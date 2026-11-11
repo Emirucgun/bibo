@@ -104,13 +104,13 @@ type Voice = {
   models?: { name?: string; languages?: { locale?: string }[] }[];
 };
 
-function isEnUs(v: Voice): boolean {
-  const locales = [
-    v.locale,
-    v.language,
-    ...(v.models ?? []).flatMap((m) => (m.languages ?? []).map((l) => l.locale)),
-  ];
-  return locales.some((l) => l?.toLowerCase() === "en-us");
+// simba-3.5 modelini en-US'de destekleyen ses.
+function isSimbaEnUs(v: Voice): boolean {
+  return (v.models ?? []).some(
+    (m) =>
+      m.name === "simba-3.5" &&
+      (m.languages ?? []).some((l) => l.locale?.toLowerCase() === "en-us"),
+  );
 }
 
 async function pickVoice(key: string): Promise<string> {
@@ -120,9 +120,13 @@ async function pickVoice(key: string): Promise<string> {
     headers: { Authorization: `Bearer ${key}` },
   });
   await failOnHttp(res, "speechify voices");
-  const voices = (await res.json()) as Voice[];
-  const voice = voices.find(isEnUs);
-  if (!voice) throw new Error(`en-US ses bulunamadı (${voices.length} ses); --voice ile ver`);
+  // Yanıt sayfalı: { voices, next_cursor, has_more }. Merhaba için ilk sayfa yeterli.
+  const body = (await res.json()) as { voices?: Voice[] } | Voice[];
+  const voices = Array.isArray(body) ? body : (body.voices ?? []);
+  const voice = voices.find(isSimbaEnUs);
+  if (!voice) {
+    throw new Error(`ilk sayfada simba-3.5 en-US ses yok (${voices.length} ses); --voice ile ver`);
+  }
   return voice.id;
 }
 

@@ -59,11 +59,11 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - Vitest ve `tsx` kurulumu, bir örnek test; kısa README; `.env.example` (değersiz).
 
 **Bitti testi**
-- [ ] Prod URL açılıyor; `/api/health` → `{ "db": "ok" }`.
-- [ ] Bir PR açıldığında önizleme URL'si oluşuyor ve `dev` veritabanına bağlanıyor.
-- [ ] `npm test` yeşil.
-- [ ] Hiçbir sır istemci paketinde yok (`NEXT_PUBLIC_` dışı değişkenler tarayıcıda görünmüyor); `.env*` dosyaları `.gitignore`'da.
-- [ ] Üç sağlayıcı anahtarıyla birer "merhaba" çağrısı yerelde çalışıyor (Claude kısa metin, Azure 3 sn'lik WAV, Speechify tek cümle) ve maliyetleri sağlayıcı panellerinde görünüyor.
+- [x] Prod URL açılıyor; `/api/health` → `{ "db": "ok" }`.
+- [x] Bir PR açıldığında önizleme URL'si oluşuyor ve `dev` veritabanına bağlanıyor.
+- [x] `npm test` yeşil.
+- [x] Hiçbir sır istemci paketinde yok (`NEXT_PUBLIC_` dışı değişkenler tarayıcıda görünmüyor); `.env*` dosyaları `.gitignore`'da.
+- [x] Üç sağlayıcı anahtarıyla birer "merhaba" çağrısı yerelde çalışıyor (Claude kısa metin, Azure 3 sn'lik WAV, Speechify tek cümle) ve maliyetleri sağlayıcı panellerinde görünüyor. _(11.11.2026: Claude ve transkript OpenRouter üzerinden, Azure yerine MAI-Transcribe-2 Speechify mp3 ile; bkz. SCOPE günlüğü)_
 
 ---
 
