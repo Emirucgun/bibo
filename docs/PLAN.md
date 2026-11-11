@@ -4,7 +4,7 @@
 | --- | --- |
 | Tarih | 11 Kasım 2026 |
 | Kapsam | `ROADMAP.md` M4 · `SPEC.md` Bölüm 4 (4.1–4.6), Bölüm 12 · `PRD.md` F3, F7 |
-| Durum | Uygulandı (yerelde doğrulandı). Veritabanı, ağ ya da yapay zekâ çağrısı yok; göç yok. |
+| Durum | Uygulandı; Bitti testinin 7 maddesi yerelde yeşil (11.11.2026). Veritabanı, ağ ya da yapay zekâ çağrısı yok; göç yok. |
 | Bağımlılık | M3'ten yalnızca kimlikler (`topics.csv`, `l1_codes.csv`, sabit kümeler) |
 
 M1 ve M3 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`).
@@ -43,8 +43,8 @@ M1 ve M3 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`).
 | 3 | PLAN #13 — çift konulu kodlar | Motor kodu değil, etkinliğin `topic_id`'sini kullanır; ek alan gerekmedi. Göç yok. |
 | 4 | Dört beceri kapsaması | 4.4 adım 4 yalnızca dinleme/konuşma diyor; amaç "dört beceri en az birer kez" olduğu için eksik **her** beceri (TTS kapalıyken dinleme hariç) kapsama ile eklenir. |
 | 5 | Slot sayısı ve süre | Sıra: 1–7 adımlarıyla taslak → 10'u aşarsa kaldırma sırası germe, tekrar, çapraz tekrar (kapsamayı bozmadan) → süre > 1200 ise germe, tekrar çıkarılır, sonra aynı beceride daha kısa türe geçilir → süre < 900 ise çapraz tekrar eklenir (≤ 10), yetmezse aynı beceride daha uzun türe geçilir. |
-| 6 | "Belirsiz konular" (çapraz tekrar) | Kanıtı olan (bir becerisinde `n > 0`), aktif teşhisi olmayan ve en az bir becerisinde `n < 3` olan konular + son 3 günde hata yapılan konular. Hiç kanıtı yoksa (yeni öğrenci) açık konulardan öncelik sırasıyla. PRD F7 "güveni < 0,6 olan teşhis yerine çapraz tekrar" bununla karşılanır. |
-| 7 | Odak becerileri (teşhis yokken) | Konunun becerileri (kanıt sayısı artan, ustalık artan) sıralanır; ilk iki farklı beceri + birinciye ikinci etkinlik. `activity_mismatch` aktifse o beceride zayıf tür seçilmez. |
+| 6 | "Belirsiz konular" (çapraz tekrar) | Kanıtı olan (bir becerisinde `n > 0`), aktif teşhisi olmayan ve en az bir becerisinde `n < 3` olan konular; sıra: önce son 3 günde hata yapılanlar (en yeni önce), sonra belirsizler **toplam kanıtı en çok olandan** (kanıt dağılmasın, karara yaklaşsın), sonra öncelik sırası. Yeni öğrencide öncelik sırası. PRD F7 "güveni < 0,6 olan teşhis yerine eksik ölçülen beceride çapraz tekrar" bununla karşılanır. |
+| 7 | Odak becerileri (teşhis yokken) | Konunun becerileri kanıt sayısı artan, ustalık artan, eşitlikte **yazma, konuşma, okuma, dinleme** sırasıyla dizilir; ilk iki farklı beceri + birinciye ikinci etkinlik. Üretim becerileri önde: tanıma becerileri (α = 0,15) yavaş ilerler ve ürünün ana ayrımı yazma/konuşma. `activity_mismatch` aktifse o beceride zayıf tür seçilmez. |
 | 8 | `purpose` eşlemesi | Tekrar `review`, odak `focus`, çapraz tekrar `retest`, kapsama konusunun amacı (`focus` / `review`), germe `stretch`. |
 | 9 | Germe konusu | Açık, sesletim olmayan, hiçbir becerisinde kanıtı olmayan, önkoşullarının her birinin ölçülmüş beceri ortalaması `≥ 0,6` olan ilk konu (`sort`). Önkoşulsuz konular uygundur. |
 | 10 | İlgi alanı | `round(n × general_content_rate)` slot `null` (rastgele konum), diğerleri ilgi alanlarına sırayla. 8 slotta %75, 10 slotta %80 temalı (PRD F3 ≥ %70). |
@@ -71,6 +71,7 @@ M1 ve M3 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`).
 1. **Karar 1 ve 13** SPEC metninden küçük sapmalar; onaylanırsa SPEC 4.3'e işlenmeli (öneri, `docs/SPEC.md` değiştirilmedi).
 2. **Karar 12**: `topic_gap` ve `activity_mismatch` için "çözüldü" koşulu SPEC'te yok; burada önerildi.
 3. Pedagoji sahibine: sesletim konuları için yalnızca tekrar/kapsama yeterli mi (karar 2)?
+4. **Simülasyon sağlamlığı:** `simulate.ts` varsayılan tohumla (42) 5. oturumda güven 1,0 ile `skill_gap(speaking)` buluyor. 100 tohumda ≈ %76'sı 5. oturuma kadar, kalanı 6. oturumda ya da sonra. Sebep SPEC 4.4'ün odak önceliği: `1 − min ustalık` olduğu için konu biraz ilerleyince odak, hiç dokunulmamış riskli konuya geçiyor ve kanıt dağılıyor. Denenen iki odak becerisi alternatifi daha kötüydü. Daha sağlam sonuç için öneri (SPEC değişikliği): aday teşhisi (güven < 0,6) olan konuya öncelikte `+0,10` ya da odağın en az 2 oturum aynı konuda kalması.
 
 ## 9. Sonraki taşlar için açık kararlar
 

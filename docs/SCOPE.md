@@ -45,7 +45,7 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 
 ### Öğrenme döngüsü
 
-- [ ] **F3** Planlayıcı: tekrar, odak, çapraz tekrar, kapsama, germe; 8–10 etkinlik, 900–1200 sn, dört beceri; seslendirme kapalıyken dinleme slotlarını metne düşürme
+- [x] **F3** Planlayıcı: tekrar, odak, çapraz tekrar, kapsama, germe; 8–10 etkinlik, 900–1200 sn, dört beceri; seslendirme kapalıyken dinleme slotlarını metne düşürme
 - [ ] **F3** Tek çağrıda oturum üretimi (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim
 - [ ] **F3** Oturumun önceden hazırlanması (`after()`, p90 ≤ 60 sn), hazır oturumun ≤ 2 sn açılması
 - [ ] **F3** Sekiz etkinlik türünün arayüzü: oku-seç, boşluk doldur, cümle diz, dinle-seç, dikte, çevir, kısa yaz, sesli cevapla
@@ -59,8 +59,8 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [ ] **F6** Bas-konuş WAV kaydı (16 kHz mono, ≤ 45 sn), ses saklanmaz
 - [ ] **F6** İki adımlı transkript (Azure MAI-Transcribe-2, `verbatim`) + değerlendirme (Claude), transkriptin gösterilmesi, 1 yeniden kayıt hakkı
 - [ ] **F7** Hata etiketleme (çeldirici kodu, kural, yapay zekâ), `error_events`
-- [ ] **F7** Kademeli ustalık puanı, aralıklı tekrar, yan kanıt
-- [ ] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6
+- [x] **F7** Kademeli ustalık puanı, aralıklı tekrar, yan kanıt
+- [x] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6
 - [ ] **F7** Etkinlik verimi verisinin toplanması (`activity_stats`)
 - [ ] **F8** Oturum özeti, kanıtlı teşhis kartı, "Doğru / Bence değil", 1–5 puan ve not
 
