@@ -9,14 +9,14 @@ paths:
 
 # Yapay zekâ katmanı kuralları (ayrıntı: docs/SPEC.md Bölüm 5, 8, 10)
 
-## Claude Haiku 5.5 (`claude-haiku-5-5`, `@ai-sdk/anthropic`)
+## Claude Haiku 5.5 (`claude-haiku-5-5`, OpenRouter üzerinden `lib/ai/client.ts`)
 
 - `temperature`, `top_p`, `top_k` ve asistan ön doldurma (prefill) GÖNDERME: Haiku 5.5 bunlarda 400 hatası döner. İnternetteki AI SDK örneklerinin çoğu `temperature` içerir; kopyalarken çıkar.
-- Düşünme derinliği `providerOptions.anthropic.effort` ile: üretim `medium`, değerlendirme `low` (değerler `app_settings`'ten). Düşünmeyi kapatmak için `thinking: { type: 'disabled' }` (yalnızca `high` ve altında geçerli).
+- Düşünme derinliği OpenRouter isteğinde `reasoning.effort` ile: üretim `medium`, değerlendirme `low` (değerler `app_settings`'ten). Düşünmeyi kapatmak için `reasoning: { enabled: false }`.
 - `max_tokens` düşünme tokenlarını da kapsar: üretim 16.000, değerlendirme 3.000. Düşük değer boş cevap üretir.
 - Yanıt bir düşünme bloğuyla başlayabilir; içeriği konumla değil türle oku.
 - `stop_reason: "refusal"` durumunu ele al (SPEC 5.1).
-- Sistem komutu sabit tutulur ve `cacheControl: { type: 'ephemeral' }` ile işaretlenir; öğrenciye özgü kısım en sonda. Önbellek ancak istem ≥ 512 token ise çalışır.
+- Sistem komutu sabit tutulur ve sistem mesajında `cache_control: { type: 'ephemeral' }` ile işaretlenir; öğrenciye özgü kısım en sonda. Önbellek ancak istem ≥ 512 token ise çalışır.
 - Kullanımdan `inputTokens`, `outputTokens` ve önbellek okuma/yazma sayılarını `llm_usage`'a yaz; maliyeti yalnızca `lib/ai/cost.ts` hesaplar.
 
 ## Yapılandırılmış çıktı (Zod şemaları)
@@ -24,7 +24,8 @@ paths:
 - `z.record` kullanma (Anthropic katı JSON şeması serbest anahtarlı nesneyi desteklemez); dizi kullan (ör. `distractors: [{ option, code, feedback_tr }]`).
 - `max`/`min` sınırları istekte açıklamaya dönüşür; cevaptan sonra Zod ile yine doğrula ve kod kontrollerini (SPEC 5.2) uygula.
 - Şemayı değiştirmek istem önbelleğini bozar; gereksiz yere değiştirme.
-- "Schema is too complex" hatasında `structuredOutputMode: 'jsonTool'`.
+- Katı şema dizi uzunluğunu zorlayamaz; sayının önemli olduğu yerde slot anahtarlı nesne kullan (`SessionGen`). 6+ slotlu `SessionGen` "Schema is too complex for compilation" verir: bir çağrıda en çok 5 slot (`MAX_SLOTS_PER_CALL`), parçalar paralel.
+- `llm_usage.error`'a Zod sorunlarını yalnızca yol/kod/sınır olarak yaz (`formatIssues`); model metni asla.
 
 ## Transkript — Azure MAI-Transcribe-2 (`lib/stt`)
 

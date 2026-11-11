@@ -46,7 +46,7 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 ### Öğrenme döngüsü
 
 - [x] **F3** Planlayıcı: tekrar, odak, çapraz tekrar, kapsama, germe; 8–10 etkinlik, 900–1200 sn, dört beceri; seslendirme kapalıyken dinleme slotlarını metne düşürme
-- [ ] **F3** Tek çağrıda oturum üretimi (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim
+- [ ] **F3** Oturum üretimi: en çok 5 slotluk paralel çağrılar (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim
 - [ ] **F3** Oturumun önceden hazırlanması (`after()`, p90 ≤ 60 sn), hazır oturumun ≤ 2 sn açılması
 - [ ] **F3** Sekiz etkinlik türünün arayüzü: oku-seç, boşluk doldur, cümle diz, dinle-seç, dikte, çevir, kısa yaz, sesli cevapla
 - [ ] **F3** Kaldığı yerden devam (24 saat), kişi başı günlük oturum sınırı
@@ -194,3 +194,4 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 11.11.2026 | Sağlayıcı erişimi: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı) ve MAI-Transcribe-2 (`microsoft/mai-transcribe-2`) OpenRouter üzerinden; Speechify Simba 3.5 doğrudan (OpenRouter'da yok). Hata ya da ölçüt kaybı olursa ilgili model kendi sağlayıcısına döner | Tek anahtar, tek fatura, kolay model değişimi; iki modelin fiyatı doğrudan sağlayıcıyla aynı. Açık: transkript AB içinde işlenmiyor (KVKK metni), `verbatim` davranışı M8'de ölçülecek, OpenRouter kredi komisyonu | Mühendis (pedagoji sahibinin itiraz hakkı saklı) |
 | 11.11.2026 | Supabase `prod` projesi Stockholm'de (`eu-north-1`); `dev` Frankfurt'ta kalıyor | Proje bu bölgede açılmıştı; yeniden açmamaya karar verildi. Bedeli: Vercel `fra1` ile her sorguda ≈ 20–30 ms ek gecikme. Her iki bölge de AB; aydınlatma metninde Supabase için "AB (Stockholm)" yazılmalı | Mühendis |
 | 11.11.2026 | `topics.csv` (32), `l1_codes.csv` (24), `placement.json` (14) geçici olarak onaylandı | M4'e geçmek için yeterli seviyede. Pilot öncesi yeniden kontrol edilecek; değişiklik olursa `scripts/build-seed.ts` + seed yeniden yüklenir | Pedagoji sahibi |
+| 11.11.2026 | M6 öncesi SPEC rev. 3 kararları: oturum üretimi en çok 5 slotluk paralel çağrılarla ve slot anahtarlı şemayla; aylık tavan OpenRouter komisyonunu kapsar (`openrouter_fee_rate`); dinleme metni `item_keys`'te; günlük sınır `start`'ta, ön üretim serbest; `finish` `maxDuration = 300`; `sessions.status`'a `generating`; `PATCH /api/profile` ve `POST /api/events`; açıklama modu "kısa"ya da geri döner | eval-generation'da tek çağrı %100 şema hedefini tutturamadı, 6+ slotlu şema sağlayıcıda derlenmiyor; diğerleri M5 sırasında açık kalan PLAN #14–#23 | Ekip |

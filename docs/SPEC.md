@@ -2,12 +2,12 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 2 (model yığını ve maliyet güncellendi) |
+| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 3 (11 Kasım 2026: OpenRouter erişimi, parçalı oturum üretimi, M6 öncesi kararlar; rev. 2: model yığını ve maliyet) |
 | Okuyucu | Mühendis; ayrıca Claude Code gibi kodlama asistanları |
 | Bağlam | Ürün kararları `PRD.md`'de, kapsam `SCOPE.md`'de, sıra `ROADMAP.md`'de; maliyet ve fiyat hesabı finans tablosunda (Google Sheets: Özet, Model Seçimi (AA), Oturum Maliyeti, Pilot) |
 | Ana kısıt | 50 kişilik pilot, aylık altyapı ≤ 50 €, tek mühendis |
 
-**Mimari karar özeti:** Tek bir Next.js uygulaması (arayüz + API) Vercel'de; veri, kimlik doğrulama ve dosya depolama Supabase'te; dil modeli Anthropic API'de (Claude Haiku 5.5); konuşma tanıma Azure Speech'te (MAI-Transcribe-2); seslendirme Speechify API'de (Simba 3.5). Teşhis motoru saf TypeScript'tir ve dil modelinden bağımsızdır. Ayrı bir arka uç sunucusu, kuyruk sistemi veya vektör veritabanı yoktur.
+**Mimari karar özeti:** Tek bir Next.js uygulaması (arayüz + API) Vercel'de; veri, kimlik doğrulama ve dosya depolama Supabase'te; dil modeli Claude Haiku 5.5, OpenRouter üzerinden (yalnızca Anthropic altyapısı); konuşma tanıma Azure Speech'te (MAI-Transcribe-2); seslendirme Speechify API'de (Simba 3.5). Teşhis motoru saf TypeScript'tir ve dil modelinden bağımsızdır. Ayrı bir arka uç sunucusu, kuyruk sistemi veya vektör veritabanı yoktur.
 
 **Model seçiminin gerekçesi (rev. 2):** Modeller Artificial Analysis karşılaştırmalarıyla "en düşük maliyete en yüksek kalite" ölçüsüyle seçildi. Önceki seçime (Gemini 3.1 Flash-Lite + Chirp 3: HD) göre dört alanda da kalite daha yüksek, oturum başı yapay zekâ maliyeti ≈ %33 daha düşük (0,0176 $ → 0,0118 $). Ayrıntı ve hesap: finans tablosu → Model Seçimi (AA).
 
@@ -34,7 +34,7 @@ Sürümler 10 Kasım 2026 itibarıyla güncel kararlı sürümlerdir. Kurulumda 
 | Bileşenler | shadcn/ui (CLI ile kopyalanan bileşenler) | CLI son sürüm | Bağımlılık değil, kaynak kod |
 | Veritabanı, Auth, Depolama | Supabase (Postgres + RLS, Auth, Storage) | `@supabase/supabase-js` 2.110.x, `@supabase/ssr` son sürüm, Supabase CLI son sürüm | Ücretsiz katman pilota yeter; tek sağlayıcıda üç ihtiyaç |
 | Şema doğrulama | Zod | 4.x | Dil modeli çıktıları ve API girdileri |
-| Yapay zekâ SDK'sı | Vercel AI SDK (`ai`) + `@ai-sdk/anthropic` | `ai` 7.0.x + onunla uyumlu son `@ai-sdk/anthropic` | Yapılandırılmış çıktı, istem önbelleği (`cacheControl`) ve `effort` desteği; sağlayıcı değişimi tek satır |
+| Yapay zekâ istemcisi | İnce `fetch` istemcisi (`lib/ai/client.ts`) → OpenRouter chat API | — | Vercel AI SDK'nın Anthropic sağlayıcısı OpenRouter'a bağlanamıyor (SCOPE günlüğü 11.11.2026). Katı yapılandırılmış çıktı (`json_schema`, `strict`), istem önbelleği (`cache_control`) ve `reasoning.effort` doğrudan gönderilir. Doğrudan Anthropic'e dönülürse yalnızca bu dosya değişir |
 | Dil modeli | Claude Haiku 5.5 (`claude-haiku-5-5`) | GA (7 Ekim 2026), emeklilik en erken 7 Ekim 2027 | 0,10 $/1M girdi, 0,50 $/1M çıktı (düşünme dahil), önbellek okuma 0,01 $/1M; düşünme derinliği `effort` ile |
 | Konuşma tanıma | Azure Speech — MAI-Transcribe-2 (Fast Transcription API, `enhancedMode`) | Önizleme (preview), `api-version=2025-10-15`, bölge `northeurope` | En düşük hata oranlarından; 1,67 $/1000 dk; varsayılan çıktı biçimi `verbatim` (öğrenci hatasını düzeltmez) |
 | Seslendirme | Speechify API — Simba 3.5 (`simba-3.5`) | REST v1 (`POST /v1/audio/speech`) | En yüksek kalite grubunun en ucuzu; ücretsiz plan 500.000 karakter/ay, sonra Starter 10 $/ay |
@@ -103,12 +103,12 @@ flowchart TB
 
 ### Temel veri akışı (bir oturum)
 
-1. `finish` çağrısı bir oturumu kapatır → ustalık ve teşhis güncellenir → `after()` ile bir sonraki oturum planlanır ve üretilir (`status = ready`).
+1. `finish` çağrısı bir oturumu kapatır → ustalık ve teşhis güncellenir → `after()` ile bir sonraki oturum planlanır ve üretilir (`status = generating` → `ready`).
 2. Öğrenci "Başla"ya basar → hazır oturum anında açılır (dil modeli çağrısı yok).
 3. Her cevap `POST /api/items/:id/attempt` (veya `/speech`) ile gönderilir → yerel ya da yapay zekâ değerlendirmesi (konuşmada önce Azure transkript, sonra Claude değerlendirme) → `attempts`, `error_events`, `mastery` güncellenir → kısa geri bildirim döner.
 4. Dinleme etkinliği açıldığında `GET /api/items/:id/audio` önbellekte yoksa Speechify ile ses üretir, `tts/` kovasına koyar, imzalı URL döner.
 
-`after()` ile yapılan iş aynı fonksiyon çağrısının süresine dahildir (Vercel Hobby'de üst sınır 300 sn). `finish` uç noktasında `export const maxDuration = 120` tanımlanır.
+`after()` ile yapılan iş aynı fonksiyon çağrısının süresine dahildir (Vercel Hobby'de üst sınır 300 sn). `finish` uç noktasında `export const maxDuration = 300` tanımlanır: tipik üretim 20–30 sn sürer, ama kötü durumda (zaman aşımı + yeniden deneme + yeniden üretim turu) 120 sn'yi aşabilir. Fonksiyon yalnızca çalıştığı süre kadar ücretlendirilir.
 
 ### Dizin yapısı
 
@@ -244,7 +244,7 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | id | uuid PK | |
 | user_id | uuid | |
 | kind | text | `placement` / `daily` |
-| status | text | `ready`, `active`, `done`, `abandoned`, `failed` |
+| status | text | `generating`, `ready`, `active`, `done`, `abandoned`, `failed`. Öğrenci başına en çok bir `generating` ya da `ready` oturum (kısmi tekil indeks); yeni bir oturum hazırlanırken eski `ready` oturum `abandoned` yapılır |
 | plan | jsonb | planlayıcının slotları ve gerekçeleri (hata ayıklama için) |
 | focus_topic_id | text → topics | |
 | created_at, started_at, finished_at | timestamptz | |
@@ -267,7 +267,7 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | purpose | text | |
 | interest | text null | `null` = genel içerik (ilgi alanı etkisini ölçmek için %20) |
 | l1_target | text → l1_codes null | |
-| payload | jsonb | yönerge, metin, şıklar, karışık kelimeler… (Bölüm 5.2) |
+| payload | jsonb | yönerge, metin, şıklar, karışık kelimeler… (Bölüm 5.2). Dinleme türlerinde (`listen_choose`, `dictation`) seslendirilen `text_en` burada **tutulmaz**, `item_keys`'e taşınır; istemci yalnızca ses URL'si alır |
 | credited | bool default false | etkinlik verimi hesabında kullanıldı mı |
 | created_at | timestamptz | |
 
@@ -276,7 +276,7 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | Alan | Tür | Not |
 | --- | --- | --- |
 | item_id | uuid PK → items on delete cascade | |
-| key | jsonb | doğru cevap, kabul edilen varyantlar, çeldiriciler ve L1 kodları, açıklamalar, ipucu |
+| key | jsonb | doğru cevap, kabul edilen varyantlar, çeldiriciler ve L1 kodları, açıklamalar, ipucu; dinleme türlerinde seslendirilen metin (`text_en`) |
 
 Bu tabloda öğrenci ve öğretmen için **hiçbir** RLS `select` politikası yoktur; cevap anahtarı istemciye asla sızmaz.
 
@@ -384,15 +384,15 @@ Benzersiz: `(item_id, try_no)`.
 | id | bigserial PK | |
 | user_id, session_id | uuid null | |
 | purpose | text | `generate`, `grade`, `transcribe`, `tts`, `placement` |
-| provider, model | text | `anthropic` / `azure` / `speechify` ve model kimliği |
+| provider, model | text | `openrouter` (dil modeli ve transkript) / `speechify`; doğrudan bağlantıya dönülürse `anthropic` / `azure`. `model` = `app_settings`'teki kimlik |
 | input_tokens, output_tokens | int | çıktıya düşünme tokenları dahil |
 | cache_read_tokens, cache_write_tokens | int default 0 | istem önbelleği |
 | audio_seconds | numeric | |
 | tts_chars | int | Speechify `billable_characters_count` |
-| cost_usd | numeric(10,6) | `lib/ai/cost.ts` fiyat tablosundan |
+| cost_usd | numeric(10,6) | `lib/ai/cost.ts` fiyat tablosundan; OpenRouter çağrılarında `openrouter_fee_rate` komisyonu dahil |
 | latency_ms | int | |
 | ok | bool | |
-| error | text | |
+| error | text | kısa kod; şema hatasında yalnızca yol, kod ve sınır (ör. `invalid_output:slot_4.key.hint_tr:too_big(max 140)`) |
 | created_at | timestamptz | indeks |
 
 İçerik (komut ya da öğrenci metni) bu tabloya **yazılmaz**.
@@ -423,6 +423,7 @@ Benzersiz: `(item_id, try_no)`.
 | `tts_voice` | pedagoji sahibinin seçtiği en-US ses kimliği | `GET /v1/voices` listesinden; pilot boyunca değişmez |
 | `tts_enabled` | `true` | `false` → yeni oturumlarda dinleme slotları metin türlerine düşer |
 | `tts_plan_usd` | `0` | Speechify aylık plan ücreti (Free 0, Starter 10); bütçe hesabına eklenir |
+| `openrouter_fee_rate` | `0.055` | OpenRouter kredi alım komisyonu; dil modeli ve transkript maliyeti `× (1 + oran)` yazılır, böylece aylık tavan gerçek harcamayı izler. Oran OpenRouter kredi ekranından doğrulanır |
 | `tts_monthly_char_alert` | `400000` | ücretsiz kotanın (500.000) %80'i; aşılınca panelde uyarı |
 | `review_sample_rate` | `0.15` | |
 | `general_content_rate` | `0.2` | |
@@ -585,10 +586,10 @@ Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk 
 
 | Çağrı | Ne zaman | Sağlayıcı / ayar | Girdi | Çıktı şeması |
 | --- | --- | --- | --- | --- |
-| Oturum üretimi | Oturum bitince (`after()`) ve başlangıç sonunda | Anthropic · `model_generate`, `effort_generate` (medium) | planlayıcı slotları, seviye, ilgi alanları, açıklama modu, ilgili L1 kodlarının kısa listesi | `SessionGen` |
-| Serbest cevap değerlendirme | `translate_tr_en`, `short_write` cevabında | Anthropic · `model_grade`, `effort_grade` (low), `thinking_grade` | etkinlik, model cevap, öğrenci metni (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
+| Oturum üretimi | Oturum bitince (`after()`) ve başlangıç sonunda | Claude (OpenRouter) · `model_generate`, `effort_generate` (medium); en çok 5 slotluk paralel çağrılar (Bölüm 5.2) | planlayıcı slotları, seviye, ilgi alanları, açıklama modu, ilgili L1 kodlarının kısa listesi | `SessionGen` |
+| Serbest cevap değerlendirme | `translate_tr_en`, `short_write` cevabında | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade` | etkinlik, model cevap, öğrenci metni (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
 | Transkript | `speak_answer` kaydında | Azure Speech · `model_transcribe` (MAI-Transcribe-2) | WAV ses; `locales: ["en"]`; `transcribeStyle` varsayılanı `verbatim` | `{ transcript: string, unclear: boolean }` (`unclear` = boş ya da çok kısa transkript) |
-| Konuşma değerlendirme | transkriptten sonra | Anthropic · `model_grade`, `effort_grade` | transkript + etkinlik | `GradeResult` |
+| Konuşma değerlendirme | transkriptten sonra | Claude (OpenRouter) · `model_grade`, `effort_grade` | transkript + etkinlik | `GradeResult` |
 
 Ayrı bir "uzun açıklama" çağrısı yoktur: yerel değerlendirilen etkinliklerin uzun açıklaması üretim anında `item_keys`'e, yapay zekâ ile değerlendirilenlerinki `GradeResult` içinde gelir. "Daha fazla açıkla" maliyetsizdir.
 
@@ -597,9 +598,9 @@ Transkript ve değerlendirme bilerek **iki ayrı adımdır** (ve iki ayrı sağl
 **Dil modeli çağrı ayarları:**
 
 - `temperature`, `top_p`, `top_k` ve ön doldurma **gönderilmez** (Haiku 5.5 kabul etmez). Çeşitlilik, komuttaki ilgi alanı, konu ve oturuma özgü bir `variety_seed` ile sağlanır.
-- `effort`: üretimde `medium`, değerlendirmede `low` (`providerOptions.anthropic.effort`). Değerlendirmede p90 gecikme 6 sn'yi aşarsa `thinking_grade = "disabled"` ile kapatılır.
+- `effort`: üretimde `medium`, değerlendirmede `low` (OpenRouter isteğinde `reasoning.effort`; kapatmak için `reasoning.enabled = false`). Değerlendirmede p90 gecikme 6 sn'yi aşarsa `thinking_grade = "disabled"` ile kapatılır.
 - `max_tokens` düşünme tokenlarını da kapsar: üretimde 16.000, değerlendirmede 3.000. Fazla düşük değer, düşünme bloğundan sonra boş cevaba yol açar.
-- Zaman aşımı: üretim 120 sn (arka planda çalışır), değerlendirme 20 sn, transkript 15 sn; bir kez yeniden deneme.
+- Zaman aşımı: üretim çağrısı başına 120 sn (arka planda çalışır), değerlendirme 20 sn, transkript 15 sn; bir kez yeniden deneme.
 - `stop_reason: "refusal"` gelirse: üretimde ilgili slot çıkarılır (oturum ≥ 8 etkinlik kalmalı), değerlendirmede öğrenciye "Bu cevabı şu an değerlendiremedik" gösterilir ve ustalık güncellenmez.
 
 ### 5.2 Şemalar (Zod, `lib/ai/schemas.ts`)
@@ -637,7 +638,10 @@ const GeneratedItem = z.object({
     hint_tr: z.string().max(140),
   }),
 })
-const SessionGen = z.object({ items: z.array(GeneratedItem).min(8).max(10) })
+// Slot anahtarlı: her slot zorunlu bir anahtar, böylece etkinlik sayısını şema zorlar.
+// Bir çağrıda en çok 5 slot; model yerel slot_1…slot_k anahtarlarını görür.
+const SessionGen = (positions: number[]) =>
+  z.object(Object.fromEntries(positions.map((p) => [`slot_${p}`, GeneratedItem])))
 
 const GradeResult = z.object({
   is_correct: z.boolean(),
@@ -656,14 +660,15 @@ const GradeResult = z.object({
 
 - Anthropic'in katı JSON şeması serbest anahtarlı nesneleri (`z.record`) desteklemez. Bu yüzden önceki `distractor_codes` / `distractor_feedback_tr` sözlükleri tek bir `distractors` dizisine çevrildi; `correct` yalnızca metin.
 - `max`, `min`, `maxLength` gibi sınırlar istekteki şemadan açıklamaya taşınır; cevap geldikten sonra Zod doğrulaması bu sınırları yine uygular.
-- Şema karmaşıklık sınırı (istek başına en çok 24 isteğe bağlı alan, 16 `anyOf`) aşılırsa API "Schema is too complex" hatası döner; bu durumda AI SDK'da `structuredOutputMode: 'jsonTool'` kullanılır.
+- Katı şema dizi uzunluğunu zorlayamaz (`minItems` yalnızca 0 ya da 1). Bu yüzden `SessionGen` dizi değil, slot anahtarlı nesnedir (rev. 3; önceki dizi tanımında model ilk çağrıların %20–50'sinde 8'den az etkinlik döndürdü).
+- Şema karmaşıklık sınırı: `GeneratedItem` `$defs`'te bir kez tanımlansa da Anthropic onu her slot için açar; 6 ve daha fazla slotlu şema "Schema is too complex for compilation" hatası verir (ölçüm 11.11.2026). Bu yüzden oturum en çok 5 slotluk **paralel** çağrılarla üretilir: 10 → 5+5, 9 → 5+4, 8 → 4+4. Yeni bir şema ilk kullanımda ≈ 30 sn derlenir, sonra sağlayıcıda önbellekte kalır; yerel anahtarlar sayesinde en çok 5 farklı şema vardır.
 - Şema değişirse istem önbelleği geçersiz olur; şema sabit tutulur.
 
-**Üretim sonrası kod kontrolleri** (şemadan geçse de): `options` doğru cevabı tam bir kez içerir; `tokens` `accepted[0]`'ın bir permütasyonudur; cümle uzunluğu A1 ≤ 12, A2 ≤ 16 kelime; `distractors` her yanlış şık için tam bir kayıt içerir. Geçmeyen slot bir kez yeniden üretilir; yine geçmezse çıkarılır (oturum ≥ 8 etkinlik kalmalı).
+**Üretim sonrası kod kontrolleri** (şemadan geçse de): `options` doğru cevabı tam bir kez içerir; `tokens` `accepted[0]`'ın bir permütasyonudur; cümle uzunluğu A1 ≤ 12, A2 ≤ 16 kelime; `distractors` her yanlış şık için tam bir kayıt içerir. Şemadan kısmen geçen yanıtta geçerli slotlar tutulur. Kod kontrolünden ya da şemadan geçmeyen, eksik ya da reddedilen slotlar tek bir yeniden üretim turunda (yine ≤ 5'lik paralel çağrılar) yeniden üretilir; yine geçmezse çıkarılır (oturum ≥ 8 etkinlik kalmalı). Ölçüm (eval-generation, 11.11.2026): 20/20 oturum geçerli, p50 20,6 sn, p90 30,0 sn, 0,0039 $/oturum.
 
 ### 5.3 Komut ilkeleri (`lib/ai/prompts/*`)
 
-- Sistem komutu sabit ve uzundur (taksonomi, stil rehberi, kurallar) ve `providerOptions.anthropic.cacheControl = { type: 'ephemeral' }` ile önbelleğe işaretlenir; öğrenciye özgü kısım sondadır. Haiku 5.5'te önbelleklenebilir en kısa istem 512 tokendır. Önbellekten okuma girdi fiyatının onda biri (0,01 $/1M), 5 dakikalık önbellek yazma 1,25 katıdır (0,125 $/1M). Maliyet modeli önbellek isabetini muhafazakâr biçimde %0 varsayar; gerçek isabet `llm_usage.cache_read_tokens` ile izlenir.
+- Sistem komutu sabit ve uzundur (taksonomi, stil rehberi, kurallar) ve sistem mesajında `cache_control: { type: 'ephemeral' }` ile önbelleğe işaretlenir; öğrenciye özgü kısım sondadır. Haiku 5.5'te önbelleklenebilir en kısa istem 512 tokendır. Önbellekten okuma girdi fiyatının onda biri (0,01 $/1M), 5 dakikalık önbellek yazma 1,25 katıdır (0,125 $/1M). Maliyet modeli önbellek isabetini muhafazakâr biçimde %0 varsayar; gerçek isabet `llm_usage.cache_read_tokens` ile izlenir.
 - Öğrenci metni `<student_answer>…</student_answer>` içinde veri olarak verilir; içindeki talimatlar yok sayılır.
 - Değerlendirme kuralları: noktalama ve büyük harf hata sayılmaz; aksan ve telaffuz yorumlanmaz; yalnızca gerçekten kullanılan yapılar için `evidence` üretilir; hata gerçekten Türkçe kaynaklıysa `L1.*`, değilse `GEN.*` kodu.
 - Açıklama stili: "sen" dili, yargısız, önce doğru biçim, sonra Türkçeyle tek cümlelik karşılaştırma.
@@ -675,9 +680,9 @@ Her yapay zekâ, transkript ve TTS çağrısından önce sırayla:
 
 1. `kill_switch = true` → reddet.
 2. Ay içi `sum(llm_usage.cost_usd) + tts_plan_usd ≥ monthly_budget_usd` → reddet, yöneticiye panelde uyarı.
-3. Oturum üretimi için: öğrencinin bugün başlattığı oturum sayısı `≥ daily_session_limit` → reddet.
+3. Öğrencinin istediği oturum üretimi için (`POST /api/sessions/next`, hazır oturum yokken): öğrencinin bugün başlattığı oturum sayısı `≥ daily_session_limit` → reddet. `finish` sonrasındaki ön üretim bu kontrole takılmaz; günlük sınır asıl olarak `POST /api/sessions/:id/start`'ta uygulanır (rev. 3).
 
-Her çağrıdan sonra `llm_usage`'a bir satır yazılır; `sessions.cost_usd` güncellenir.
+Her çağrıdan sonra `llm_usage`'a bir satır yazılır; `sessions.cost_usd` güncellenir. OpenRouter çağrılarının maliyeti `openrouter_fee_rate` komisyonuyla yazıldığı için 2. adımdaki toplam komisyonu da kapsar.
 
 **Seslendirme kotası:** Speechify ücretsiz planı kota dolunca isteği reddeder. Ay içi `sum(llm_usage.tts_chars) ≥ tts_monthly_char_alert` olunca panelde "Starter'a geçme kararı" uyarısı çıkar. Speechify 402 veya 429 dönerse `tts_enabled = false` gibi davranılır: yeni oturumlarda dinleme slotları metin türlerine düşer (Bölüm 4.4 adım 8), açık bir dinleme etkinliği "Ses şu an kullanılamıyor" mesajıyla atlanır ve ustalık güncellenmez.
 
@@ -701,15 +706,15 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 
 | Yöntem | Yol | Rol | Girdi | Çıktı |
 | --- | --- | --- | --- | --- |
-| POST | `/api/sessions/next` | öğrenci | — | `{ sessionId, status }` · hazır oturum varsa onu, yoksa üretir; koruma kontrolleri |
+| POST | `/api/sessions/next` | öğrenci | — | `{ sessionId, status }` · `ready` ya da `generating` oturum varsa onu döner, yoksa üretir; koruma kontrolleri |
 | GET | `/api/sessions/:id` | sahibi | — | `{ session, items (anahtarsız), attempts }` |
-| POST | `/api/sessions/:id/start` | sahibi | — | `{ ok }` |
+| POST | `/api/sessions/:id/start` | sahibi | — | `{ ok }` · bugün başlatılan oturum sayısı `≥ daily_session_limit` ise `429` + `{ error: { code: 'daily_limit' } }` ve `limit_hit` olayı |
 | POST | `/api/items/:id/attempt` | sahibi | `{ response, timeMs, hintUsed }` | `{ attemptId, isCorrect, score, feedbackShortTr, correction }` |
 | POST | `/api/items/:id/speech` | sahibi | `multipart`: `audio` (WAV ≤ 2 MB, ≤ 45 sn), `timeMs`, `tryNo` | `{ attemptId, transcript, isCorrect, score, feedbackShortTr, correction }` |
 | GET | `/api/items/:id/hint` | sahibi | — | `{ hintTr }` |
 | GET | `/api/attempts/:id/explanation` | sahibi | — | `{ explanationLongTr }` · `explain_opened = true` |
 | GET | `/api/items/:id/audio` | sahibi | — | `{ url }` 1 saatlik imzalı URL · seslendirme kullanılamıyorsa `503` + `{ error: { code: 'tts_unavailable' } }` |
-| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` | `{ summary, diagnosis? }` · sonraki oturum `after()` ile üretilir (`maxDuration = 120`) |
+| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` | `{ summary, diagnosis? }` · sonraki oturum `after()` ile üretilir (`maxDuration = 300`) |
 | POST | `/api/diagnoses/:id/feedback` | sahibi | `{ feedback: 'agree' \| 'disagree' }` | `{ ok }` |
 
 ### İlerleme ve hesap
@@ -717,6 +722,8 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | Yöntem | Yol | Rol | Girdi | Çıktı |
 | --- | --- | --- | --- | --- |
 | GET | `/api/progress` | öğrenci | — | `{ grid, weekSessions, topErrors, diagnoses }` |
+| PATCH | `/api/profile` | öğrenci | `{ displayName?, interests?: string[≥2], explainMode? }` | `{ ok }` · yalnızca bu üç alan (RLS tablosuyla aynı) |
+| POST | `/api/events` | öğrenci | `{ name, props? }` | `{ ok }` · `name` yalnızca `events` tablosundaki listeden; `props` ≤ 1 KB, öğrenci metni içermez |
 | POST | `/api/school-topic` | öğrenci | `{ topicId \| null }` | `{ ok }` |
 | GET | `/api/account/export` | öğrenci | — | JSON dosyası (tüm kişisel kayıtlar) |
 | DELETE | `/api/account` | öğrenci | `{ confirm: "SİL" }` | `{ ok }` · `auth.admin.deleteUser` → zincirleme silme |
@@ -769,7 +776,7 @@ Fiyatlar: Claude Haiku 5.5 0,10 $ / 1M girdi token, 0,50 $ / 1M çıktı token (
 
 | Çağrı | Adet | Girdi | Çıktı (düşünme dahil) | Maliyet |
 | --- | --- | --- | --- | --- |
-| Oturum üretimi (`medium`) | 1 | 6.500 tok | 6.500 + 2.000 tok | 0,00490 $ |
+| Oturum üretimi (`medium`, 2 paralel çağrı) | 1 | 6.500 tok | 6.500 + 2.000 tok | 0,00490 $ (ölçülen 0,0039 $, komisyon hariç) |
 | Yazma değerlendirme (`low`) | 2 | 2.340 tok | 650 + 300 tok | 0,00142 $ |
 | Transkript (≈ 40 sn, %20 yeniden kayıt) | 2,4 | 0,67 dk | — | 0,00267 $ |
 | Konuşma değerlendirme (`low`) | 2,4 | 2.340 tok | 650 + 300 tok | 0,00170 $ |
