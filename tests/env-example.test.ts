@@ -1,14 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-// docs/SPEC.md Bölüm 9
+// docs/SPEC.md Bölüm 9 (11.11.2026: Anthropic + Azure anahtarları yerine OPENROUTER_API_KEY)
 const EXPECTED_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
   "SUPABASE_SECRET_KEY",
-  "ANTHROPIC_API_KEY",
-  "AZURE_SPEECH_KEY",
-  "AZURE_SPEECH_ENDPOINT",
+  "OPENROUTER_API_KEY",
   "SPEECHIFY_API_KEY",
   "CRON_SECRET",
   "APP_URL",

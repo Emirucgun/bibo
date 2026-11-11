@@ -805,9 +805,7 @@ Pilotun iki aylık toplamı (Gerçekçi) ≈ 36 €. Sabit maliyet pilotta 0 $. 
 | `NEXT_PUBLIC_SUPABASE_URL` | istemci + sunucu | |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | istemci + sunucu | yayınlanabilir anahtar |
 | `SUPABASE_SECRET_KEY` | yalnızca sunucu | servis istemcisi |
-| `ANTHROPIC_API_KEY` | yalnızca sunucu | aylık harcama limiti tanımlı çalışma alanının anahtarı |
-| `AZURE_SPEECH_KEY` | yalnızca sunucu | Speech kaynağı anahtarı |
-| `AZURE_SPEECH_ENDPOINT` | yalnızca sunucu | `https://<kaynak-adı>.cognitiveservices.azure.com` (bölge `northeurope`) |
+| `OPENROUTER_API_KEY` | yalnızca sunucu | Claude Haiku 5.5 ve MAI-Transcribe-2 OpenRouter üzerinden (11.11.2026); anahtarda kredi limiti tanımlı. Doğrudan sağlayıcıya dönülürse `ANTHROPIC_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_ENDPOINT` geri gelir |
 | `SPEECHIFY_API_KEY` | yalnızca sunucu | |
 | `CRON_SECRET` | yalnızca sunucu | |
 | `APP_URL` | sunucu | OAuth dönüşü |

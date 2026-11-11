@@ -27,6 +27,7 @@ M1'in sonunda elde olacak şey: boş ama canlı bir uygulama, `dev` ve `prod` ve
 | 10 | Sağlık kontrolü | Servis istemcisiyle `app_settings`'ten tek satır okuma. `DATABASE_URL` yok. |
 | 11 | Sürümler | Ana sürümde SPEC kazanır; içindeki en güncel yama tam sürümle sabitlenir. |
 | 12 | CI | GitHub Actions yok. Lint, tür ve test yerelde koşar. |
+| 13 | Sağlayıcı erişimi (11.11.2026) | Claude ve MAI-Transcribe-2 OpenRouter üzerinden, Speechify doğrudan. Merhaba betiği buna göre; Anthropic ve Azure hesapları M1 için gerekmiyor. |
 
 **Guard muafiyeti notu (karar 7):** `CLAUDE.md` "guard'ı atlayan yol yok" der. `llm_usage` tablosu M3'te, `guard.ts` M5'te geliyor; M1'deki betik bu yüzden guard'sız çalışır. Betik uygulama kodundan çağrılmaz, yalnızca elle koşulur ve M5'te silinir.
 

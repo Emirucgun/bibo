@@ -1,6 +1,10 @@
 /**
- * M1 tek seferlik "merhaba" çağrıları: Anthropic, Speechify, Azure Speech.
- * M5'te silinir (yerini lib/ai, lib/tts, lib/stt alır).
+ * M1 tek seferlik "merhaba" çağrıları (M5'te silinir; yerini lib/ai, lib/tts, lib/stt alır).
+ *
+ * Sağlayıcı düzeni (SCOPE.md günlüğü, 11.11.2026):
+ *   - Claude Haiku 5.5      → OpenRouter (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı)
+ *   - MAI-Transcribe-2      → OpenRouter (`microsoft/mai-transcribe-2`)
+ *   - Speechify Simba 3.5   → doğrudan Speechify (OpenRouter'da yok)
  *
  * Guard muafiyeti: llm_usage (M3) ve lib/ai/guard.ts (M5) henüz yok. Bu betik
  * uygulama kodundan çağrılmaz, yalnızca elle çalıştırılır. Gerçek API çağırır;
@@ -15,6 +19,7 @@
 import { readFile } from "node:fs/promises";
 
 const SENTENCE = "She plays football every day.";
+const OPENROUTER = "https://openrouter.ai/api/v1";
 
 type Result = { name: string; ok: boolean; ms: number; info: string };
 
@@ -29,10 +34,7 @@ function env(name: string): string {
   return v;
 }
 
-async function timed(
-  name: string,
-  fn: () => Promise<string>,
-): Promise<Result> {
+async function timed(name: string, fn: () => Promise<string>): Promise<Result> {
   const t0 = performance.now();
   try {
     const info = await fn();
@@ -45,46 +47,56 @@ async function timed(
 
 async function failOnHttp(res: Response, label: string): Promise<void> {
   if (res.ok) return;
-  // Gövdenin yalnızca hata kodu kısmını göster; içerik yazma.
+  // Gövdenin yalnızca hata kodu/türü kısmını göster; içerik yazma.
   let code = "";
   try {
-    const body = (await res.json()) as { error?: { type?: string; code?: string } };
-    code = body.error?.type ?? body.error?.code ?? "";
+    const body = (await res.json()) as {
+      error?: { type?: string; code?: string | number; message?: string };
+    };
+    code = String(body.error?.type ?? body.error?.code ?? "");
   } catch {
     /* gövde JSON değil */
   }
   throw new Error(`${label} HTTP ${res.status}${code ? ` (${code})` : ""}`);
 }
 
-// --- Anthropic ----------------------------------------------------------------
-async function helloAnthropic(): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+function openRouterHeaders(): Record<string, string> {
+  return {
+    Authorization: `Bearer ${env("OPENROUTER_API_KEY")}`,
+    "content-type": "application/json",
+  };
+}
+
+// --- Claude Haiku 5.5 (OpenRouter) ------------------------------------------
+async function helloClaude(): Promise<string> {
+  const res = await fetch(`${OPENROUTER}/chat/completions`, {
     method: "POST",
-    headers: {
-      "x-api-key": env("ANTHROPIC_API_KEY"),
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
+    headers: openRouterHeaders(),
     // temperature / top_p / top_k gönderilmez (Haiku 5.5 kabul etmez).
     body: JSON.stringify({
-      model: "claude-haiku-5-5",
-      max_tokens: 64,
-      thinking: { type: "disabled" },
+      model: "anthropic/claude-haiku-5.5",
+      // Veri işleyen listesi değişmesin diye yalnızca Anthropic altyapısı; eğitimde kullanım yok.
+      provider: { only: ["anthropic"], data_collection: "deny" },
+      reasoning: { effort: "low" },
+      max_tokens: 512,
       messages: [{ role: "user", content: "Reply with the single word: hello" }],
     }),
   });
-  await failOnHttp(res, "anthropic");
+  await failOnHttp(res, "openrouter chat");
   const data = (await res.json()) as {
-    stop_reason?: string;
-    content?: { type: string }[];
-    usage?: { input_tokens?: number; output_tokens?: number };
+    provider?: string;
+    choices?: { finish_reason?: string; message?: { content?: string | null } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number; cost?: number };
   };
-  const hasText = data.content?.some((b) => b.type === "text") ?? false;
-  if (!hasText) throw new Error(`metin bloğu yok (stop_reason=${data.stop_reason})`);
-  return `in=${data.usage?.input_tokens} out=${data.usage?.output_tokens} stop=${data.stop_reason}`;
+  const choice = data.choices?.[0];
+  if (!choice?.message?.content) {
+    throw new Error(`boş yanıt (finish_reason=${choice?.finish_reason})`);
+  }
+  const u = data.usage;
+  return `via=${data.provider} in=${u?.prompt_tokens} out=${u?.completion_tokens} cost=$${u?.cost ?? "?"} finish=${choice.finish_reason}`;
 }
 
-// --- Speechify ----------------------------------------------------------------
+// --- Speechify Simba 3.5 (doğrudan) -----------------------------------------
 type Voice = {
   id: string;
   locale?: string;
@@ -140,7 +152,7 @@ async function helloSpeechify(): Promise<string> {
   return `voice=${voiceId} chars=${data.billable_characters_count} bytes=${speechifyAudio.length}`;
 }
 
-// --- Azure Speech (MAI-Transcribe-2) -----------------------------------------
+// --- MAI-Transcribe-2 (OpenRouter) ------------------------------------------
 function wordAccuracy(expected: string, actual: string): number {
   const norm = (s: string) =>
     s.toLowerCase().replace(/[^a-z' ]/g, " ").split(/\s+/).filter(Boolean);
@@ -149,58 +161,47 @@ function wordAccuracy(expected: string, actual: string): number {
   return exp.filter((w) => act.has(w)).length / exp.length;
 }
 
-async function helloAzure(): Promise<string> {
+async function helloTranscribe(): Promise<string> {
   const wavPath = arg("wav");
-  let audio: Blob;
-  let filename: string;
+  let audio: Buffer;
+  let format: "wav" | "mp3";
   if (wavPath) {
-    audio = new Blob([new Uint8Array(await readFile(wavPath))], { type: "audio/wav" });
-    filename = "hello.wav";
+    audio = await readFile(wavPath);
+    format = "wav";
   } else if (speechifyAudio) {
-    audio = new Blob([new Uint8Array(speechifyAudio)], { type: "audio/mpeg" });
-    filename = "hello.mp3";
+    audio = speechifyAudio;
+    format = "mp3";
   } else {
     throw new Error("ses yok: Speechify başarısız; --wav <yol> ile 3 sn'lik WAV ver");
   }
 
-  const form = new FormData();
-  form.append("audio", audio, filename);
-  // transcribeStyle gönderilmez (varsayılan verbatim).
-  form.append(
-    "definition",
-    JSON.stringify({
-      locales: ["en"],
-      enhancedMode: { enabled: true, model: "MAI-Transcribe-2" },
+  const res = await fetch(`${OPENROUTER}/audio/transcriptions`, {
+    method: "POST",
+    headers: openRouterHeaders(),
+    body: JSON.stringify({
+      model: "microsoft/mai-transcribe-2",
+      input_audio: { data: audio.toString("base64"), format },
+      language: "en",
+      provider: { data_collection: "deny" },
     }),
-  );
-
-  const endpoint = env("AZURE_SPEECH_ENDPOINT").replace(/\/+$/, "");
-  const res = await fetch(
-    `${endpoint}/speechtotext/transcriptions:transcribe?api-version=2025-10-15`,
-    {
-      method: "POST",
-      headers: { "Ocp-Apim-Subscription-Key": env("AZURE_SPEECH_KEY") },
-      body: form,
-    },
-  );
-  await failOnHttp(res, "azure");
+  });
+  await failOnHttp(res, "openrouter transcribe");
   const data = (await res.json()) as {
-    durationMilliseconds?: number;
-    combinedPhrases?: { text?: string }[];
+    text?: string;
+    usage?: { seconds?: number; cost?: number };
   };
-  const transcript = data.combinedPhrases?.map((p) => p.text ?? "").join(" ") ?? "";
+  const transcript = data.text?.trim() ?? "";
   if (!transcript) throw new Error("boş transkript");
-  const source = wavPath ? "wav" : "speechify-mp3";
   const acc = wavPath ? "n/a" : wordAccuracy(SENTENCE, transcript).toFixed(2);
-  return `source=${source} audio_ms=${data.durationMilliseconds} words=${transcript.split(/\s+/).length} word_match=${acc}`;
+  return `source=${wavPath ? "wav" : "speechify-mp3"} words=${transcript.split(/\s+/).length} word_match=${acc} usage=${JSON.stringify(data.usage ?? {})}`;
 }
 
 // --- main ---------------------------------------------------------------------
 async function main() {
   const results = [
-    await timed("anthropic", helloAnthropic),
+    await timed("claude", helloClaude),
     await timed("speechify", helloSpeechify),
-    await timed("azure", helloAzure),
+    await timed("transcribe", helloTranscribe),
   ];
   for (const r of results) {
     console.log(`${r.ok ? "OK  " : "FAIL"} ${r.name.padEnd(10)} ${String(r.ms).padStart(6)} ms  ${r.info}`);
