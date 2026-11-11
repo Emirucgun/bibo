@@ -1,80 +1,77 @@
-# PLAN — M3 (Tam şema ve içerik omurgası)
+# PLAN — M4 (Teşhis motoru, saf TypeScript)
 
 | | |
 | --- | --- |
 | Tarih | 11 Kasım 2026 |
-| Kapsam | `ROADMAP.md` M3. M2 (giriş, davet, onam) bu planda yok. |
-| Durum | Uygulandı; `dev`e uygulandı ve doğrulandı (11.11.2026). pedagoji sahibi içeriği geçici olarak onayladı; `prod`'a birleştirmeden sonra uygulanır. |
-| Kaynak belgeler | `SPEC.md` Bölüm 2 (dizin), 3 (veri modeli, RLS), 5.2 (şemalar), Ek A–C · `ROADMAP.md` M3 · `.claude/rules/veritabani.md` |
+| Kapsam | `ROADMAP.md` M4 · `SPEC.md` Bölüm 4 (4.1–4.6), Bölüm 12 · `PRD.md` F3, F7 |
+| Durum | Uygulandı; Bitti testinin 7 maddesi yerelde yeşil (11.11.2026). Veritabanı, ağ ya da yapay zekâ çağrısı yok; göç yok. |
+| Bağımlılık | M3'ten yalnızca kimlikler (`topics.csv`, `l1_codes.csv`, sabit kümeler) |
 
-M1'in planı bu dosyanın git geçmişinde (`80efea6`).
+M1 ve M3 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`).
 
 ---
 
-## 1. Neden M2 değil de M3
+## 1. Yaklaşım
 
-- M3 kritik yolda: M3 → M4 → M5 → M6. M2'ye ancak M9'da ihtiyaç var (`ROADMAP` akış şeması); ikisi bağımsız.
-- M3 tamamen yerelde doğrulanabilir (SQL + Vitest). M2'nin bitti testi Google OAuth ekranı, iki gerçek Google hesabı ve telefonda elle deneme ister.
-- M3 rol yardımcısını (`private.user_role()`) getirir; M2'nin `profiles` / `cohorts` politikaları bunu yeniden kullanır.
+- `lib/engine/*` saf fonksiyonlar: girdi alır, çıktı döner. Zaman (`now: Date`) ve rastgelelik (`rng: () => number`) parametre olarak gelir; aynı girdi aynı planı üretir.
+- Veritabanı satırlarına benzeyen ama ondan bağımsız türler (`lib/engine/types.ts`); M6 Route Handler'ları satırları bu türlere çevirip motoru çağırır.
+- Testler fikstür tabanlı (`tests/engine/fixtures.ts`): küçük el yapımı konu listesi + gerçek seed ile bir duman testi.
+- `scripts/simulate.ts` motorun çekirdeğini (`scripts/lib/simulate.ts`) çalıştırır; aynı çekirdek bir Vitest testinde de koşar, böylece Bitti testinin son maddesi CI'da da kanıtlanır.
 
-## 2. Verilen kararlar
-
-| # | Konu | Karar |
-| --- | --- | --- |
-| 1 | Tek göç | `20261111150000_m3_full_schema.sql`: 14 yeni tablo, indeksler, `check` kısıtları, RLS politikaları ve `app_settings` admin politikaları. `cohorts` ve `profiles` politikaları M2'de. |
-| 2 | Rol yardımcısı | `private.user_role()` (security definer, `search_path = ''`). `private` şeması API'ye açık değil; politikalar `(select private.user_role()) = 'admin'` biçiminde. |
-| 3 | Admin "tümü" | Öğrenci tablolarında, `topics`, `l1_codes`, `teacher_reviews`'da admin için `for all`; `llm_usage`, `tts_cache` yalnızca `select`; `app_settings` `select` + `update`; `item_keys`'te admin dahil **hiçbir** politika yok. |
-| 4 | Öğretmen kapsamı | Öğrenci tablolarında öğretmen tüm satırları okur (SPEC: "`select` (inceleme için)"; kohort sınırı yalnızca `profiles` için yazılı). Tek kohortlu pilotta fark yok. |
-| 5 | Silme zinciri | Öğrenci tabloları `auth.users` → `on delete cascade`. `llm_usage.user_id` / `session_id` → `on delete set null` (maliyet geçmişi kalır, kişiyle bağ kopar). `teacher_reviews.reviewer_id` → `set null` (altın veri kalır). |
-| 6 | Sabit olmayan küme | `llm_usage.provider` ve `events.name` için `check` yok: M1'de sağlayıcı OpenRouter oldu (SPEC'teki `anthropic` / `azure` listesi tutmuyor), olay adları PLAN #21 ile genişleyebilir. |
-| 7 | Ek kısıtlar | `items (session_id, position)` benzersiz; `school_topics.week_start` pazartesi; `teacher_reviews` `verdict = 'fix'` ise `corrected_l1_code` zorunlu; `attempts.try_no` 1–2; skor ve sayaçlar aralıkta. |
-| 8 | Seed akışı | Kaynak `supabase/seed/*.csv`. `npx tsx scripts/build-seed.ts` → `supabase/seed.sql` (upsert, tekrar çalıştırılabilir). Uzak projeye `db push --remote --include-seed`. Vitest seed.sql'in CSV'lerle eşit olduğunu denetler. |
-| 9 | `placement.json` | Veritabanına yazılmaz (SPEC Ek C: "soru bankası dosyadadır"); M9 dosyadan okur. Biçim SPEC 5.2 `GeneratedItem` ile aynı (`payload` + `key`). Dinleme türlerinde seslendirilen metin `key.correct`'te, `payload`'da değil (PLAN #14 ile uyumlu). |
-| 10 | `l1_codes.topic_id` (PLAN #13) | SPEC'e sadık kalındı: tek değer, Ek B'deki ilk konu birincil (`PREP_IN_ON_AT` → `g.prep_time`, `SIMPLE_CONT` → `g.present_simple`). `topics`'e "ilgili kodlar" alanı **eklenmedi**; bkz. açık soru 1. |
-| 11 | Türler | `lib/db/types.ts`, Docker olmadan yerel Postgres'e karşı `supabase gen types typescript --remote=<db-url>` ile üretildi. |
-| 12 | Dal | Oturum ortamı `claude/upbeat-feynman-lfib5u` dalını zorunlu kılıyor (`CLAUDE.md`'deki `m3-schema` yerine). |
-
-## 3. Dosyalar
+## 2. Dosyalar
 
 | Dosya | Ne |
 | --- | --- |
-| `supabase/migrations/20261111150000_m3_full_schema.sql` | Şema + RLS |
-| `supabase/seed/topics.csv` | 32 konu (Ek A); `title_en`, `description_tr`, `prereqs` taslak |
-| `supabase/seed/l1_codes.csv` | 24 kod (Ek B) |
-| `supabase/seed/placement.json` | 14 yerleştirme sorusu (Ek C), `status: "draft"` |
-| `supabase/seed.sql` | CSV'lerden üretilmiş upsert |
-| `scripts/lib/seed.ts`, `scripts/build-seed.ts` | CSV ayrıştırıcı, yükleyiciler, SQL üretici |
-| `lib/content/activity-types.ts` | `SKILLS`, `MODES`, `PURPOSES`, `ROLES`, `ACTIVITY_TYPES`, `ACTIVITY_TYPE_INFO` |
-| `lib/content/interests.ts` | 12 ilgi alanı + Türkçe etiketler |
-| `lib/db/types.ts` | Üretilmiş veritabanı türleri |
-| `tests/content/{seed,placement,constants}.test.ts` | İçerik, yerleştirme ve sabit ↔ `check` kısıtı eşitliği |
-| `tests/db/rls.sql`, `tests/db/supabase-stub.sql`, `tests/db/README.md` | RLS / seed / silme zinciri doğrulaması (geri alınan işlem) |
+| `lib/engine/types.ts` | `EngineTopic`, `MasteryState`, `MasteryRow`, `Evidence`, `PlanSlot`, `Plan`, `DiagnosisCandidate`, `LocalGradeResult` … |
+| `lib/engine/normalize.ts` | `normalizeAnswer`, `tokenizeWords` (4.6 normalizasyon, kısaltma eşdeğerleri) |
+| `lib/engine/grade-local.ts` | `gradeLocal` — `mcq_read`, `listen_choose`, `gap_fill`, `word_order`, `dictation` (kelime düzeyi Levenshtein) |
+| `lib/engine/mastery.ts` | `prior`, `applyEvidence` (4.1), `reviewIntervalDays` / `nextReviewAt` (4.2), `masteryBand`, `evidenceFromAttempt` |
+| `lib/engine/diagnosis.ts` | `diagnoseTopic` (4.3 kuralları), `reconcileDiagnoses` (aktif / superseded / resolved), `diagnosisMessage` (şablonlar) |
+| `lib/engine/planner.ts` | `planSession` (4.4 adım 1–8) |
+| `lib/engine/effectiveness.ts` | `creditRetest`, `applyCredit` (4.5) |
+| `lib/content/activity-types.ts` | + `SKILL_LABELS_TR`, `ACTIVITY_TYPE_LABELS_TR` (teşhis mesajları için) |
+| `scripts/lib/simulate.ts`, `scripts/simulate.ts` | Sentetik öğrenci, sahte değerlendirme, 6 oturum |
+| `tests/engine/*.test.ts` | normalize, grade-local, mastery, diagnosis, planner, effectiveness, simulate |
+| `.gitattributes` | Windows'ta `core.autocrlf=true` iken `seed.sql` CRLF'e dönüyor ve M3 eşitlik testi kırmızı oluyordu; metin dosyaları LF |
 
-## 4. M3 "Bitti testi" eşlemesi
+## 3. Verilen kararlar (SPEC'te açık bırakılan noktalar)
 
-| ROADMAP maddesi | Kanıt |
+| # | Konu | Karar |
+| --- | --- | --- |
+| 1 | PLAN #20 — `topic_gap` dalı | SPEC'teki sözde kodda `topic_gap` iç içe `if` yüzünden erişilemez. Kurallar **sırayla** uygulanır: önce `skill_gap`, olmazsa `topic_gap`, olmazsa `activity_mismatch`. Eşikler `≤ 0,45` (PRD F7'deki "< 0,45" yerine SPEC/ROADMAP). Testler SPEC'teki cevap sırasını kullanır (1,1,1,1,0,1 / 0,0,1,0). |
+| 2 | PLAN #19 — sesletim konuları (`p.*`) | Yalnızca dinleme becerisinde ölçülür. Odak, çapraz tekrar ve germe olmaz; yalnızca tekrar (1. adım) ve dinleme kapsaması. `tts_enabled = false` iken tamamen atlanır. |
+| 3 | PLAN #13 — çift konulu kodlar | Motor kodu değil, etkinliğin `topic_id`'sini kullanır; ek alan gerekmedi. Göç yok. |
+| 4 | Dört beceri kapsaması | 4.4 adım 4 yalnızca dinleme/konuşma diyor; amaç "dört beceri en az birer kez" olduğu için eksik **her** beceri (TTS kapalıyken dinleme hariç) kapsama ile eklenir. |
+| 5 | Slot sayısı ve süre | Sıra: 1–7 adımlarıyla taslak → 10'u aşarsa kaldırma sırası germe, tekrar, çapraz tekrar (kapsamayı bozmadan) → süre > 1200 ise germe, tekrar çıkarılır, sonra aynı beceride daha kısa türe geçilir → süre < 900 ise çapraz tekrar eklenir (≤ 10), yetmezse aynı beceride daha uzun türe geçilir. |
+| 6 | "Belirsiz konular" (çapraz tekrar) | Kanıtı olan (bir becerisinde `n > 0`), aktif teşhisi olmayan ve en az bir becerisinde `n < 3` olan konular; sıra: önce son 3 günde hata yapılanlar (en yeni önce), sonra belirsizler **toplam kanıtı en çok olandan** (kanıt dağılmasın, karara yaklaşsın), sonra öncelik sırası. Yeni öğrencide öncelik sırası. PRD F7 "güveni < 0,6 olan teşhis yerine eksik ölçülen beceride çapraz tekrar" bununla karşılanır. |
+| 7 | Odak becerileri (teşhis yokken) | Konunun becerileri kanıt sayısı artan, ustalık artan, eşitlikte **yazma, konuşma, okuma, dinleme** sırasıyla dizilir; ilk iki farklı beceri + birinciye ikinci etkinlik. Üretim becerileri önde: tanıma becerileri (α = 0,15) yavaş ilerler ve ürünün ana ayrımı yazma/konuşma. `activity_mismatch` aktifse o beceride zayıf tür seçilmez. |
+| 8 | `purpose` eşlemesi | Tekrar `review`, odak `focus`, çapraz tekrar `retest`, kapsama konusunun amacı (`focus` / `review`), germe `stretch`. |
+| 9 | Germe konusu | Açık, sesletim olmayan, hiçbir becerisinde kanıtı olmayan, önkoşullarının her birinin ölçülmüş beceri ortalaması `≥ 0,6` olan ilk konu (`sort`). Önkoşulsuz konular uygundur. |
+| 10 | İlgi alanı | `round(n × general_content_rate)` slot `null` (rastgele konum), diğerleri ilgi alanlarına sırayla. 8 slotta %75, 10 slotta %80 temalı (PRD F3 ≥ %70). |
+| 11 | `l1_target` | Konuda son 3 günde yapılan en son hatanın kodu; yoksa konunun ilk `L1.*` kodu; yoksa `null`. |
+| 12 | Teşhis yaşam döngüsü | Güven ≥ 0,6 → `active`; aynı konudaki farklı aktif teşhis `superseded`. Aynı tür ve aynı zayıf beceri/etkinlikle zaten aktif teşhis varsa yeni satır yazılmaz. `resolved`: `skill_gap` zayıf beceri `≥ 0,65`; `topic_gap` ölçülen becerilerin ortalaması `≥ 0,65`; `activity_mismatch` zayıf türün başarısı `≥ 0,70`. |
+| 13 | Mesaj şablonu | "{konu}'yu" ekini her başlığa doğru uydurmak mümkün değil ("-s'yu"); "{konu} konusunu" kullanıldı. Diğer metin SPEC'teki gibi. |
+| 14 | Dikte hata etiketleri | Hizalamadaki her değiştirme/eksik kelime bir hata; kelime `target_words` içindeyse `item.l1_target`, değilse `GEN.OTHER`; fazladan kelime `GEN.OTHER`; en çok 5. |
+| 15 | `correct` sayacı | `is_correct` doğruysa artar (mesaj şablonlarındaki d/n buradan). |
+
+## 4. Bitti testi eşlemesi
+
+| ROADMAP maddesi | Test |
 | --- | --- |
-| Seed sayıları: 32 konu, 24 kod, 14 yerleştirme sorusu | `tests/content/*.test.ts` + `tests/db/rls.sql` (1) |
-| `L1.LITERAL` dışındaki her `L1.*` kodunun `topic_id`'si var | `seed.test.ts` + `rls.sql` (2) |
-| Öğrenci rolüyle `select * from item_keys` → 0 satır | `rls.sql` (3) — yerelde geçti; `dev`'de yeniden koşulacak |
-| Security Advisor'da RLS'i kapalı tablo yok | `rls.sql` (9) yerelde; Advisor `dev`'e push sonrası elle |
-| Pedagoji sahibi onayı (P1, P2) | insan işi |
+| Yazma 5/6 + konuşma 1/4 → `skill_gap(speaking)`, güven ≥ 0,6 | `tests/engine/diagnosis.test.ts` |
+| Tüm beceriler ≤ 0,45, kanıt ≥ 6 → `topic_gap` | `tests/engine/diagnosis.test.ts` |
+| Tür ≤ %35 / ≥ %70 → `activity_mismatch` | `tests/engine/diagnosis.test.ts` |
+| Tek cevap ≤ 0,25; ipuçlu ≤ 0,5 | `tests/engine/mastery.test.ts` |
+| 8–10 slot, 900–1200 sn, dört beceri, ≥ 1 çapraz tekrar; TTS kapalıyken dinleme yok | `tests/engine/planner.test.ts` (çok sayıda rastgele tohum + gerçek seed) |
+| Dikte 0,80 → yanlış | `tests/engine/grade-local.test.ts` |
+| `simulate.ts`: en geç 5. oturumda `skill_gap(speaking)` ≥ 0,6 | `tests/engine/simulate.test.ts` + `npx tsx scripts/simulate.ts` |
 
-## 5. Elle yapılacaklar
+## 5. Açık sorular
 
-1. `dev`'e uygula ve doğrula:
-   - `npx supabase link --project-ref <dev-ref>`
-   - `npx supabase db push --remote --include-seed`
-   - `psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql` (işlem sonunda geri alınır)
-   - Supabase panelinde Security Advisor: RLS kapalı tablo yok.
-2. Ana dala birleştikten sonra `prod`'a aynı komutlarla; ardından bağlantıyı `dev`'e geri al.
-3. Pedagoji sahibi `topics.csv`, `l1_codes.csv`, `placement.json`'ı onaylar (P1, P2, P5); değişiklik olursa `npx tsx scripts/build-seed.ts` ve yeniden `db push --include-seed`.
-
-## 6. Açık sorular
-
-1. **PLAN #13:** Ek A'da sekiz kod iki konuya bağlı (ör. `HE_SHE` → `subject_pronouns` ve `object_pronouns`; `THERE_HAVE` → `there_is_are` ve `have_has`), ama `l1_codes.topic_id` tek değer. M4'ün teşhis motoru bu ikinci bağlantıyı kullanacaksa `topics.l1_codes text[]` (yeni göç + SPEC değişikliği) gerekir. Öneri: M4 planında karar.
-2. **P2:** ROADMAP "her koda 2 yanlış/doğru örnek" diyor, şemada tek `wrong_example` / `right_example` var. Şimdilik birer örnek (bazılarında " / " ile iki örnek). İkinci örnek gerekirse alan dizi olur (SPEC değişikliği).
-3. **Öğretmen kapsamı:** öğrenci tablolarında öğretmen tüm kohortları görüyor. Kohortla sınırlamak istenirse M2'de `profiles.cohort_id` üzerinden politika güncellenir.
+1. **Karar 1 ve 13** SPEC metninden küçük sapmalar; onaylanırsa SPEC 4.3'e işlenmeli (öneri, `docs/SPEC.md` değiştirilmedi).
+2. **Karar 12**: `topic_gap` ve `activity_mismatch` için "çözüldü" koşulu SPEC'te yok; burada önerildi.
+3. Pedagoji sahibine: sesletim konuları için yalnızca tekrar/kapsama yeterli mi (karar 2)?
+4. **Simülasyon sağlamlığı:** `simulate.ts` varsayılan tohumla (42) 5. oturumda güven 1,0 ile `skill_gap(speaking)` buluyor. 100 tohumda ≈ %76'sı 5. oturuma kadar, kalanı 6. oturumda ya da sonra. Sebep SPEC 4.4'ün odak önceliği: `1 − min ustalık` olduğu için konu biraz ilerleyince odak, hiç dokunulmamış riskli konuya geçiyor ve kanıt dağılıyor. Denenen iki odak becerisi alternatifi daha kötüydü. Daha sağlam sonuç için öneri (SPEC değişikliği): aday teşhisi (güven < 0,6) olan konuya öncelikte `+0,10` ya da odağın en az 2 oturum aynı konuda kalması.
 
 ## 9. Sonraki taşlar için açık kararlar
 
@@ -82,14 +79,14 @@ Bunlar M1'i etkilemez. Önerilen varsayılanlar **onaylanmadı**; her biri ilgil
 
 | # | Taş | Sorun | Önerilen varsayılan |
 | --- | --- | --- | --- |
-| 13 | M3 | `l1_codes.topic_id` tek değer, ama sekiz kod iki konuya bağlı; `topics`'te "ilgili kodlar" alanı yok | `topic_id` birincil konu; `topics`'e `l1_codes text[]` |
+| 13 | M3 | `l1_codes.topic_id` tek değer, ama sekiz kod iki konuya bağlı; `topics`'te "ilgili kodlar" alanı yok | **Karar verildi (M4 #3):** ek alan gerekmedi |
 | 14 | M5/M7 | Dinlemede seslendirilen metin (`payload.text_en`) öğrenciye açık; cevap sızar | Dinleme türlerinde metin `item_keys`'te |
 | 15 | M5/M6 | Günlük sınır üretimde denetlenince ön üretim engelleniyor; saat dilimi tanımsız | Sınır `start`'ta denetlenir; Europe/Istanbul |
 | 16 | M5/M6 | Üretim zaman aşımı 120 sn + yeniden deneme, `maxDuration = 120`'ye sığmıyor | `finish` için `maxDuration = 300` |
 | 17 | M6/M10 | `generating` durumu yok (çift üretim); cron'daki "yeniden planla" için durum yok | `generating` eklenir; bayat `ready` → `abandoned` |
 | 18 | M8 | PRD önce transkripti gösteriyor, API transkript + değerlendirmeyi tek çağrıda dönüyor | İki deneme de değerlendirilir, ustalığa sonuncusu işlenir |
-| 19 | M4 | Sesletim konuları yalnızca dinle-seç ile ölçülüyor; odak ve teşhis kuralları uygulanamıyor | Odak olmaz; yalnızca tekrar/kapsama; TTS kapalıyken atlanır |
-| 20 | M4 | `topic_gap` dalı yazıldığı hâliyle erişilemez; eşik `<` / `≤` farkı; "5/6" sıraya bağlı | Kurallar sırayla; `≤ 0,45`; testler SPEC'teki sırayı kullanır |
+| 19 | M4 | Sesletim konuları yalnızca dinle-seç ile ölçülüyor; odak ve teşhis kuralları uygulanamıyor | **Karar verildi (M4 #2)** |
+| 20 | M4 | `topic_gap` dalı yazıldığı hâliyle erişilemez; eşik `<` / `≤` farkı; "5/6" sıraya bağlı | **Karar verildi (M4 #1)** |
 | 21 | M6/M7 | Profil güncelleme ve olay yazma uç noktaları yok | `PATCH /api/profile`, `POST /api/events` |
 | 22 | M9 | Yerleştirme tohumlaması ve "3 zayıf konu" seçimi tanımsız | Normal kanıt gibi işlenir; en düşük ustalıklı üç konu |
 | 23 | M6 | Açıklama modu "kısa"ya geri dönmüyor | Aynı kural tersine de işler |

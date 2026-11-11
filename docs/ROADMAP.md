@@ -118,13 +118,13 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - `scripts/simulate.ts`: "yazmada bilen, konuşmada bilmeyen" sentetik öğrenciyle sahte değerlendirme kullanarak 6 oturum.
 
 **Bitti testi** (en az 25 Vitest testi, hepsi yeşil; şunlar zorunlu)
-- [ ] Yazma 5/6 + konuşma 1/4 → `skill_gap(speaking)`, güven ≥ 0,6.
-- [ ] Tüm ölçülen beceriler ≤ 0,45 ve toplam kanıt ≥ 6 → `topic_gap`.
-- [ ] Aynı konu ve beceride bir tür ≤ %35, diğeri ≥ %70 → `activity_mismatch`.
-- [ ] Tek cevap bir ustalık puanını en çok 0,25 değiştiriyor; ipuçlu cevap en çok 0,5 sayılıyor.
-- [ ] Planlayıcı her çağrıda 8–10 slot, 900–1200 sn, dört beceri ve (uygunsa) ≥ 1 çapraz tekrar üretiyor; `tts_enabled = false` iken dinleme slotu yok.
-- [ ] Dikte: hedef "She plays football every day", cevap "She play football every day" → 5 kelimede 1 hata, puan 0,80 → yanlış (eşik 0,9).
-- [ ] `simulate.ts`: en geç 5. oturumda güveni ≥ 0,6 `skill_gap(speaking)`.
+- [x] Yazma 5/6 + konuşma 1/4 → `skill_gap(speaking)`, güven ≥ 0,6.
+- [x] Tüm ölçülen beceriler ≤ 0,45 ve toplam kanıt ≥ 6 → `topic_gap`.
+- [x] Aynı konu ve beceride bir tür ≤ %35, diğeri ≥ %70 → `activity_mismatch`.
+- [x] Tek cevap bir ustalık puanını en çok 0,25 değiştiriyor; ipuçlu cevap en çok 0,5 sayılıyor.
+- [x] Planlayıcı her çağrıda 8–10 slot, 900–1200 sn, dört beceri ve (uygunsa) ≥ 1 çapraz tekrar üretiyor; `tts_enabled = false` iken dinleme slotu yok.
+- [x] Dikte: hedef "She plays football every day", cevap "She play football every day" → 5 kelimede 1 hata, puan 0,80 → yanlış (eşik 0,9).
+- [x] `simulate.ts`: en geç 5. oturumda güveni ≥ 0,6 `skill_gap(speaking)`.
 
 ---
 

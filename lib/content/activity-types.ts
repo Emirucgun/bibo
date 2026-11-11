@@ -51,6 +51,26 @@ export const ACTIVITY_TYPE_INFO: Record<ActivityType, ActivityTypeInfo> = {
   speak_answer: { skill: "speaking", mode: "free", grading: "llm_audio", est_seconds: 120 },
 };
 
+/** Arayüz ve teşhis mesajlarındaki beceri adları. */
+export const SKILL_LABELS_TR: Record<Skill, string> = {
+  reading: "okuma",
+  listening: "dinleme",
+  writing: "yazma",
+  speaking: "konuşma",
+};
+
+/** PRD "Etkinlik türleri (v1)" tablosundaki adlar. */
+export const ACTIVITY_TYPE_LABELS_TR: Record<ActivityType, string> = {
+  mcq_read: "Oku ve seç",
+  gap_fill: "Boşluk doldur",
+  word_order: "Cümle diz",
+  listen_choose: "Dinle ve seç",
+  dictation: "Dikte",
+  translate_tr_en: "Türkçeden çevir",
+  short_write: "Kısa yaz",
+  speak_answer: "Sesli cevapla",
+};
+
 export function isActivityType(value: string): value is ActivityType {
   return (ACTIVITY_TYPES as readonly string[]).includes(value);
 }

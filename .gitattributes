@@ -1,0 +1,7 @@
+# Metin dosyaları depoda ve çalışma kopyasında LF (Windows core.autocrlf=true iken
+# seed.sql CRLF oluyor ve tests/content/seed.test.ts eşitliği bozuluyordu).
+* text=auto eol=lf
+*.ico binary
+*.png binary
+*.wav binary
+*.mp3 binary
