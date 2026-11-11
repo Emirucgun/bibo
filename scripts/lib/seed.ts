@@ -215,3 +215,62 @@ export function buildSeedSql(topics = loadTopics(), codes = loadL1Codes()): stri
     "",
   ].join("\n");
 }
+
+/**
+ * lib/content/taxonomy.ts içeriği: komutlar ve Zod enum'ları için konu ve hata kodu listesi.
+ * Çalışma zamanında CSV okunmasın diye TS olarak üretilir (tests/content/taxonomy.test.ts eşitliği denetler).
+ */
+export function buildTaxonomyTs(topics = loadTopics(), codes = loadL1Codes()): string {
+  const topicRows = topics.map((t) => ({
+    id: t.id,
+    level: t.level,
+    kind: t.kind,
+    title_tr: t.title_tr,
+    title_en: t.title_en,
+    active: t.active,
+  }));
+  const codeRows = codes.map((c) => ({
+    code: c.code,
+    topic_id: c.topic_id,
+    is_l1: c.is_l1,
+    name_tr: c.name_tr,
+    rule_tr: c.rule_tr,
+    wrong_example: c.wrong_example,
+    right_example: c.right_example,
+  }));
+  const json = (v: unknown) => JSON.stringify(v, null, 2);
+  return [
+    "// ÜRETİLMİŞ DOSYA, elle düzenlemeyin. Kaynak: supabase/seed/topics.csv, l1_codes.csv",
+    "// Yeniden üret: npx tsx scripts/build-seed.ts",
+    "",
+    "export interface TaxonomyTopic {",
+    "  id: string;",
+    '  level: "A1" | "A2";',
+    '  kind: "grammar" | "pron";',
+    "  title_tr: string;",
+    "  title_en: string;",
+    "  active: boolean;",
+    "}",
+    "",
+    "export interface TaxonomyL1Code {",
+    "  code: string;",
+    "  topic_id: string | null;",
+    "  is_l1: boolean;",
+    "  name_tr: string;",
+    "  rule_tr: string | null;",
+    "  wrong_example: string | null;",
+    "  right_example: string | null;",
+    "}",
+    "",
+    `export const TOPICS: readonly TaxonomyTopic[] = ${json(topicRows)};`,
+    "",
+    `export const L1_CODES: readonly TaxonomyL1Code[] = ${json(codeRows)};`,
+    "",
+    `export const TOPIC_IDS = ${json(topicRows.map((t) => t.id))} as const;`,
+    "export type TopicId = (typeof TOPIC_IDS)[number];",
+    "",
+    `export const L1_CODE_IDS = ${json(codeRows.map((c) => c.code))} as const;`,
+    "export type L1CodeId = (typeof L1_CODE_IDS)[number];",
+    "",
+  ].join("\n");
+}
