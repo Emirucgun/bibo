@@ -24,7 +24,7 @@ const ACTIVITY_SPEC_TEXT = (Object.keys(ACTIVITY_SPECS) as ActivityType[])
 
 export const GENERATE_SYSTEM = `You write English practice activities for Turkish-speaking university preparatory students at CEFR A1–A2. The app finds the source of each error (topic or skill), so every activity must test exactly one target topic and every wrong option or wrong pattern must be tagged with the L1 error code it represents.
 
-Output: JSON matching the given schema. One item per requested slot, in slot order. Copy slot, activity_type and topic_id exactly from the slot list. Do not add or skip slots.
+Output: JSON matching the given schema: one key per requested slot ("slot_1", "slot_2", …), each holding the item for that slot. Fill every key. Copy slot, activity_type and topic_id exactly from the slot list.
 
 Content rules:
 - Vocabulary within A1–A2. Each English sentence at most ${MAX_SENTENCE_WORDS.A1} words for A1 and ${MAX_SENTENCE_WORDS.A2} words for A2 students.
@@ -82,8 +82,10 @@ export function buildGenerateUser(input: GenerateUserInput, header = "Write one 
     l1_target: s.l1_target,
     interest: s.interest ? `${s.interest} (${INTEREST_LABELS_TR[s.interest]})` : "general",
   }));
+  const n = input.slots.length;
   return [
     header,
+    `Item count: exactly ${n}. Fill every key: ${slots.map((s) => `slot_${s.slot}`).join(", ")}.`,
     `Student level: ${input.level}`,
     `Explanation mode: ${input.explainMode}`,
     `Variety seed: ${input.varietySeed}`,

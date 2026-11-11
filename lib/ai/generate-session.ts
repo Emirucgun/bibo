@@ -1,13 +1,13 @@
-// Oturum üretimi (docs/SPEC.md 5.1, 5.2): tek çağrı → Zod + kod kontrolleri →
-// geçmeyen slotlar için tek bir yeniden üretim → en az 8 etkinlik.
+// Oturum üretimi (docs/SPEC.md 5.1, 5.2): en çok 5 slotluk paralel parçalar → Zod + kod
+// kontrolleri → geçmeyen slotlar için tek bir yeniden üretim turu → en az 8 etkinlik.
 // Veritabanına etkinlik yazmaz; M6'daki çağıran `items` / `item_keys`'e böler.
 import type { z } from "zod";
 import type { Level } from "@/lib/engine/types";
-import type { StructuredCall } from "./client";
+import { formatIssues, type StructuredCall } from "./client";
 import { checkItem } from "./checks";
 import { guardedLlmCall, type AiDeps, type CallContext } from "./guard";
-import { buildGenerateUser, GENERATE_SYSTEM, type GenerateUserInput } from "./prompts/generate";
-import { SessionGen, SlotRegen, type GeneratedItem } from "./schemas";
+import { buildGenerateUser, GENERATE_SYSTEM, type GenerateSlotInput, type GenerateUserInput } from "./prompts/generate";
+import { GeneratedItem, SessionGen, slotKey } from "./schemas";
 import type { AiSettings } from "./settings";
 
 /** SPEC 5.1: üretimde `max_tokens` 16.000 (düşünme dahil), zaman aşımı 120 sn. */
@@ -15,6 +15,11 @@ export const GENERATE_MAX_TOKENS = 16_000;
 export const GENERATE_TIMEOUT_MS = 120_000;
 /** Oturum en az 8 etkinlik kalmalı (SPEC 5.1, 5.2). */
 export const MIN_SESSION_ITEMS = 8;
+/**
+ * Bir çağrıdaki en çok slot. Slot anahtarlı katı şema 6 slottan itibaren Anthropic'te
+ * "Schema is too complex for compilation" ile reddediliyor (ölçüm 11.11.2026).
+ */
+export const MAX_SLOTS_PER_CALL = 5;
 
 export type GenerationErrorCode = "refusal" | "invalid_output" | "too_few_items";
 
@@ -47,6 +52,50 @@ export interface GenerateSessionInput extends GenerateUserInput {
   level: Level;
 }
 
+/** Bir etkinlik için kaydedilen Zod sorunları en çok bu kadar (yeniden üretim notu kısa kalsın). */
+const MAX_ITEM_ISSUES = 3;
+
+export interface SalvagedItems {
+  items: GeneratedItem[];
+  /** Şemadan geçmeyen etkinliklerin slotları ve sorunları (`schema:<yol>:<kod>`). */
+  problems: Map<number, string[]>;
+}
+
+/** Slot anahtarlı yanıtı slot sırasında etkinlik listesine çevirir; `slot` anahtardan alınır. */
+export function itemsFromSlots(data: SessionGen, positions: readonly number[]): GeneratedItem[] {
+  return positions.flatMap((p) => {
+    const item = data[slotKey(p)];
+    return item ? [{ ...item, slot: p }] : [];
+  });
+}
+
+/**
+ * Şemadan geçmeyen yanıtta slotları tek tek doğrular. Tek bir alandaki taşma (ör. açıklama
+ * karakter sınırı) bütün oturumu yeniden ürettirmesin; yalnızca o slot yeniden üretilir.
+ * Yanıt nesne değilse `null` (tüm çağrı tekrar denenir). Eksik anahtar `missing_item` sayılır.
+ */
+export function salvageItems(raw: unknown, positions: readonly number[]): SalvagedItems | null {
+  if (raw === null || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const obj = raw as Record<string, unknown>;
+  const items: GeneratedItem[] = [];
+  const problems = new Map<number, string[]>();
+  for (const p of positions) {
+    if (!(slotKey(p) in obj)) continue;
+    const parsed = GeneratedItem.safeParse(obj[slotKey(p)]);
+    if (parsed.success) {
+      items.push({ ...parsed.data, slot: p });
+      continue;
+    }
+    problems.set(
+      p,
+      formatIssues(parsed.error.issues, MAX_ITEM_ISSUES)
+        .split(", ")
+        .map((s) => `schema:${s}`),
+    );
+  }
+  return { items, problems };
+}
+
 function buildCall<T>(schema: z.ZodType<T>, name: string, user: string) {
   return (settings: AiSettings, model: string): StructuredCall<T> => ({
     model,
@@ -61,6 +110,21 @@ function buildCall<T>(schema: z.ZodType<T>, name: string, user: string) {
   });
 }
 
+/** Slotları en çok `MAX_SLOTS_PER_CALL`'luk, olabildiğince eşit parçalara böler (10 → 5+5, 9 → 5+4, 8 → 4+4). */
+export function chunkSlots<T>(slots: readonly T[], max = MAX_SLOTS_PER_CALL): T[][] {
+  const parts = Math.ceil(slots.length / max);
+  const out: T[][] = [];
+  let start = 0;
+  for (let i = 0; i < parts; i++) {
+    const size = Math.ceil((slots.length - start) / (parts - i));
+    out.push(slots.slice(start, start + size));
+    start += size;
+  }
+  return out;
+}
+
+type ChunkResult = { kind: "ok"; batch: SalvagedItems } | { kind: "failed"; refusal: boolean; problem: string };
+
 export async function generateSession(
   deps: AiDeps,
   ctx: Omit<CallContext, "purpose">,
@@ -69,70 +133,87 @@ export async function generateSession(
   const callCtx: CallContext = { ...ctx, purpose: "generate" };
   const pickModel = (s: { model_generate: string }) => s.model_generate;
   let calls = 0;
+  let anyNonRefusal = false;
 
-  // 1) Tüm oturum; geçersiz ya da reddedilmiş yanıtta bir kez daha.
-  let full: SessionGen | null = null;
-  let lastKind: "refusal" | "invalid" = "invalid";
-  let lastIssues = "";
-  for (let i = 0; i < 2 && !full; i++) {
+  /**
+   * Bir parça için tek çağrı. Model parçadaki slotları `slot_1…slot_k` olarak görür (en çok 5
+   * farklı şema; derlenen şema sağlayıcıda önbellekte kalır), sonuç gerçek slotlara geri eşlenir.
+   */
+  const runChunk = async (chunk: GenerateSlotInput[], name: string, problems?: Map<number, string[]>): Promise<ChunkResult> => {
+    const local = chunk.map((s, i) => ({ ...s, position: i + 1 }));
+    const localPos = local.map((s) => s.position);
+    const toReal = (p: number) => chunk[p - 1].position;
+    const header = problems
+      ? `Rewrite these slots; the previous versions failed automatic checks (${local
+          .map((s, i) => `slot ${s.position}: ${problems.get(chunk[i].position)!.join(", ")}`)
+          .join("; ")}).`
+      : undefined;
     calls++;
     const res = await guardedLlmCall<SessionGen>(
       deps,
       callCtx,
       pickModel,
-      buildCall(SessionGen, "session_gen", buildGenerateUser(input)),
+      buildCall(SessionGen(localPos), name, buildGenerateUser({ ...input, slots: local }, header)),
     );
-    if (res.kind === "ok") full = res.data;
-    else {
-      lastKind = res.kind;
-      lastIssues = res.kind === "invalid" ? res.issues : "";
-    }
-  }
-  if (!full) {
-    throw new GenerationError(lastKind === "refusal" ? "refusal" : "invalid_output", lastIssues);
-  }
+    if (res.kind !== "refusal") anyNonRefusal = true;
+    let batch: SalvagedItems | null = null;
+    if (res.kind === "ok") batch = { items: itemsFromSlots(res.data, localPos), problems: new Map() };
+    else if (res.kind === "invalid") batch = salvageItems(res.raw, localPos);
+    if (!batch) return { kind: "failed", refusal: res.kind === "refusal", problem: res.kind === "refusal" ? "refusal" : "invalid_output" };
+    return {
+      kind: "ok",
+      batch: {
+        items: batch.items.map((it) => ({ ...it, slot: toReal(it.slot) })),
+        problems: new Map([...batch.problems].map(([p, v]) => [toReal(p), v])),
+      },
+    };
+  };
 
-  // 2) Kod kontrolleri
   const slotsByPos = new Map(input.slots.map((s) => [s.position, s]));
   const valid = new Map<number, GeneratedItem>();
   const failing = new Map<number, string[]>();
-  const evaluate = (items: GeneratedItem[], wanted: Set<number>) => {
-    for (const pos of wanted) {
+  const evaluate = (chunk: GenerateSlotInput[], result: ChunkResult) => {
+    for (const { position: pos } of chunk) {
       const slot = slotsByPos.get(pos)!;
-      const item = items.find((it) => it.slot === pos);
-      const problems = item ? checkItem(item, slot, input.level) : ["missing_item"];
+      const item = result.kind === "ok" ? result.batch.items.find((it) => it.slot === pos) : undefined;
+      const problems =
+        result.kind === "failed"
+          ? [result.problem]
+          : item
+            ? checkItem(item, slot, input.level)
+            : (result.batch.problems.get(pos) ?? ["missing_item"]);
       if (problems.length === 0 && item) {
         valid.set(pos, item);
         failing.delete(pos);
       } else failing.set(pos, problems);
     }
   };
-  evaluate(full.items, new Set(slotsByPos.keys()));
 
-  // 3) Geçmeyen slotlar bir kez yeniden üretilir; yine geçmezse çıkarılır.
+  const runRound = async (slots: GenerateSlotInput[], name: string, problems?: Map<number, string[]>) => {
+    const chunks = chunkSlots(slots);
+    const results = await Promise.all(chunks.map((c) => runChunk(c, name, problems)));
+    chunks.forEach((c, i) => evaluate(c, results[i]));
+  };
+
+  // 1) Tüm oturum, paralel parçalar hâlinde. Şemadan kısmen geçen ya da reddedilen parçanın
+  //    slotları 2. adımda yeniden üretilir.
+  await runRound(input.slots, "session_gen");
+
+  // 2) Geçmeyen slotlar bir kez yeniden üretilir; yine geçmezse çıkarılır.
   const regenerated = [...failing.keys()];
   if (regenerated.length > 0) {
-    const regenInput = { ...input, slots: input.slots.filter((s) => failing.has(s.position)) };
-    const problemsNote = regenerated.map((p) => `slot ${p}: ${failing.get(p)!.join(", ")}`).join("; ");
-    calls++;
-    const res = await guardedLlmCall<SlotRegen>(
-      deps,
-      callCtx,
-      pickModel,
-      buildCall(
-        SlotRegen,
-        "slot_regen",
-        buildGenerateUser(
-          regenInput,
-          `Rewrite only these slots; the previous versions failed automatic checks (${problemsNote}).`,
-        ),
-      ),
+    await runRound(
+      input.slots.filter((s) => failing.has(s.position)),
+      "slot_regen",
+      new Map(failing),
     );
-    if (res.kind === "ok") evaluate(res.data.items, new Set(regenerated));
   }
 
   const dropped = [...failing.entries()].map(([slot, problems]) => ({ slot, problems }));
   const items = input.slots.map((s) => valid.get(s.position)).filter((x): x is GeneratedItem => Boolean(x));
+  if (items.length === 0) {
+    throw new GenerationError(anyNonRefusal ? "invalid_output" : "refusal", dropped.map((d) => `slot ${d.slot}: ${d.problems.join(", ")}`).join("; ").slice(0, 300));
+  }
   if (items.length < MIN_SESSION_ITEMS) {
     throw new GenerationError("too_few_items", `${items.length} valid`);
   }

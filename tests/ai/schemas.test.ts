@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { llmCostUsd, priceFor } from "@/lib/ai/cost";
 import { toStrictJsonSchema } from "@/lib/ai/json-schema";
-import { GradeResult, SessionGen, SlotRegen } from "@/lib/ai/schemas";
+import { GeneratedItem, GradeResult, SessionGen } from "@/lib/ai/schemas";
 import { parseAiSettings } from "@/lib/ai/settings";
-import { TYPES_10, validItem } from "./fixtures";
+import { bySlot, TYPES_10, validItem } from "./fixtures";
+
+const TEN = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 const UNSUPPORTED = ["maxLength", "minLength", "maxItems", "minimum", "maximum", "$schema"];
 
@@ -16,7 +18,7 @@ function walk(node: unknown, visit: (o: Record<string, unknown>) => void) {
 }
 
 describe("katı JSON şeması", () => {
-  for (const [name, schema] of Object.entries({ SessionGen, SlotRegen, GradeResult })) {
+  for (const [name, schema] of Object.entries({ SessionGen: SessionGen(TEN), SlotRegen: SessionGen([3, 5]), GradeResult })) {
     it(`${name}: desteklenmeyen sınır yok, her nesne kapalı, minItems ≤ 1`, () => {
       const json = toStrictJsonSchema(schema);
       walk(json, (o) => {
@@ -31,14 +33,22 @@ describe("katı JSON şeması", () => {
   }
 
   it("sınırlar açıklamaya taşınır", () => {
-    const json = JSON.stringify(toStrictJsonSchema(SessionGen));
+    const json = JSON.stringify(toStrictJsonSchema(SessionGen(TEN)));
     expect(json).toContain("at most 140 characters");
-    expect(json).toContain("at least 8 items");
+    expect(json).toContain("at least 3 items");
+  });
+
+  it("her slot zorunlu bir anahtar; etkinlik tanımı $defs'te bir kez", () => {
+    const json = toStrictJsonSchema(SessionGen(TEN)) as { required: string[]; properties: Record<string, { $ref?: string }>; $defs: Record<string, unknown> };
+    expect(json.required).toEqual(TEN.map((p) => `slot_${p}`));
+    expect(Object.values(json.properties).every((v) => v.$ref === "#/$defs/GeneratedItem")).toBe(true);
+    expect(Object.keys(json.$defs)).toEqual(["GeneratedItem"]);
+    expect((toStrictJsonSchema(SessionGen([3, 5])) as { required: string[] }).required).toEqual(["slot_3", "slot_5"]);
   });
 
   it("isteğe bağlı alan sayısı ≤ 24 (Anthropic sınırı)", () => {
     let optional = 0;
-    walk(toStrictJsonSchema(SessionGen), (o) => {
+    walk(toStrictJsonSchema(SessionGen(TEN)), (o) => {
       if (o.type === "object" && o.properties) {
         const req = new Set((o.required as string[]) ?? []);
         optional += Object.keys(o.properties as object).filter((k) => !req.has(k)).length;
@@ -56,18 +66,18 @@ describe("katı JSON şeması", () => {
 });
 
 describe("Zod doğrulaması cevapta sınırları yine uygular", () => {
-  it("geçerli 10 etkinlik geçer, 7 etkinlik geçmez", () => {
+  it("10 slotun hepsi geçer; eksik slot geçmez", () => {
     const items = TYPES_10.map((t, i) => validItem(i + 1, t));
-    expect(SessionGen.safeParse({ items }).success).toBe(true);
-    expect(SessionGen.safeParse({ items: items.slice(0, 7) }).success).toBe(false);
+    expect(SessionGen(TEN).safeParse(bySlot(items)).success).toBe(true);
+    expect(SessionGen(TEN).safeParse(bySlot(items.slice(0, 7))).success).toBe(false);
   });
 
   it("uzun kısa açıklama ve bilinmeyen kod reddedilir", () => {
     const item = validItem(1, "gap_fill");
     const long = { ...item, key: { ...item.key, explanation_short_tr: "x".repeat(221) } };
-    expect(SessionGen.shape.items.element.safeParse(long).success).toBe(false);
+    expect(GeneratedItem.safeParse(long).success).toBe(false);
     const badCode = { ...item, key: { ...item.key, wrong_patterns: [{ answer: "a", code: "L1.NOPE" }] } };
-    expect(SessionGen.shape.items.element.safeParse(badCode).success).toBe(false);
+    expect(GeneratedItem.safeParse(badCode).success).toBe(false);
   });
 });
 

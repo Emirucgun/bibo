@@ -39,21 +39,34 @@ export const GeneratedKey = z.object({
   hint_tr: z.string().max(140),
 });
 
-export const GeneratedItem = z.object({
-  slot: z.number().int(),
-  activity_type: ActivityType,
-  topic_id: TopicId,
-  payload: GeneratedPayload,
-  key: GeneratedKey,
-});
+// `id`: JSON şemasında bir kez `$defs`'e yazılır, slotlar `$ref` ile başvurur. Böylece istek
+// küçük kalır ve isteğe bağlı alanlar slot sayısıyla çoğalmaz (Anthropic sınırı 24).
+export const GeneratedItem = z
+  .object({
+    slot: z.number().int(),
+    activity_type: ActivityType,
+    topic_id: TopicId,
+    payload: GeneratedPayload,
+    key: GeneratedKey,
+  })
+  .meta({ id: "GeneratedItem" });
 export type GeneratedItem = z.infer<typeof GeneratedItem>;
 
-export const SessionGen = z.object({ items: z.array(GeneratedItem).min(8).max(10) });
-export type SessionGen = z.infer<typeof SessionGen>;
+export const slotKey = (position: number) => `slot_${position}`;
 
-/** Kod kontrolünden geçmeyen slotların tek seferlik yeniden üretimi (SPEC 5.2 son paragraf). */
-export const SlotRegen = z.object({ items: z.array(GeneratedItem).min(1).max(10) });
-export type SlotRegen = z.infer<typeof SlotRegen>;
+/**
+ * Oturum üretimi şeması (SPEC 5.2 `SessionGen`), slot anahtarlı: `{ slot_1: item, … }`.
+ * Katı JSON şeması dizi uzunluğunu (`minItems > 1`) zorlayamadığı için model zaman zaman
+ * eksik etkinlik dönüyordu (eval-generation, 11.11.2026); her slot zorunlu bir anahtar olunca
+ * sayı şemayla zorlanır. Aynı şema yeniden üretimde yalnızca istenen slotlarla kullanılır
+ * (SPEC 5.2 son paragraf, eski `SlotRegen`).
+ */
+export function SessionGen(positions: readonly number[]) {
+  return z.object(
+    Object.fromEntries(positions.map((p) => [slotKey(p), GeneratedItem])) as Record<string, typeof GeneratedItem>,
+  );
+}
+export type SessionGen = Record<string, GeneratedItem>;
 
 export const GradeResult = z.object({
   is_correct: z.boolean(),

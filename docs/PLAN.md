@@ -4,7 +4,7 @@
 | --- | --- |
 | Tarih | 11 Kasım 2026 |
 | Kapsam | `ROADMAP.md` M5 · `SPEC.md` Bölüm 5 (5.1–5.4), 3 (`llm_usage`, `app_settings`), 8 (maliyet modeli), 12 · `PRD.md` F3, F4, F12, Bölüm 8 |
-| Durum | Uygulandı; çevrimdışı Bitti testi maddeleri Vitest ile yeşil. Gerçek API çağıran `eval-*` betikleri yazıldı, **çalıştırılmadı** (maliyet onayı + P3/P4 girdileri bekleniyor). |
+| Durum | Uygulandı; çevrimdışı Bitti testi maddeleri Vitest ile yeşil. `eval-generation` 11.11.2026'da geçti (karar 13). `eval-tagging` P4 altın setini, örneklem incelemesi pedagoji sahibini bekliyor. |
 | Bağımlılık | M3 (şema, seed), M4 (`PlanSlot`, `ItemKey`, normalizasyon). M4 dalı (`claude/m4-analysis-implementation-2449d8`) bu dala ileri sarıldı; ana dala henüz birleşmemişti. |
 
 M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`).
@@ -57,6 +57,7 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 | 10 | Kod kontrolleri | SPEC 5.2'dekiler + slot planla eşleşir (konum, tür, konu) + türe göre zorunlu alanlar + `gap_fill`'de tek `___` + dikte cümlesi `text_en` ile aynı + `target_words` cümlede. Cümle uzunluğu İngilizce alanlarda (metin, soru, şıklar, kabul edilenler, model cevap) cümle başına sayılır. |
 | 11 | Değerlendirme çıktısı | Model `errors`/`evidence`'ta listede olmayan kod/konu döndüremez (enum). `errors` boşsa ve `is_correct = false` ise hata etiketi `GEN.OTHER` ile çağıran tarafta tamamlanır (M6). |
 | 12 | Stil rehberi (P3) | Henüz yok; SPEC 5.3'teki kurallar komuta yazıldı. Rehber gelince `prompts/*` sistem metnine eklenir (önbellek bir kez yeniden yazılır). |
+| 13 | Üretim şeması ve bölme (eval-generation sonrası, kullanıcı onayı 11.11.2026) | Katı şema `minItems > 1` desteklemediğinden model ilk çağrıların %20–50'sinde 8'den az etkinlik döndü. `SessionGen` artık slot anahtarlı (`{ slot_1: item, … }`, her anahtar zorunlu); 6+ slotlu şema Anthropic'te "Schema is too complex for compilation" verdiği için oturum en çok 5 slotluk paralel çağrılara bölünür (10 → 5+5, 9 → 5+4, 8 → 4+4), model yerel `slot_1…slot_k` görür. Şemadan kısmen geçen yanıtta geçerli slotlar tutulur; bozuk, eksik ya da reddedilen slotlar tek bir yeniden üretim turunda (yine ≤ 5'lik paralel parçalar) üretilir. `llm_usage.error` yalnızca yol/kod/sınır içerir (ör. `invalid_output:slot_4.key.hint_tr:too_big(max 140)`). **SPEC 5.1/5.2 önerisi:** "tek çağrı" ve `SessionGen` dizi tanımı bu biçimde güncellenmeli. |
 
 ## 4. Bitti testi eşlemesi
 
@@ -73,9 +74,9 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 
 1. **SPEC önerisi:** Bölüm 1 yığın tablosu ve 5.1'deki "Anthropic" ifadeleri OpenRouter + fetch istemcisi olarak güncellenmeli; `llm_usage.provider` değer listesine `openrouter` eklenmeli.
 2. **OpenRouter kredi komisyonu** `cost.ts`'de yok (Anthropic fiyatları). Tavan hesabı komisyonu da kapsasın mı?
-3. **Göç `dev`'e uygulanmadı** (yerelde Docker yok). `npx supabase db push` ve ardından tür üretimi gerekiyor.
+3. ~~Göç `dev`'e uygulanmadı.~~ 11.11.2026'da `bibo-dev`'e uygulandı, `lib/db/types.ts` güncellendi (PR #6).
 4. PLAN #14 (dinleme metninin `payload`'da istemciye sızması) ve #15 (ön üretim × günlük sınır) M6'da karar bekliyor.
-5. `reasoning.effort`'un OpenRouter'da Haiku 5.5'in `effort` parametresine birebir geçtiği ve `json_schema` (strict) desteği ilk eval çalıştırmasında doğrulanacak.
+5. ~~`reasoning.effort` ve `json_schema` (strict) doğrulanacak.~~ eval-generation'da doğrulandı; sınır: en çok 5 slotluk slot anahtarlı şema (karar 13).
 
 ## 9. Sonraki taşlar için açık kararlar
 

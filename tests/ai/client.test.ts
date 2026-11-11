@@ -134,8 +134,9 @@ describe("yanıt ayrıştırma", () => {
     const res = await client.callStructured(CALL);
     expect(res.kind).toBe("invalid");
     if (res.kind === "invalid") {
-      expect(res.issues).toContain("score");
+      expect(res.issues).toContain("score:too_big(max 1)");
       expect(res.issues).not.toContain("GİZLİ");
+      expect(res.raw).toEqual(bad); // kısmi kurtarma için bellekte; loglanmaz
     }
   });
 

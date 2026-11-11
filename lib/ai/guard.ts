@@ -2,7 +2,7 @@
 // `withAiCall()` içinden geçer: guard → çağrı → `llm_usage` satırı → `sessions.cost_usd`.
 // Guard'ı atlayan yol yok.
 import { AiCallError, type LlmClient, type StructuredCall, type StructuredResult } from "./client";
-import { llmCostUsd, type LlmTokenUsage } from "./cost";
+import { llmCostUsd } from "./cost";
 import type { AiSettings } from "./settings";
 import type { AiStore, LlmUsageRow, UsagePurpose } from "./store";
 
@@ -193,18 +193,27 @@ export async function guardedLlmCall<T>(
       run: async (settings) => {
         const model = pickModel(settings);
         const result = await deps.llm.callStructured(build(settings, model));
-        return { value: result, metrics: llmMetrics(model, result.usage, result.kind) };
+        return { value: result, metrics: llmMetrics(model, result) };
       },
     },
     { clock: deps.clock },
   );
 }
 
-function llmMetrics(model: string, u: LlmTokenUsage, kind: StructuredResult<unknown>["kind"]): CallMetrics {
+/** `llm_usage.error` için üst sınır; sorun listesi yalnızca yol ve koddan oluşur. */
+export const USAGE_ERROR_MAX = 200;
+
+function llmMetrics(model: string, result: StructuredResult<unknown>): CallMetrics {
+  const u = result.usage;
   return {
     ...u,
     cost_usd: llmCostUsd(model, u),
-    ok: kind === "ok",
-    error: kind === "ok" ? null : kind === "refusal" ? "refusal" : "invalid_output",
+    ok: result.kind === "ok",
+    error:
+      result.kind === "ok"
+        ? null
+        : result.kind === "refusal"
+          ? "refusal"
+          : `invalid_output:${result.issues}`.slice(0, USAGE_ERROR_MAX),
   };
 }
