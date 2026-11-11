@@ -818,7 +818,11 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      add_session_cost: {
+        Args: { p_session_id: string; p_usd: number };
+        Returns: undefined;
+      };
+      llm_cost_since: { Args: { since: string }; Returns: number };
     };
     Enums: {
       [_ in never]: never;
