@@ -76,9 +76,9 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 
 ### İçerik (pedagoji)
 
-- [ ] 32 konu (Ek A) doğrulandı
-- [ ] 24 hata kodu (Ek B) doğrulandı, her birine örnek eklendi
-- [ ] 14 yerleştirme sorusu yazıldı
+- [x] 32 konu (Ek A) doğrulandı _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
+- [x] 24 hata kodu (Ek B) doğrulandı, her birine örnek eklendi _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
+- [x] 14 yerleştirme sorusu yazıldı _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
 - [ ] Açıklama stil rehberi (1 sayfa)
 - [ ] 40 cümlelik altın etiket seti
 - [ ] 20 bilerek hatalı okunmuş ses kaydı (transkript testi)
@@ -193,3 +193,4 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 10.11.2026 | F5: seslendirme kotası dolarsa ya da servis yanıt vermezse dinleme slotlarının metne düşmesi | Speechify ücretsiz planı kota dolunca isteği reddediyor | Ekip |
 | 11.11.2026 | Sağlayıcı erişimi: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı) ve MAI-Transcribe-2 (`microsoft/mai-transcribe-2`) OpenRouter üzerinden; Speechify Simba 3.5 doğrudan (OpenRouter'da yok). Hata ya da ölçüt kaybı olursa ilgili model kendi sağlayıcısına döner | Tek anahtar, tek fatura, kolay model değişimi; iki modelin fiyatı doğrudan sağlayıcıyla aynı. Açık: transkript AB içinde işlenmiyor (KVKK metni), `verbatim` davranışı M8'de ölçülecek, OpenRouter kredi komisyonu | Mühendis (pedagoji sahibinin itiraz hakkı saklı) |
 | 11.11.2026 | Supabase `prod` projesi Stockholm'de (`eu-north-1`); `dev` Frankfurt'ta kalıyor | Proje bu bölgede açılmıştı; yeniden açmamaya karar verildi. Bedeli: Vercel `fra1` ile her sorguda ≈ 20–30 ms ek gecikme. Her iki bölge de AB; aydınlatma metninde Supabase için "AB (Stockholm)" yazılmalı | Mühendis |
+| 11.11.2026 | `topics.csv` (32), `l1_codes.csv` (24), `placement.json` (14) geçici olarak onaylandı | M4'e geçmek için yeterli seviyede. Pilot öncesi yeniden kontrol edilecek; değişiklik olursa `scripts/build-seed.ts` + seed yeniden yüklenir | Pedagoji sahibi |

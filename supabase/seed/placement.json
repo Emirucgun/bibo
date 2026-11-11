@@ -1,0 +1,298 @@
+{
+  "version": "2026-11-11",
+  "status": "approved_provisional",
+  "note": "SPEC Ek C'ye göre yazıldı; pedagoji sahibi 11.11.2026'da geçici olarak onayladı, pilot öncesi yeniden kontrol edilecek (ROADMAP P5). Dinleme türlerinde seslendirilecek metin payload'da değil, key.correct'te durur.",
+  "items": [
+    {
+      "position": 1,
+      "activity_type": "mcq_read",
+      "topic_id": "g.be_present",
+      "l1_target": "L1.BE_OMIT",
+      "payload": {
+        "instruction_tr": "Metni oku ve doğru cümleyi seç.",
+        "text_en": "This is Ali. He is from Izmir. He likes music.",
+        "question_en": "Which sentence is correct?",
+        "options": ["Ali is a student.", "Ali a student.", "Ali are a student."]
+      },
+      "key": {
+        "correct": "Ali is a student.",
+        "distractors": [
+          { "option": "Ali a student.", "code": "L1.BE_OMIT", "feedback_tr": "İngilizcede \"be\" fiili atlanmaz: Ali is a student." },
+          { "option": "Ali are a student.", "code": "GEN.VERB_FORM", "feedback_tr": "Tekil özneyle \"are\" değil \"is\" kullanılır." }
+        ],
+        "explanation_short_tr": "Türkçede \"öğrenci\" derken ek-fiil düşer; İngilizcede \"is\" şart.",
+        "explanation_long_tr": "Türkçede \"Ali öğrenci\" demek yeterli, \"-dir\" ekini çoğu zaman söylemeyiz. İngilizcede ise isim ya da sıfatla kurulan cümlede be fiili (am / is / are) mutlaka bulunur: Ali is a student. Tekil özne (he, she, it, Ali) ile \"is\" gelir.",
+        "hint_tr": "Cümlede bir fiil olmalı."
+      }
+    },
+    {
+      "position": 2,
+      "activity_type": "mcq_read",
+      "topic_id": "g.subject_pronouns",
+      "l1_target": "L1.HE_SHE",
+      "payload": {
+        "instruction_tr": "Metni oku ve boşluğa uyan kelimeyi seç.",
+        "text_en": "My sister works in a hospital. ___ is a nurse.",
+        "question_en": "Which word goes in the gap?",
+        "options": ["She", "He", "It"]
+      },
+      "key": {
+        "correct": "She",
+        "distractors": [
+          { "option": "He", "code": "L1.HE_SHE", "feedback_tr": "\"Sister\" bir kadın; \"he\" erkekler için kullanılır." },
+          { "option": "It", "code": "L1.HE_SHE", "feedback_tr": "\"It\" insanlar için değil, eşya ve hayvanlar için kullanılır." }
+        ],
+        "explanation_short_tr": "Türkçede \"o\" herkes için aynı; İngilizcede kadın için \"she\" kullanılır.",
+        "explanation_long_tr": "Türkçede \"o\" zamiri cinsiyet taşımaz. İngilizcede üçüncü tekil zamir üçe ayrılır: erkek için he, kadın için she, eşya ve hayvan için it. \"My sister\" bir kadın olduğu için doğru cevap She.",
+        "hint_tr": "Kız kardeşin için hangi zamir kullanılır?"
+      }
+    },
+    {
+      "position": 3,
+      "activity_type": "mcq_read",
+      "topic_id": "g.do_does_q_neg",
+      "l1_target": "L1.DO_SUPPORT",
+      "payload": {
+        "instruction_tr": "Metni oku ve doğru cümleyi seç.",
+        "text_en": "Mert eats fish and chicken. He eats vegetables too. But meat? No!",
+        "question_en": "Which sentence is correct?",
+        "options": ["Mert doesn't like meat.", "Mert not like meat.", "Mert don't like meat."]
+      },
+      "key": {
+        "correct": "Mert doesn't like meat.",
+        "distractors": [
+          { "option": "Mert not like meat.", "code": "L1.DO_SUPPORT", "feedback_tr": "Olumsuz cümlede yardımcı fiil gerekir: doesn't like." },
+          { "option": "Mert don't like meat.", "code": "L1.DO_SUPPORT", "feedback_tr": "He / she / it ile \"don't\" değil \"doesn't\" kullanılır." }
+        ],
+        "explanation_short_tr": "Türkçede olumsuzluk fiile ek olarak gelir (sevmez); İngilizcede \"doesn't\" gerekir.",
+        "explanation_long_tr": "Türkçede \"sevmek\" fiilini \"-me\" ekiyle olumsuz yaparız. İngilizcede geniş zamanda olumsuz cümle yardımcı fiille kurulur: I / you / we / they don't, he / she / it doesn't. Doesn't'tan sonra fiil yalın kalır: doesn't like.",
+        "hint_tr": "Mert = he. He ile hangi yardımcı fiil kullanılır?"
+      }
+    },
+    {
+      "position": 4,
+      "activity_type": "mcq_read",
+      "topic_id": "g.wh_questions",
+      "l1_target": "L1.Q_INVERSION",
+      "payload": {
+        "instruction_tr": "Metni oku ve doğru soruyu seç.",
+        "text_en": "Elif lives in Ankara. Her friend Can wants to know her city.",
+        "question_en": "What does Can ask?",
+        "options": ["Where do you live?", "Where you live?", "Where you are live?"]
+      },
+      "key": {
+        "correct": "Where do you live?",
+        "distractors": [
+          { "option": "Where you live?", "code": "L1.Q_INVERSION", "feedback_tr": "Soru cümlesinde özneden önce yardımcı fiil gelir: Where do you live?" },
+          { "option": "Where you are live?", "code": "L1.Q_INVERSION", "feedback_tr": "Geniş zamanda soru \"are\" ile değil \"do\" ile kurulur ve özneden önce gelir." }
+        ],
+        "explanation_short_tr": "Türkçede soru \"-mı\" ve tonlamayla kurulur; İngilizcede \"do\" özneden önce gelir.",
+        "explanation_long_tr": "Türkçede \"Nerede yaşıyorsun?\" derken kelime sırası değişmez. İngilizcede soru kelimesinden sonra yardımcı fiil, sonra özne, sonra fiil gelir: Where + do + you + live? Bu sıra bozulursa cümle soru olmaz.",
+        "hint_tr": "Soru kelimesi + yardımcı fiil + özne + fiil."
+      }
+    },
+    {
+      "position": 5,
+      "activity_type": "mcq_read",
+      "topic_id": "g.present_simple",
+      "l1_target": "L1.SIMPLE_CONT",
+      "payload": {
+        "instruction_tr": "Metni oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Every morning I wake up at seven. I ___ to school by bus.",
+        "question_en": "Which words go in the gap?",
+        "options": ["go", "am going", "going"]
+      },
+      "key": {
+        "correct": "go",
+        "distractors": [
+          { "option": "am going", "code": "L1.SIMPLE_CONT", "feedback_tr": "\"Every morning\" bir alışkanlık; alışkanlık için geniş zaman kullanılır: I go." },
+          { "option": "going", "code": "GEN.VERB_FORM", "feedback_tr": "-ing'li fiil tek başına cümlenin fiili olamaz." }
+        ],
+        "explanation_short_tr": "Türkçede \"gidiyorum\" alışkanlık için de kullanılır; İngilizcede alışkanlık geniş zamanla anlatılır.",
+        "explanation_long_tr": "Türkçede \"Her sabah okula otobüsle gidiyorum\" demek çok doğal. İngilizcede ise -ing'li şimdiki zaman yalnızca şu anda olan şeyler içindir. Her gün tekrar eden şeyler için geniş zaman kullanılır: I go to school every day.",
+        "hint_tr": "\"Every morning\" ne anlatıyor: şu an mı, alışkanlık mı?"
+      }
+    },
+    {
+      "position": 6,
+      "activity_type": "mcq_read",
+      "topic_id": "g.present_perfect",
+      "l1_target": "L1.PERFECT_PAST",
+      "payload": {
+        "instruction_tr": "Metni oku ve doğru cümleyi seç.",
+        "text_en": "Yesterday Deniz went to the cinema with her brother. The film was very funny.",
+        "question_en": "Which sentence is correct?",
+        "options": ["Deniz saw a film yesterday.", "Deniz has seen a film yesterday.", "Deniz has see a film yesterday."]
+      },
+      "key": {
+        "correct": "Deniz saw a film yesterday.",
+        "distractors": [
+          { "option": "Deniz has seen a film yesterday.", "code": "L1.PERFECT_PAST", "feedback_tr": "\"Yesterday\" gibi belirli bir geçmiş zamanla present perfect kullanılmaz." },
+          { "option": "Deniz has see a film yesterday.", "code": "GEN.VERB_FORM", "feedback_tr": "Has'ten sonra fiilin üçüncü hâli gelir (seen); ama burada zaten geçmiş zaman gerekir." }
+        ],
+        "explanation_short_tr": "Türkçe \"-di\" iki yapıyı da karşılar; \"yesterday\" varsa İngilizcede geçmiş zaman kullanılır.",
+        "explanation_long_tr": "Türkçede \"Dün film izledi\" ile \"Hiç film izledi mi?\" aynı \"-di\" ekini kullanır. İngilizcede zaman belli ise (yesterday, last week, in 2020) past simple kullanılır: saw. Present perfect (has seen) zamanı söylenmeyen deneyimler içindir.",
+        "hint_tr": "Cümlede \"yesterday\" var. Bu, zamanın belli olduğunu gösterir."
+      }
+    },
+    {
+      "position": 7,
+      "activity_type": "gap_fill",
+      "topic_id": "g.present_simple_3sg",
+      "l1_target": "L1.3SG_S",
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki fiilin doğru biçimini yaz.",
+        "text_en": "My brother ___ (play) football every Saturday."
+      },
+      "key": {
+        "accepted": ["plays"],
+        "wrong_patterns": [
+          { "answer": "play", "code": "L1.3SG_S" },
+          { "answer": "playing", "code": "GEN.VERB_FORM" },
+          { "answer": "is playing", "code": "L1.SIMPLE_CONT" }
+        ],
+        "explanation_short_tr": "He / she / it ile geniş zamanda fiile -s gelir: plays.",
+        "explanation_long_tr": "Türkçede fiil eki kişiye göre değişir (oynarım, oynar). İngilizcede geniş zamanda yalnızca üçüncü tekil kişide (he, she, it, my brother) fiile -s eklenir: My brother plays. Diğer kişilerde fiil yalın kalır: I play, they play.",
+        "hint_tr": "My brother = he."
+      }
+    },
+    {
+      "position": 8,
+      "activity_type": "gap_fill",
+      "topic_id": "g.articles_a_an",
+      "l1_target": "L1.ART_OMIT",
+      "payload": {
+        "instruction_tr": "Boşluğa uygun kelimeyi yaz (a ya da an). Boş bırakman gerekiyorsa \"-\" yaz.",
+        "text_en": "I have ___ new phone. It is very fast."
+      },
+      "key": {
+        "accepted": ["a"],
+        "wrong_patterns": [
+          { "answer": "-", "code": "L1.ART_OMIT" },
+          { "answer": "an", "code": "GEN.OTHER" },
+          { "answer": "the", "code": "L1.ART_THE" }
+        ],
+        "explanation_short_tr": "Tekil sayılabilir isim artikelsiz kalmaz: a new phone.",
+        "explanation_long_tr": "Türkçede \"Yeni bir telefonum var\" derken \"bir\"i söylemesek de olur. İngilizcede tekil ve sayılabilir bir isim (phone) tek başına kalamaz; önüne a ya da an gelir. \"new\" sessiz harfle başladığı için \"a\" kullanılır.",
+        "hint_tr": "\"Phone\" tekil ve sayılabilir bir isim."
+      }
+    },
+    {
+      "position": 9,
+      "activity_type": "gap_fill",
+      "topic_id": "g.plurals",
+      "l1_target": "L1.PLURAL_NUM",
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki ismin doğru biçimini yaz.",
+        "text_en": "There are three ___ (cat) in our garden."
+      },
+      "key": {
+        "accepted": ["cats"],
+        "wrong_patterns": [
+          { "answer": "cat", "code": "L1.PLURAL_NUM" },
+          { "answer": "cates", "code": "GEN.SPELLING" }
+        ],
+        "explanation_short_tr": "İngilizcede sayıdan sonra isim çoğul olur: three cats.",
+        "explanation_long_tr": "Türkçede \"üç kedi\" deriz; sayıdan sonra çoğul eki gelmez. İngilizcede birden büyük sayılardan sonra isim çoğul olur: three cats, two books, five friends.",
+        "hint_tr": "Üç tane kedi var. İsim tekil mi kalır?"
+      }
+    },
+    {
+      "position": 10,
+      "activity_type": "gap_fill",
+      "topic_id": "g.prep_time",
+      "l1_target": "L1.PREP_IN_ON_AT",
+      "payload": {
+        "instruction_tr": "Boşluğa uygun edatı yaz (in, on ya da at).",
+        "text_en": "We have an English exam ___ Monday."
+      },
+      "key": {
+        "accepted": ["on"],
+        "wrong_patterns": [
+          { "answer": "in", "code": "L1.PREP_IN_ON_AT" },
+          { "answer": "at", "code": "L1.PREP_IN_ON_AT" }
+        ],
+        "explanation_short_tr": "Günlerle \"on\" kullanılır: on Monday.",
+        "explanation_long_tr": "Türkçede \"pazartesi-de\", \"mart-ta\", \"saat beş-te\" hep aynı ekle söylenir. İngilizcede bu üçe ayrılır: saatlerle at (at 5 o'clock), günlerle on (on Monday), ay ve yıllarla in (in March, in 2026).",
+        "hint_tr": "Monday bir gün. Günlerle hangi edat gelir?"
+      }
+    },
+    {
+      "position": 11,
+      "activity_type": "listen_choose",
+      "topic_id": "p.th",
+      "l1_target": "L1.TH_SOUND",
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun kelimeyi seç.",
+        "options": ["think", "sink", "tink"]
+      },
+      "key": {
+        "correct": "think",
+        "distractors": [
+          { "option": "sink", "code": "L1.TH_SOUND", "feedback_tr": "Duyduğun ses \"th\" idi; dil ucu dişlerin arasında söylenir, \"s\" değil." },
+          { "option": "tink", "code": "L1.TH_SOUND", "feedback_tr": "Duyduğun ses \"th\" idi; \"t\" gibi patlayarak değil, hava sürtünerek çıkar." }
+        ],
+        "explanation_short_tr": "Türkçede \"th\" sesi yok; kulak onu s ya da t ile karıştırabilir.",
+        "explanation_long_tr": "\"th\" sesi dil ucu üst dişlere hafifçe değerken hava üflenerek çıkar. Türkçede bu ses olmadığı için \"think\" kelimesi \"sink\" ya da \"tink\" gibi duyulabilir. Dinlerken sesin yumuşak ve sürtünmeli olmasına dikkat et.",
+        "hint_tr": "Ses yumuşak ve hava sürtünmeli miydi?"
+      }
+    },
+    {
+      "position": 12,
+      "activity_type": "listen_choose",
+      "topic_id": "p.w_v",
+      "l1_target": "L1.W_V",
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun kelimeyi seç.",
+        "options": ["wine", "vine", "fine"]
+      },
+      "key": {
+        "correct": "wine",
+        "distractors": [
+          { "option": "vine", "code": "L1.W_V", "feedback_tr": "Duyduğun ses \"w\" idi; dudaklar yuvarlanır, dişler dudağa değmez." },
+          { "option": "fine", "code": "GEN.OTHER", "feedback_tr": "Duyduğun ses \"w\" idi; \"f\" sesinde üst dişler alt dudağa değer." }
+        ],
+        "explanation_short_tr": "Türkçede \"w\" sesi yok; kulak onu \"v\" ile karıştırabilir.",
+        "explanation_long_tr": "\"w\" sesinde dudaklar \"u\" der gibi yuvarlanır ve dişler dudağa değmez. \"v\" sesinde ise üst dişler alt dudağa değer. Türkçede yalnızca \"v\" olduğu için \"wine\" ve \"vine\" aynı duyulabilir.",
+        "hint_tr": "Ses \"u\" der gibi yuvarlak dudakla mı başladı?"
+      }
+    },
+    {
+      "position": 13,
+      "activity_type": "word_order",
+      "topic_id": "g.word_order_svo",
+      "l1_target": "L1.WORD_ORDER_SOV",
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": ["football", "every", "I", "Saturday", "play"]
+      },
+      "key": {
+        "accepted": ["I play football every Saturday"],
+        "wrong_patterns": [
+          { "answer": "I football play every Saturday", "code": "L1.WORD_ORDER_SOV" },
+          { "answer": "Every Saturday I football play", "code": "L1.WORD_ORDER_SOV" }
+        ],
+        "explanation_short_tr": "İngilizcede sıra özne + fiil + nesnedir: I play football.",
+        "explanation_long_tr": "Türkçede fiil cümlenin sonuna gelir: \"Ben futbol oynarım.\" İngilizcede fiil özneden hemen sonra gelir, nesne fiilden sonra: I (özne) play (fiil) football (nesne). Zaman ifadesi genelde sona gider: every Saturday.",
+        "hint_tr": "Özneden hemen sonra fiil gelir."
+      }
+    },
+    {
+      "position": 14,
+      "activity_type": "speak_answer",
+      "topic_id": "g.present_simple",
+      "l1_target": null,
+      "payload": {
+        "instruction_tr": "Soruyu sesli cevapla. Yaklaşık 20 saniye konuş; basit cümleler yeterli.",
+        "prompt_en": "Tell me about your day."
+      },
+      "key": {
+        "model_answer_en": "I wake up at seven. I go to school by bus. I have lunch with my friends. In the evening I watch TV and I study English.",
+        "target_words": ["wake up", "go", "have", "study"],
+        "explanation_short_tr": "Günlük işleri geniş zamanla anlatırız: I go, I have, I study.",
+        "explanation_long_tr": "Gününü anlatırken her gün tekrarladığın şeyleri söylüyorsun; bunun için geniş zaman kullanılır. Kısa ve basit cümleler kur: özne + fiil + gerisi. He / she ile anlatırsan fiile -s eklemeyi unutma.",
+        "hint_tr": "Sabah, öğle ve akşam ne yaptığını birer cümleyle söyle."
+      }
+    }
+  ]
+}

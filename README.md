@@ -23,6 +23,7 @@ npm run dev                  # http://localhost:3000
 | Lint | `npm run lint` |
 | Tür kontrolü | `npx tsc --noEmit` |
 | Test | `npm test` |
+| Seed'i CSV'lerden üret | `npx tsx scripts/build-seed.ts` |
 | Sağlayıcı merhaba (gerçek API, < 0,01 $) | `npx tsx --env-file=.env.local scripts/hello-providers.ts` |
 
 ## Ortamlar
@@ -43,8 +44,11 @@ Yerel Supabase yığını (Docker) kullanılmıyor; göçler bulut projelerine u
 npx supabase login                               # bir kez
 npx supabase migration new <ad>                  # yeni göç (yalnızca eklenir)
 npx supabase link --project-ref <dev-ref>
-npx supabase db push --remote                    # dev'e uygula (CLI 3.x: --remote olmadan yerel yığını hedefler)
+npx supabase db push --remote --include-seed     # dev'e uygula (CLI 3.x: --remote olmadan yerel yığını hedefler)
+psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql   # RLS ve seed doğrulaması (geri alınır)
 ```
+
+İçerik (konular, hata kodları, yerleştirme soruları) `supabase/seed/` altındadır ve pedagoji sahibi tarafından düzenlenir. CSV değişince `npx tsx scripts/build-seed.ts` ile `supabase/seed.sql` yeniden üretilir; `npm test` ikisinin eşit olduğunu denetler. Seed upsert'tür, tekrar çalıştırılabilir. Türler: `tests/db/README.md`.
 
 `prod`'a yalnızca `dev`'de doğrulandıktan ve ana dala birleştirildikten sonra, aynı komutlarla `<prod-ref>`'e bağlanarak uygulanır; ardından bağlantı `dev`'e geri alınır.
 
