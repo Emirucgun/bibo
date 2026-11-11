@@ -99,10 +99,10 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - TypeScript türlerinin üretilmesi (`supabase gen types`).
 
 **Bitti testi**
-- [ ] Seed sayıları: 32 konu, 24 kod, 14 yerleştirme sorusu.
-- [ ] `L1.LITERAL` dışındaki her `L1.*` kodunun geçerli bir `topic_id`'si var.
-- [ ] Öğrenci rolüyle `select * from item_keys` → 0 satır / izin hatası.
-- [ ] Supabase Security Advisor'da RLS'i kapalı tablo yok.
+- [x] Seed sayıları: 32 konu, 24 kod, 14 yerleştirme sorusu.
+- [x] `L1.LITERAL` dışındaki her `L1.*` kodunun geçerli bir `topic_id`'si var.
+- [x] Öğrenci rolüyle `select * from item_keys` → 0 satır / izin hatası.
+- [x] Supabase Security Advisor'da RLS'i kapalı tablo yok.
 - [ ] Pedagoji sahibi konu ve kod listesini onayladı (P1, P2 işaretli).
 
 ---
