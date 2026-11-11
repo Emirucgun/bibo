@@ -4,7 +4,7 @@
 | --- | --- |
 | Tarih | 11 Kasım 2026 |
 | Kapsam | `ROADMAP.md` M3. M2 (giriş, davet, onam) bu planda yok. |
-| Durum | Uygulandı; `dev`e uygulandı ve doğrulandı (11.11.2026). `prod` ve pedagoji onayı bekliyor. |
+| Durum | Uygulandı; `dev`e uygulandı ve doğrulandı (11.11.2026). pedagoji sahibi içeriği geçici olarak onayladı; `prod`'a birleştirmeden sonra uygulanır. |
 | Kaynak belgeler | `SPEC.md` Bölüm 2 (dizin), 3 (veri modeli, RLS), 5.2 (şemalar), Ek A–C · `ROADMAP.md` M3 · `.claude/rules/veritabani.md` |
 
 M1'in planı bu dosyanın git geçmişinde (`80efea6`).

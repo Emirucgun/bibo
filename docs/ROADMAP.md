@@ -103,7 +103,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - [x] `L1.LITERAL` dışındaki her `L1.*` kodunun geçerli bir `topic_id`'si var.
 - [x] Öğrenci rolüyle `select * from item_keys` → 0 satır / izin hatası.
 - [x] Supabase Security Advisor'da RLS'i kapalı tablo yok.
-- [ ] Pedagoji sahibi konu ve kod listesini onayladı (P1, P2 işaretli).
+- [x] Pedagoji sahibi konu ve kod listesini onayladı (P1, P2 işaretli). _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
 
 ---
 

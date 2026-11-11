@@ -1,7 +1,7 @@
 {
-  "version": "2026-11-11-draft",
-  "status": "draft",
-  "note": "SPEC Ek C'ye göre taslak; pedagoji sahibi onaylayana kadar 'draft' (ROADMAP P5). Dinleme türlerinde seslendirilecek metin payload'da değil, key.correct'te durur.",
+  "version": "2026-11-11",
+  "status": "approved_provisional",
+  "note": "SPEC Ek C'ye göre yazıldı; pedagoji sahibi 11.11.2026'da geçici olarak onayladı, pilot öncesi yeniden kontrol edilecek (ROADMAP P5). Dinleme türlerinde seslendirilecek metin payload'da değil, key.correct'te durur.",
   "items": [
     {
       "position": 1,
