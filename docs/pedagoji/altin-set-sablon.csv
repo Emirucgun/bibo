@@ -1,0 +1,3 @@
+﻿id,etkinlik_turu,konu,seviye,gorev,model_cevap,ogrenci_cevabi,dogru_mu,birincil_kod,diger_kodlar,not
+g01,translate_tr_en,g.present_simple_3sg,A1,Kardeşim her gün futbol oynar.,My brother plays football every day.,My brother play football every day.,hayir,L1.3SG_S,,3. tekil -s yok
+g02,short_write,g.articles_a_an,A1,Describe your room in 2-3 sentences.,I have a small room. There is a bed and a desk.,I have a small room. There is a bed and a desk.,evet,,,örnek doğru cevap
