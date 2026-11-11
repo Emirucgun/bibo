@@ -260,7 +260,7 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 - [ ] Kısa açıklama en fazla 2 cümledir ve Türkçedir.
 - [ ] Hata bir L1 koduyla eşleştiyse açıklama Türkçeyle karşılaştırma içerir.
 - [ ] "Daha fazla açıkla" uzun açıklamayı gösterir ve tıklama kaydedilir.
-- [ ] Son 2 oturumda yanlış cevapların ≥ %50'sinde uzun açıklama açılmışsa varsayılan mod "uzun"a geçer.
+- [ ] Son 2 oturumda yanlış cevapların ≥ %50'sinde uzun açıklama açılmışsa varsayılan mod "uzun"a geçer; uzun moddayken son 2 oturumda yanlışların < %20'sinde açılmışsa "kısa"ya döner (arada boşluk, mod sürekli gidip gelmesin diye).
 - [ ] İpucu kullanılan cevap ustalık hesabında en fazla 0,5 sayılır.
 
 ### F5 Dinleme

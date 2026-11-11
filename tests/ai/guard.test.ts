@@ -131,6 +131,19 @@ describe("withAiCall", () => {
 });
 
 describe("guardedLlmCall", () => {
+  it("OpenRouter komisyonu maliyete eklenir (openrouter_fee_rate)", async () => {
+    const store = new FakeStore();
+    store.settings.openrouter_fee_rate = 0.055;
+    const llm = new FakeLlm([{ kind: "refusal", usage: USAGE }]);
+    await guardedLlmCall({ store, llm }, GEN, (s) => s.model_generate, (s, model) => ({
+      model, effort: s.effort_generate, thinking: "adaptive", system: "", user: "", schema: SessionGen([1]),
+      schemaName: "x", maxTokens: 1, timeoutMs: 1,
+    }));
+    // 0,00113 $ × 1,055 = 0,00119215 → 6 ondalık
+    expect(store.rows[0].cost_usd).toBe(0.001192);
+    expect(store.sessionCost.get("s1")).toBe(0.001192); // oturum maliyeti de komisyonlu
+  });
+
   it("llm_usage satırında komut ya da model çıktısı yok; maliyet cost.ts'ten", async () => {
     const store = new FakeStore();
     const secret = "STUDENT_SECRET_TEXT";

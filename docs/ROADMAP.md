@@ -155,7 +155,8 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 **Amaç:** Bir öğrenci telefonundan baştan sona bir oturum yapabilsin ve teşhis kartını görsün.
 
 **Kapsam**
-- `POST /api/sessions/next`, `GET /api/sessions/:id`, `start`, `POST /api/items/:id/attempt`, `hint`, `explanation`, `finish` (+ `after()` ile sonraki oturum, `maxDuration = 120`), `diagnoses/:id/feedback`.
+- `POST /api/sessions/next`, `GET /api/sessions/:id`, `start`, `POST /api/items/:id/attempt`, `hint`, `explanation`, `finish` (+ `after()` ile sonraki oturum, `maxDuration = 300`), `diagnoses/:id/feedback`, `PATCH /api/profile`, `POST /api/events`.
+- `sessions.status`'a `generating` (göç; öğrenci başına tek `generating`/`ready` oturum); günlük sınır `start`'ta; dinleme türlerinde `text_en` `item_keys`'e (SPEC rev. 3).
 - `/oturum/[id]` sayfası, ilerleme çubuğu, beş metin bileşeni: `McqRead`, `GapFill`, `WordOrder`, `Translate`, `ShortWrite`.
 - Kaldığı yerden devam; oturum özeti; teşhis kartı; 1–5 puan.
 - Geçici bayrak: dinleme ve konuşma slotları bu taşta metin türlerine düşürülür (M7–M8'de kaldırılır; dinleme için aynı mekanizma `tts_enabled` ile kalıcı olur).

@@ -16,6 +16,7 @@ export const SETTINGS: AiSettings = {
   effort_grade: "low",
   thinking_grade: "adaptive",
   tts_plan_usd: 0,
+  openrouter_fee_rate: 0, // komisyonun etkisi guard.test.ts'te ayrıca sınanır
 };
 
 export const USAGE: LlmTokenUsage = {

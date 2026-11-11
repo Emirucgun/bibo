@@ -43,7 +43,7 @@ Yapay zekâ sağlayıcılarına özgü kurallar `.claude/rules/ai-katmani.md`'de
 
 ## Sık yapılan hatalar
 
-- `after()` ile yapılan iş aynı fonksiyon süresine dahil (Vercel Hobby üst sınır 300 sn); `finish` uç noktasında `export const maxDuration = 120`.
+- `after()` ile yapılan iş aynı fonksiyon süresine dahil (Vercel Hobby üst sınır 300 sn); `finish` uç noktasında `export const maxDuration = 300`.
 - Vercel istek gövdesi en çok 4,5 MB; ses yüklemesi 2 MB ile sınırlı.
 - iOS Safari'de mikrofon ve ses çalma yalnızca kullanıcı dokunuşundan sonra başlar; `AudioContext` 16 kHz isteğini yok sayar, kaydedici kendisi örnek azaltır.
 - Server Component'te çerez yazılmaz; Supabase oturum çerezleri `proxy.ts` ve Route Handler'larda güncellenir.

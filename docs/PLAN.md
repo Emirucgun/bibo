@@ -72,13 +72,15 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 
 ## 5. Açık sorular
 
-1. **SPEC önerisi:** Bölüm 1 yığın tablosu ve 5.1'deki "Anthropic" ifadeleri OpenRouter + fetch istemcisi olarak güncellenmeli; `llm_usage.provider` değer listesine `openrouter` eklenmeli.
-2. **OpenRouter kredi komisyonu** `cost.ts`'de yok (Anthropic fiyatları). Tavan hesabı komisyonu da kapsasın mı?
+1. ~~SPEC'te OpenRouter + fetch istemcisi ve `provider = openrouter`.~~ SPEC rev. 3'te güncellendi (11.11.2026).
+2. ~~OpenRouter komisyonu tavana dahil mi?~~ Evet: `app_settings.openrouter_fee_rate` (varsayılan 0,055, oran OpenRouter'dan doğrulanacak), SPEC rev. 3. Uygulandı: göç `20261111190000_openrouter_fee_rate.sql` (`bibo-dev`'de), `withFee()` ile `llm_usage.cost_usd` ve `sessions.cost_usd` komisyonlu.
 3. ~~Göç `dev`'e uygulanmadı.~~ 11.11.2026'da `bibo-dev`'e uygulandı, `lib/db/types.ts` güncellendi (PR #6).
-4. PLAN #14 (dinleme metninin `payload`'da istemciye sızması) ve #15 (ön üretim × günlük sınır) M6'da karar bekliyor.
+4. ~~PLAN #14 ve #15.~~ Karar verildi (aşağıdaki tablo); M6'da uygulanır.
 5. ~~`reasoning.effort` ve `json_schema` (strict) doğrulanacak.~~ eval-generation'da doğrulandı; sınır: en çok 5 slotluk slot anahtarlı şema (karar 13).
 
 ## 9. Sonraki taşlar için açık kararlar
+
+Karar (11.11.2026, SPEC rev. 3): #14, #15, #16, #17, #21 ve #23 önerilen varsayılanla kabul edildi; M6'da uygulanır. #18 ve #22 açık.
 
 | # | Taş | Sorun | Önerilen varsayılan |
 | --- | --- | --- | --- |
