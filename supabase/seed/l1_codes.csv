@@ -1,0 +1,25 @@
+code,topic_id,is_l1,name_tr,rule_tr,wrong_example,right_example
+L1.ART_OMIT,g.articles_a_an,true,Artikel atlama,"Türkçede ""bir"" çoğu zaman söylenmez; İngilizcede tekil sayılabilir isim artikelsiz kalmaz.",I have car.,I have a car.
+L1.ART_THE,g.articles_the,true,the'yi fazla ya da eksik kullanma,Türkçede belirlilik bağlamdan anlaşılır; İngilizcede genel anlamda the kullanılmaz.,The life is hard.,Life is hard.
+L1.HE_SHE,g.subject_pronouns,true,he / she / it karışıklığı,"Türkçede ""o"" cinsiyetsizdir; İngilizcede ayrılır.","My sister, he is a doctor.","My sister, she is a doctor."
+L1.HIS_HER,g.possessives,true,his / her karışıklığı,"Türkçe iyelik eki (-ı, -i) cinsiyet taşımaz.",My mother loves his job.,My mother loves her job.
+L1.SUBJ_DROP,g.subject_pronouns,true,Özne düşürme,Türkçede özne fiil ekinden anlaşılır; İngilizcede özne zorunludur.,Is very good.,It is very good.
+L1.BE_OMIT,g.be_present,true,be fiilini atlama,Türkçede ek-fiil (-dır) çoğu zaman söylenmez.,She happy.,She is happy.
+L1.3SG_S,g.present_simple_3sg,true,Üçüncü tekil -s eksikliği,İngilizcede yalnızca he / she / it ile fiile -s gelir.,He play football.,He plays football.
+L1.DO_SUPPORT,g.do_does_q_neg,true,do / does / did eksikliği ya da yanlışı,Türkçede olumsuzluk fiile ek (-me) olarak gelir; İngilizcede yardımcı fiil gerekir.,She don't like. / I not like.,She doesn't like. / I don't like.
+L1.Q_INVERSION,g.wh_questions,true,"Soru yapısı (yardımcı fiil, sıra)",Türkçede soru -mı eki ve tonlamayla yapılır; İngilizcede sıra değişir.,Where you live?,Where do you live?
+L1.WORD_ORDER_SOV,g.word_order_svo,true,Fiili sona koyma,"Türkçe özne-nesne-fiil, İngilizce özne-fiil-nesne dizilir.",I football play.,I play football.
+L1.PLURAL_NUM,g.plurals,true,Sayıdan sonra çoğul eksikliği,"Türkçede sayıdan sonra çoğul eki gelmez (""iki kitap"").",two book,two books
+L1.COUNT_UNCOUNT,g.some_any_much_many,true,Sayılabilir / sayılamaz karışıklığı,Türkçede bu ayrım dilbilgisel olarak işaretlenmez.,"many water, informations","much water, information"
+L1.PREP_IN_ON_AT,g.prep_time,true,in / on / at karışıklığı,Türkçedeki tek -de/-da eki İngilizcede üç edata ayrılır.,in Monday,on Monday
+L1.THERE_HAVE,g.there_is_are,true,"""var"" yapısı","Türkçedeki ""var"", İngilizcede there is ya da have ile karşılanır.",In my city has a park.,There is a park in my city.
+L1.SIMPLE_CONT,g.present_simple,true,Geniş / şimdiki zaman karışıklığı,Türkçe -yor hem şu ana hem alışkanlığa kullanılır.,I am going to school every day.,I go to school every day.
+L1.PERFECT_PAST,g.present_perfect,true,Present perfect / past simple karışıklığı,Türkçe -di iki anlamı da karşılar; belirli geçmiş zamanla present perfect kullanılmaz.,I have seen him yesterday.,I saw him yesterday.
+L1.VERB_PATTERN,g.verb_patterns,true,Mastar yapısı (to / -ing),"Türkçede mastar eki fiile bağlıdır (gitmek); İngilizcede ayrı ""to"" gerekir.",I want go.,I want to go.
+L1.LITERAL,,true,Kelime kelime çeviri ve kalıp,Türkçe kalıbı birebir çevirmek İngilizcede yanlış yapı üretir.,I am agree. / make sport,I agree. / do sport
+L1.TH_SOUND,p.th,true,th sesi,"Türkçede th sesi yoktur; t, d, s ile karışır.",sink (think yerine),think
+L1.W_V,p.w_v,true,w / v ayrımı,Türkçede w sesi yoktur; v ile karışır.,vine (wine yerine),wine
+GEN.VERB_FORM,,false,Yanlış fiil biçimi,Türkçe kaynaklı değil.,He goed.,He went.
+GEN.SPELLING,,false,Yazım,,becuase,because
+GEN.VOCAB,,false,Yanlış kelime seçimi,,,
+GEN.OTHER,,false,Diğer,,,
