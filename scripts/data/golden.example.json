@@ -1,0 +1,22 @@
+[
+  {
+    "id": "ornek-01",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Kardeşim her gün futbol oynar.",
+    "model_answer_en": "My brother plays football every day.",
+    "student_text": "My brother play football every day.",
+    "expected": { "is_correct": false, "l1_codes": ["L1.3SG_S"] }
+  },
+  {
+    "id": "ornek-02",
+    "activity_type": "short_write",
+    "topic_id": "g.articles_a_an",
+    "level": "A1",
+    "task": "Describe your room in 2-3 sentences.",
+    "model_answer_en": "I have a small room. There is a bed and a desk.",
+    "student_text": "I have a small room. There is a bed and a desk.",
+    "expected": { "is_correct": true, "l1_codes": [] }
+  }
+]

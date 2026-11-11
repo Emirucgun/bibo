@@ -23,8 +23,10 @@ npm run dev                  # http://localhost:3000
 | Lint | `npm run lint` |
 | Tür kontrolü | `npx tsc --noEmit` |
 | Test | `npm test` |
-| Seed'i CSV'lerden üret | `npx tsx scripts/build-seed.ts` |
+| Seed + `lib/content/taxonomy.ts`'i CSV'lerden üret | `npx tsx scripts/build-seed.ts` |
 | Sağlayıcı merhaba (gerçek API, < 0,01 $) | `npx tsx --env-file=.env.local scripts/hello-providers.ts` |
+| Üretim değerlendirmesi (gerçek API, ≈ 0,10–0,25 $; önce onay) | `npx tsx --env-file=.env.local scripts/eval-generation.ts [--no-db]` |
+| Etiketleme değerlendirmesi (gerçek API, ≈ 0,03 $; altın set `scripts/data/golden.json`) | `npx tsx --env-file=.env.local scripts/eval-tagging.ts [--no-db]` |
 
 ## Ortamlar
 

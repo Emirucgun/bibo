@@ -36,9 +36,9 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 | `lib/ai/generate-session.ts` | Tek çağrıda üretim → kontroller → başarısız slotlar için tek yeniden üretim → ≥ 8 kontrolü |
 | `lib/ai/grade.ts` | Serbest cevap değerlendirme (`translate_tr_en`, `short_write`, `speak_answer` transkripti) |
 | `supabase/migrations/20261111170000_m5_ai_usage_functions.sql` | `llm_cost_since(ts)`, `add_session_cost(uuid, numeric)`; yalnızca `service_role` çalıştırır |
-| `scripts/eval-generation.ts`, `scripts/eval-tagging.ts`, `scripts/lib/eval.ts` | Gerçek API; maliyet, gecikme (p50/p90), şema geçerliliği, uyum raporu |
+| `scripts/eval-generation.ts`, `scripts/eval-tagging.ts`, `scripts/lib/eval.ts`, `scripts/lib/eval-env.ts` | Gerçek API; maliyet, gecikme (p50/p90), şema geçerliliği, uyum raporu |
 | `scripts/data/golden.example.json` | Altın set biçimi (2 örnek). Gerçek 40 cümle P4 ile `scripts/data/golden.json`'a gelir |
-| `scripts/hello-providers.ts` | Silindi (başlığında "M5'te silinir"; yerini `lib/ai` aldı) |
+| `scripts/hello-providers.ts` | Korundu: Speechify ve transkript için `lib/tts` / `lib/stt` M7–M8'de gelecek; o zaman silinir |
 | `tests/ai/*.test.ts`, `tests/content/taxonomy.test.ts` | Bitti testinin çevrimdışı maddeleri |
 
 ## 3. Verilen kararlar (SPEC'te açık ya da OpenRouter'a uyarlanan noktalar)
