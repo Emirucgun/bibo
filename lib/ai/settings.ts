@@ -15,6 +15,8 @@ export const AiSettingsSchema = z.object({
   effort_grade: z.enum(EFFORTS),
   thinking_grade: z.enum(["adaptive", "disabled"]),
   tts_plan_usd: z.number().nonnegative(),
+  /** OpenRouter kredi komisyonu (SPEC rev. 3); 0,5 üstü yazım hatası sayılır. */
+  openrouter_fee_rate: z.number().min(0).max(0.5),
 });
 export type AiSettings = z.infer<typeof AiSettingsSchema>;
 

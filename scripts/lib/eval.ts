@@ -69,6 +69,7 @@ export const MIGRATION_DEFAULTS: AiSettings = {
   effort_grade: "low",
   thinking_grade: "adaptive",
   tts_plan_usd: 0,
+  openrouter_fee_rate: 0.055,
 };
 
 export interface UsageSummary {

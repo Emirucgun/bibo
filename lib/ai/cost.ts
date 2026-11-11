@@ -1,5 +1,6 @@
 // Fiyat tablosu (docs/SPEC.md 1, 5.3, 8 "Maliyet modeli"). Maliyeti yalnızca bu dosya hesaplar.
-// Fiyatlar $ / 1M token. OpenRouter aynı fiyatı geçirir; kredi komisyonu burada yok (PLAN açık soru 2).
+// Fiyatlar $ / 1M token. OpenRouter aynı fiyatı geçirir; kredi komisyonu `withFee` ile eklenir
+// (oran `app_settings.openrouter_fee_rate`, SPEC rev. 3).
 
 export interface LlmPrice {
   input: number;
@@ -39,6 +40,11 @@ export function llmCostUsd(model: string, u: LlmTokenUsage): number {
       u.cache_write_tokens * p.cache_write) /
     1_000_000;
   return round6(usd);
+}
+
+/** Aracı komisyonunu ekler: `usd × (1 + rate)`, 6 ondalık. */
+export function withFee(usd: number, rate: number): number {
+  return round6(usd * (1 + rate));
 }
 
 export function transcribeCostUsd(audioSeconds: number): number {

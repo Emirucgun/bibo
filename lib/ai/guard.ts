@@ -2,7 +2,7 @@
 // `withAiCall()` içinden geçer: guard → çağrı → `llm_usage` satırı → `sessions.cost_usd`.
 // Guard'ı atlayan yol yok.
 import { AiCallError, type LlmClient, type StructuredCall, type StructuredResult } from "./client";
-import { llmCostUsd } from "./cost";
+import { llmCostUsd, withFee } from "./cost";
 import type { AiSettings } from "./settings";
 import type { AiStore, LlmUsageRow, UsagePurpose } from "./store";
 
@@ -193,7 +193,7 @@ export async function guardedLlmCall<T>(
       run: async (settings) => {
         const model = pickModel(settings);
         const result = await deps.llm.callStructured(build(settings, model));
-        return { value: result, metrics: llmMetrics(model, result) };
+        return { value: result, metrics: llmMetrics(model, result, settings.openrouter_fee_rate) };
       },
     },
     { clock: deps.clock },
@@ -203,11 +203,12 @@ export async function guardedLlmCall<T>(
 /** `llm_usage.error` için üst sınır; sorun listesi yalnızca yol ve koddan oluşur. */
 export const USAGE_ERROR_MAX = 200;
 
-function llmMetrics(model: string, result: StructuredResult<unknown>): CallMetrics {
+/** `feeRate`: OpenRouter komisyonu; tavan gerçek harcamayı izlesin diye maliyete eklenir. */
+function llmMetrics(model: string, result: StructuredResult<unknown>, feeRate: number): CallMetrics {
   const u = result.usage;
   return {
     ...u,
-    cost_usd: llmCostUsd(model, u),
+    cost_usd: withFee(llmCostUsd(model, u), feeRate),
     ok: result.kind === "ok",
     error:
       result.kind === "ok"

@@ -73,7 +73,7 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 ## 5. Açık sorular
 
 1. ~~SPEC'te OpenRouter + fetch istemcisi ve `provider = openrouter`.~~ SPEC rev. 3'te güncellendi (11.11.2026).
-2. ~~OpenRouter komisyonu tavana dahil mi?~~ Evet: `app_settings.openrouter_fee_rate` (varsayılan 0,055, doğrulanacak), SPEC rev. 3. **Uygulanmadı:** göç + `cost.ts`/guard değişikliği gerekiyor.
+2. ~~OpenRouter komisyonu tavana dahil mi?~~ Evet: `app_settings.openrouter_fee_rate` (varsayılan 0,055, oran OpenRouter'dan doğrulanacak), SPEC rev. 3. Uygulandı: göç `20261111190000_openrouter_fee_rate.sql` (`bibo-dev`'de), `withFee()` ile `llm_usage.cost_usd` ve `sessions.cost_usd` komisyonlu.
 3. ~~Göç `dev`'e uygulanmadı.~~ 11.11.2026'da `bibo-dev`'e uygulandı, `lib/db/types.ts` güncellendi (PR #6).
 4. ~~PLAN #14 ve #15.~~ Karar verildi (aşağıdaki tablo); M6'da uygulanır.
 5. ~~`reasoning.effort` ve `json_schema` (strict) doğrulanacak.~~ eval-generation'da doğrulandı; sınır: en çok 5 slotluk slot anahtarlı şema (karar 13).

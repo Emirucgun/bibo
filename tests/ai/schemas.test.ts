@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { llmCostUsd, priceFor } from "@/lib/ai/cost";
+import { llmCostUsd, priceFor, withFee } from "@/lib/ai/cost";
 import { toStrictJsonSchema } from "@/lib/ai/json-schema";
 import { GeneratedItem, GradeResult, SessionGen } from "@/lib/ai/schemas";
 import { parseAiSettings } from "@/lib/ai/settings";
@@ -93,6 +93,11 @@ describe("maliyet", () => {
     expect(llmCostUsd("claude-haiku-5-5", { input_tokens: 0, output_tokens: 0, cache_read_tokens: 1_000_000, cache_write_tokens: 1_000_000 })).toBe(0.135);
   });
 
+  it("komisyon: usd × (1 + oran), 6 ondalık", () => {
+    expect(withFee(0.004, 0.055)).toBe(0.00422);
+    expect(withFee(0.00113, 0)).toBe(0.00113);
+  });
+
   it("bilinmeyen model hata verir (sessizce 0 $ yazılmaz)", () => {
     expect(() => llmCostUsd("unknown", { input_tokens: 1, output_tokens: 1, cache_read_tokens: 0, cache_write_tokens: 0 })).toThrow();
   });
@@ -109,11 +114,19 @@ describe("app_settings", () => {
     { key: "effort_grade", value: "low" },
     { key: "thinking_grade", value: "adaptive" },
     { key: "tts_plan_usd", value: 0 },
+    { key: "openrouter_fee_rate", value: 0.055 },
     { key: "tts_voice", value: null },
   ];
 
   it("göçteki varsayılanlar okunur", () => {
     expect(parseAiSettings(rows)).toMatchObject({ effort_generate: "medium", effort_grade: "low", monthly_budget_usd: 40 });
+  });
+
+  it("komisyon oranı okunur; eksik ya da 0,5 üstü reddedilir", () => {
+    expect(parseAiSettings(rows).openrouter_fee_rate).toBe(0.055);
+    expect(() => parseAiSettings(rows.filter((r) => r.key !== "openrouter_fee_rate"))).toThrow(/openrouter_fee_rate/);
+    const typo = rows.map((r) => (r.key === "openrouter_fee_rate" ? { ...r, value: 5.5 } : r));
+    expect(() => parseAiSettings(typo)).toThrow(/openrouter_fee_rate/);
   });
 
   it("eksik anahtar varsayılana düşmez, hata verir", () => {
