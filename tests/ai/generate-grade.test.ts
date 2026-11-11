@@ -1,68 +1,120 @@
 import { describe, expect, it } from "vitest";
-import { generateSession, GenerationError } from "@/lib/ai/generate-session";
+import type { StructuredCall } from "@/lib/ai/client";
+import { chunkSlots, generateSession, GenerationError } from "@/lib/ai/generate-session";
 import { gradeFreeAnswer } from "@/lib/ai/grade";
 import { buildGradeUser, escapeStudentText, GRADE_SYSTEM } from "@/lib/ai/prompts/grade";
 import { buildGenerateUser, GENERATE_SYSTEM } from "@/lib/ai/prompts/generate";
 import type { GeneratedItem } from "@/lib/ai/schemas";
-import { FakeLlm, FakeStore, ok, slotsFor, TYPES_10, USAGE, validItem } from "./fixtures";
+import { answerAll, FakeLlm, FakeStore, ok, slotsFor, TYPES_10, USAGE, type Responder } from "./fixtures";
 
 const NOW = new Date("2026-11-11T10:00:00Z");
 const CTX = { userId: "u1", sessionId: "s1", now: NOW };
 const INPUT = { level: "A1" as const, explainMode: "short" as const, varietySeed: "seed-1", slots: slotsFor(TYPES_10) };
-const good = () => TYPES_10.map((t, i) => validItem(i + 1, t));
 
 function breakItem(item: GeneratedItem): GeneratedItem {
   return { ...item, topic_id: "g.be_present" };
 }
 
 describe("generateSession", () => {
-  it("tek çağrı yeterliyse yeniden üretim yok; üretim ayarları kullanılır", async () => {
+  // Paralel parçalar: yanıtlar sıraya değil istekteki slot listesine göre üretilir.
+  const isRegen = (call: StructuredCall<unknown>) => call.schemaName === "slot_regen";
+
+  it("10 slot iki paralel 5'lik çağrıya bölünür; üretim ayarları kullanılır", async () => {
     const store = new FakeStore();
-    const llm = new FakeLlm([ok({ items: good() })]);
+    const llm = new FakeLlm([answerAll(), answerAll()]);
     const out = await generateSession({ store, llm }, CTX, INPUT);
-    expect(out.items).toHaveLength(10);
-    expect(out).toMatchObject({ dropped: [], regenerated: [], calls: 1 });
+    expect(out.items.map((i) => i.slot)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(out.items.map((i) => i.activity_type)).toEqual(TYPES_10);
+    expect(out).toMatchObject({ dropped: [], regenerated: [], calls: 2 });
     expect(llm.calls[0]).toMatchObject({ effort: "medium", maxTokens: 16000, timeoutMs: 120000, schemaName: "session_gen" });
-    expect(store.rows).toHaveLength(1);
-    expect(store.rows[0].purpose).toBe("generate");
+    // her parça yerel slot_1…slot_5 anahtarlarını görür
+    for (const call of llm.calls) expect(call.user).toContain("Fill every key: slot_1, slot_2, slot_3, slot_4, slot_5.");
+    expect(store.rows).toHaveLength(2);
+    expect(store.rows.every((r) => r.purpose === "generate")).toBe(true);
   });
 
-  it("geçmeyen slot bir kez yeniden üretilir ve yerine konur", async () => {
-    const items = good();
-    items[2] = breakItem(items[2]);
-    const llm = new FakeLlm([ok({ items }), ok({ items: [validItem(3, "word_order")] })]);
+  it("parçalar: 10 → 5+5, 9 → 5+4, 8 → 4+4", () => {
+    const sizes = (n: number) => chunkSlots(Array.from({ length: n }, (_, i) => i)).map((c) => c.length);
+    expect(sizes(10)).toEqual([5, 5]);
+    expect(sizes(9)).toEqual([5, 4]);
+    expect(sizes(8)).toEqual([4, 4]);
+    expect(sizes(4)).toEqual([4]);
+  });
+
+  it("kod kontrolünden geçmeyen slot bir kez yeniden üretilir ve gerçek slotuna konur", async () => {
+    // ikinci parçanın 3. yerel slotu = gerçek slot 8
+    const breakSecondChunk = answerAll((it, call) => (call.user.includes('"activity_type": "' + TYPES_10[7] + '"') && it.slot === 3 ? breakItem(it) : it));
+    const llm = new FakeLlm([breakSecondChunk, breakSecondChunk, answerAll()]);
     const out = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT);
-    expect(out.regenerated).toEqual([3]);
-    expect(out.items).toHaveLength(10);
-    expect(llm.calls[1].schemaName).toBe("slot_regen");
-    expect(llm.calls[1].user).toContain("topic_mismatch");
-    expect(llm.calls[1].system).toBe(GENERATE_SYSTEM); // önbellek aynı ön ekte kalır
+    expect(out).toMatchObject({ regenerated: [8], dropped: [], calls: 3 });
+    expect(out.items.map((i) => i.slot)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    const regen = llm.calls.find(isRegen)!;
+    expect(regen.user).toContain("slot 1: topic_mismatch"); // yeniden üretimde tek slot, yerel numara 1
+    expect(regen.user).toContain("Fill every key: slot_1.");
+    expect(regen.system).toBe(GENERATE_SYSTEM); // önbellek aynı ön ekte kalır
   });
 
   it("yine geçmezse slot çıkarılır; ≥ 8 kalırsa oturum geçerli", async () => {
-    const items = good();
-    items[2] = breakItem(items[2]);
-    items[4] = breakItem(items[4]);
-    const llm = new FakeLlm([ok({ items }), ok({ items: [breakItem(validItem(3, "word_order"))] })]);
+    const broken = new Set([3, 5]);
+    const first = answerAll((it) => (broken.has(it.slot) ? breakItem(it) : it));
+    const llm = new FakeLlm([first, answerAll(), answerAll((it) => breakItem(it))]);
     const out = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT);
     expect(out.items.map((i) => i.slot)).toEqual([1, 2, 4, 6, 7, 8, 9, 10]);
     expect(out.dropped.map((d) => d.slot)).toEqual([3, 5]);
   });
 
   it("8'in altına düşerse GenerationError(too_few_items)", async () => {
-    const items = good().map((it, i) => (i < 3 ? breakItem(it) : it));
-    const llm = new FakeLlm([ok({ items }), { kind: "refusal", usage: USAGE }]);
+    const first = answerAll((it) => (it.slot <= 3 ? breakItem(it) : it));
+    const llm = new FakeLlm([first, answerAll(), { kind: "refusal", usage: USAGE }]);
     await expect(generateSession({ store: new FakeStore(), llm }, CTX, INPUT)).rejects.toMatchObject({ code: "too_few_items" });
   });
 
-  it("geçersiz tüm çıktı bir kez tekrar denenir", async () => {
-    const llm = new FakeLlm([{ kind: "invalid", issues: "json_parse", usage: USAGE }, ok({ items: good() })]);
-    const out = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT);
-    expect(out.calls).toBe(2);
+  it("şemadan tek etkinlik geçmezse yalnızca o slot yeniden üretilir; llm_usage'da yol var, metin yok", async () => {
+    const secret = "GİZLİ-İPUCU ".repeat(20);
+    const withLongHint: Responder = (call) => {
+      const res = answerAll()(call);
+      const data = (res as { data: Record<string, GeneratedItem> }).data;
+      data.slot_4 = { ...data.slot_4, key: { ...data.slot_4.key, hint_tr: secret } };
+      return { kind: "invalid", issues: "slot_4.key.hint_tr:too_big(max 140)", raw: data, usage: USAGE };
+    };
+    const store = new FakeStore();
+    const llm = new FakeLlm([withLongHint, answerAll(), answerAll()]);
+    const out = await generateSession({ store, llm }, CTX, INPUT);
+    expect(out).toMatchObject({ regenerated: [4], dropped: [], calls: 3 });
+    expect(out.items).toHaveLength(10);
+    expect(llm.calls.find(isRegen)!.user).toContain("slot 1: schema:key.hint_tr:too_big(max 140)");
+    expect(store.rows[0]).toMatchObject({ ok: false, error: "invalid_output:slot_4.key.hint_tr:too_big(max 140)" });
+    expect(JSON.stringify(store.rows)).not.toContain("GİZLİ");
   });
 
-  it("iki kez reddedilirse GenerationError(refusal)", async () => {
-    const llm = new FakeLlm([{ kind: "refusal", usage: USAGE }, { kind: "refusal", usage: USAGE }]);
+  it("eksik slot anahtarları yeniden üretilir", async () => {
+    const missingTwo: Responder = (call) => {
+      const data = { ...(answerAll()(call) as { data: Record<string, unknown> }).data };
+      delete data.slot_4;
+      delete data.slot_5;
+      return { kind: "invalid", issues: "slot_4:invalid_type", raw: data, usage: USAGE };
+    };
+    const llm = new FakeLlm([missingTwo, answerAll(), answerAll()]);
+    const out = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT);
+    expect(out).toMatchObject({ regenerated: [4, 5], dropped: [], calls: 3 });
+    expect(llm.calls.find(isRegen)!.user).toContain("slot 1: missing_item");
+  });
+
+  it("okunamayan ya da reddedilen parça yeniden üretim turunda baştan üretilir", async () => {
+    const llm = new FakeLlm([
+      { kind: "invalid", issues: "json_parse", usage: USAGE },
+      { kind: "refusal", usage: USAGE },
+      answerAll(),
+      answerAll(),
+    ]);
+    const out = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT);
+    expect(out).toMatchObject({ calls: 4, dropped: [] });
+    expect(out.regenerated).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  });
+
+  it("her çağrı reddedilirse GenerationError(refusal)", async () => {
+    const refusal = { kind: "refusal" as const, usage: USAGE };
+    const llm = new FakeLlm([refusal, refusal, refusal, refusal]);
     const err = await generateSession({ store: new FakeStore(), llm }, CTX, INPUT).catch((e) => e);
     expect(err).toBeInstanceOf(GenerationError);
     expect(err.code).toBe("refusal");
@@ -71,7 +123,7 @@ describe("generateSession", () => {
   it("günlük sınır doluysa model hiç çağrılmaz", async () => {
     const store = new FakeStore();
     store.startedToday = 2;
-    const llm = new FakeLlm([ok({ items: good() })]);
+    const llm = new FakeLlm([answerAll(), answerAll()]);
     await expect(generateSession({ store, llm }, CTX, INPUT)).rejects.toMatchObject({ code: "daily_limit" });
     expect(llm.calls).toHaveLength(0);
   });
@@ -132,6 +184,7 @@ describe("komutlar", () => {
   it("öğrenciye özgü kısım user mesajında", () => {
     const user = buildGenerateUser(INPUT);
     expect(user).toContain("Variety seed: seed-1");
+    expect(user).toContain("Item count: exactly 10. Fill every key: slot_1, slot_2, slot_3, slot_4, slot_5, slot_6, slot_7, slot_8, slot_9, slot_10.");
     expect(user).toContain("Student level: A1");
     expect(user).toContain("L1.3SG_S");
   });

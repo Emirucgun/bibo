@@ -134,14 +134,14 @@ describe("guardedLlmCall", () => {
   it("llm_usage satırında komut ya da model çıktısı yok; maliyet cost.ts'ten", async () => {
     const store = new FakeStore();
     const secret = "STUDENT_SECRET_TEXT";
-    const llm = new FakeLlm([ok({ items: [], note: secret })]);
+    const llm = new FakeLlm([ok({ slot_1: {}, note: secret })]);
     await guardedLlmCall({ store, llm }, GEN, (s) => s.model_generate, (s, model) => ({
       model,
       effort: s.effort_generate,
       thinking: "adaptive",
       system: "SYSTEM",
       user: secret,
-      schema: SessionGen,
+      schema: SessionGen([1]),
       schemaName: "x",
       maxTokens: 10,
       timeoutMs: 10,
@@ -160,7 +160,7 @@ describe("guardedLlmCall", () => {
     store.settings.effort_generate = "high";
     const llm = new FakeLlm([{ kind: "refusal", usage: USAGE }]);
     const res = await guardedLlmCall({ store, llm }, GEN, (s) => s.model_generate, (s, model) => ({
-      model, effort: s.effort_generate, thinking: "adaptive", system: "", user: "", schema: SessionGen,
+      model, effort: s.effort_generate, thinking: "adaptive", system: "", user: "", schema: SessionGen([1]),
       schemaName: "x", maxTokens: 1, timeoutMs: 1,
     }));
     expect(res.kind).toBe("refusal");

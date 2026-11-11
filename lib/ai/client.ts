@@ -31,8 +31,12 @@ export interface StructuredCall<T> {
 export type StructuredResult<T> =
   | { kind: "ok"; data: T; usage: LlmTokenUsage }
   | { kind: "refusal"; usage: LlmTokenUsage }
-  /** JSON ya da şema geçersiz; `issues` yalnızca yol/kod içerir, model metni içermez. */
-  | { kind: "invalid"; issues: string; usage: LlmTokenUsage };
+  /**
+   * JSON ya da şema geçersiz; `issues` yalnızca yol/kod içerir, model metni içermez.
+   * `raw`: JSON okunabildiyse ayrıştırılmış hâli (yalnızca bellekte; kısmi kurtarma için,
+   * loglanmaz).
+   */
+  | { kind: "invalid"; issues: string; raw?: unknown; usage: LlmTokenUsage };
 
 export interface LlmClient {
   callStructured<T>(call: StructuredCall<T>): Promise<StructuredResult<T>>;
@@ -120,6 +124,20 @@ export function extractJson(content: string): string {
   return fenced ? fenced[1] : content.trim();
 }
 
+/**
+ * Zod sorunlarını yol + kod olarak yazar (ör. `items.3.key.hint_tr:too_big(max 140)`).
+ * Yalnızca alan adları, sıra numaraları ve sınırlar; model metni hiçbir zaman.
+ */
+export function formatIssues(issues: readonly z.core.$ZodIssue[], limit = 5): string {
+  return issues
+    .slice(0, limit)
+    .map((i) => {
+      const bound = i.code === "too_big" ? `(max ${i.maximum})` : i.code === "too_small" ? `(min ${i.minimum})` : "";
+      return `${i.path.join(".")}:${i.code}${bound}`;
+    })
+    .join(", ");
+}
+
 export function parseStructured<T>(
   schema: z.ZodType<T>,
   json: OpenRouterResponse,
@@ -139,13 +157,7 @@ export function parseStructured<T>(
     return { kind: "invalid", issues: "json_parse", usage };
   }
   const parsed = schema.safeParse(raw);
-  if (!parsed.success) {
-    const issues = parsed.error.issues
-      .slice(0, 5)
-      .map((i) => `${i.path.join(".")}:${i.code}`)
-      .join(", ");
-    return { kind: "invalid", issues, usage };
-  }
+  if (!parsed.success) return { kind: "invalid", issues: formatIssues(parsed.error.issues), raw, usage };
   return { kind: "ok", data: parsed.data, usage };
 }
 

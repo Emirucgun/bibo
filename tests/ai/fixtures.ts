@@ -50,14 +50,18 @@ export class FakeStore implements AiStore {
 }
 
 /** Sırayla verilen yanıtları döner; her çağrının isteğini kaydeder. */
+/** İsteğe bakarak yanıt üreten sahte yanıt (paralel parçalarda sıra yerine içerikle eşleşir). */
+export type Responder = (call: StructuredCall<unknown>) => StructuredResult<unknown>;
+
 export class FakeLlm implements LlmClient {
   calls: StructuredCall<unknown>[] = [];
-  constructor(private responses: (StructuredResult<unknown> | Error)[]) {}
+  constructor(private responses: (StructuredResult<unknown> | Error | Responder)[]) {}
   async callStructured<T>(call: StructuredCall<T>): Promise<StructuredResult<T>> {
     this.calls.push(call as StructuredCall<unknown>);
     const next = this.responses.shift();
     if (!next) throw new Error("FakeLlm: yanıt kalmadı");
     if (next instanceof Error) throw next;
+    if (typeof next === "function") return next(call as StructuredCall<unknown>) as StructuredResult<T>;
     return next as StructuredResult<T>;
   }
 }
@@ -150,4 +154,23 @@ export function slotsFor(types: ActivityType[], topic = "g.present_simple_3sg"):
     l1_target: "L1.3SG_S",
     interest: i % 5 === 0 ? null : "football",
   }));
+}
+
+/** Etkinlik listesini slot anahtarlı üretim yanıtına çevirir (`{ slot_1: item, … }`). */
+export function bySlot(items: readonly unknown[]): Record<string, unknown> {
+  return Object.fromEntries(items.map((it) => [`slot_${(it as { slot: number }).slot}`, it]));
+}
+
+/** Üretim isteğindeki (yerel numaralı) slot listesi. */
+export function requestedSlots(call: StructuredCall<unknown>): { slot: number; activity_type: ActivityType; topic_id: string }[] {
+  const marker = "Slots:\n";
+  return JSON.parse(call.user.slice(call.user.indexOf(marker) + marker.length));
+}
+
+/** İstenen her slot için geçerli etkinlik döndüren yanıt; `edit` ile tek tek bozulabilir. */
+export function answerAll(edit: (item: GeneratedItem, call: StructuredCall<unknown>) => unknown = (i) => i): Responder {
+  return (call) => {
+    const items = requestedSlots(call).map((s) => edit(validItem(s.slot, s.activity_type, s.topic_id), call));
+    return ok(bySlot(items.filter((x) => x !== undefined)));
+  };
 }
