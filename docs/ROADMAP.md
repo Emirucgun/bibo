@@ -145,8 +145,8 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - [ ] `eval-tagging`: 40 cümlelik altın sette öğretmen etiketiyle ≥ %80 uyum. Değilse önce `effort_grade = medium`, yetmezse `model_grade` bir üst modele alınır, test tekrarlanır.
 - [ ] `eval-tagging`: değerlendirme p90 ≤ 6 sn. Değilse `thinking_grade = disabled` ile tekrar ölçülür ve uyum yeniden kontrol edilir.
 - [ ] İsteklerde `temperature` / `top_p` yok (kod incelemesi); ikinci çağrıdan itibaren `cache_read_tokens > 0`.
-- [ ] Guard testleri: `kill_switch = true` → çağrı yok; ay içi maliyet + plan ücreti tavana eşit → çağrı yok; günlük sınır aşılınca üretim yok.
-- [ ] `llm_usage` satırlarında komut ya da öğrenci metni yok.
+- [x] Guard testleri: `kill_switch = true` → çağrı yok; ay içi maliyet + plan ücreti tavana eşit → çağrı yok; günlük sınır aşılınca üretim yok. _(11.11.2026: `tests/ai/guard.test.ts`, `tests/ai/generate-grade.test.ts`)_
+- [x] `llm_usage` satırlarında komut ya da öğrenci metni yok. _(11.11.2026: `tests/ai/guard.test.ts`)_
 
 ---
 
