@@ -43,7 +43,7 @@ Yerel Supabase yığını (Docker) kullanılmıyor; göçler bulut projelerine u
 npx supabase login                               # bir kez
 npx supabase migration new <ad>                  # yeni göç (yalnızca eklenir)
 npx supabase link --project-ref <dev-ref>
-npx supabase db push                             # dev'e uygula
+npx supabase db push --remote                    # dev'e uygula (CLI 3.x: --remote olmadan yerel yığını hedefler)
 ```
 
 `prod`'a yalnızca `dev`'de doğrulandıktan ve ana dala birleştirildikten sonra, aynı komutlarla `<prod-ref>`'e bağlanarak uygulanır; ardından bağlantı `dev`'e geri alınır.
