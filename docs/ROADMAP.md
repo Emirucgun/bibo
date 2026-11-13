@@ -141,7 +141,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 **Bitti testi**
 - [x] `eval-generation`: 4 profil × 5 oturum = 20 oturum, yeniden denemeyle %100 şema geçerli, ortalama ≤ 0,02 $/oturum (beklenen ≈ 0,005 $ yalnız üretim), üretim süresi p90 ≤ 60 sn. _(11.11.2026: 20/20, 0,0039 $/oturum, p50 20,6 sn, p90 30,0 sn; slot anahtarlı şema, en çok 5 slotluk paralel çağrılar — bkz. PLAN.md karar 13)_
-- [ ] Pedagoji sahibi 20 oturumdan rastgele 20 etkinliği inceledi: ≥ 18'i seviyeye ve kurallara uygun.
+- [x] Pedagoji sahibi 20 oturumdan rastgele 20 etkinliği inceledi: ≥ 18'i seviyeye ve kurallara uygun. _(13.11.2026: 20/20 uygun; notlar ve boş açıklama düzeltmesi `docs/pedagoji/M5-inceleme-sonucu.md`)_
 - [ ] `eval-tagging`: 40 cümlelik altın sette öğretmen etiketiyle ≥ %80 uyum. Değilse önce `effort_grade = medium`, yetmezse `model_grade` bir üst modele alınır, test tekrarlanır.
 - [ ] `eval-tagging`: değerlendirme p90 ≤ 6 sn. Değilse `thinking_grade = disabled` ile tekrar ölçülür ve uyum yeniden kontrol edilir.
 - [x] İsteklerde `temperature` / `top_p` yok (kod incelemesi); ikinci çağrıdan itibaren `cache_read_tokens > 0`. _(11.11.2026: `tests/ai/client.test.ts`; eval-generation'da ilk çağrıdan sonraki tüm çağrılarda önbellek okuması var)_

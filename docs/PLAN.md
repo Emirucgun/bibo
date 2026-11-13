@@ -4,7 +4,7 @@
 | --- | --- |
 | Tarih | 11 Kasım 2026 |
 | Kapsam | `ROADMAP.md` M5 · `SPEC.md` Bölüm 5 (5.1–5.4), 3 (`llm_usage`, `app_settings`), 8 (maliyet modeli), 12 · `PRD.md` F3, F4, F12, Bölüm 8 |
-| Durum | Uygulandı; çevrimdışı Bitti testi maddeleri Vitest ile yeşil. `eval-generation` 11.11.2026'da geçti (karar 13). `eval-tagging` P4 altın setini, örneklem incelemesi pedagoji sahibini bekliyor. |
+| Durum | Uygulandı; çevrimdışı Bitti testi maddeleri Vitest ile yeşil. `eval-generation` 11.11.2026'da geçti (karar 13). Pedagoji incelemesi 13.11.2026'da geçti (20/20). `eval-tagging` P4 altın setini bekliyor. |
 | Bağımlılık | M3 (şema, seed), M4 (`PlanSlot`, `ItemKey`, normalizasyon). M4 dalı (`claude/m4-analysis-implementation-2449d8`) bu dala ileri sarıldı; ana dala henüz birleşmemişti. |
 
 M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`).
@@ -64,7 +64,7 @@ M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff
 | ROADMAP maddesi | Kanıt |
 | --- | --- |
 | `eval-generation` 20 oturum, %100 şema, ≤ 0,02 $, p90 ≤ 60 sn | `npx tsx --env-file=<.env.local> scripts/eval-generation.ts` — **çalıştırılmadı** (onay + maliyet ≈ 0,10–0,25 $) |
-| Pedagoji 20 etkinlik ≥ 18 uygun | eval-generation `scripts/out/review-sample.md` üretir — insan işi |
+| Pedagoji 20 etkinlik ≥ 18 uygun | 13.11.2026: 20/20 uygun — `docs/pedagoji/M5-inceleme-sonucu.md`; boş açıklama/ipucu artık `checks.ts`'te reddediliyor |
 | `eval-tagging` ≥ %80 uyum, p90 ≤ 6 sn | `scripts/eval-tagging.ts` — P4 altın seti bekleniyor |
 | `temperature`/`top_p` yok; ikinci çağrıdan itibaren `cache_read_tokens > 0` | `tests/ai/client.test.ts` (istek gövdesi) + kod incelemesi; önbellek isabeti eval-generation raporunda |
 | Guard testleri | `tests/ai/guard.test.ts` |

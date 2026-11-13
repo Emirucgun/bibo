@@ -49,6 +49,12 @@ export function checkItem(item: GeneratedItem, slot: SlotSpec, level: Level): st
   need(item.activity_type === slot.activity_type, "activity_type_mismatch");
   need(item.topic_id === slot.topic_id, "topic_mismatch");
 
+  // Her etkinlikte açıklamalar ve ipucu dolu (şema boş metni kabul eder; pedagoji incelemesi 13.11.2026)
+  need(p.instruction_tr.trim(), "missing_instruction");
+  need(k.explanation_short_tr.trim(), "missing_explanation_short");
+  need(k.explanation_long_tr.trim(), "missing_explanation_long");
+  need(k.hint_tr.trim(), "missing_hint");
+
   // Türe göre zorunlu alanlar
   switch (item.activity_type) {
     case "mcq_read":
