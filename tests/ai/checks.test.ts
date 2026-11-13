@@ -66,4 +66,11 @@ describe("checkItem", () => {
     const item = validItem(6, "translate_tr_en");
     expect(check({ ...item, payload: { instruction_tr: "x" } })).toContain("missing_source_tr");
   });
+
+  it("açıklamalar, ipucu ve yönerge boş ya da yalnız boşluk olamaz", () => {
+    const item = validItem(8, "speak_answer");
+    const empty = { ...item, key: { ...item.key, explanation_short_tr: "", explanation_long_tr: " ", hint_tr: "" } };
+    expect(check(empty)).toEqual(["missing_explanation_short", "missing_explanation_long", "missing_hint"]);
+    expect(check({ ...item, payload: { ...item.payload, instruction_tr: "  " } })).toEqual(["missing_instruction"]);
+  });
 });
