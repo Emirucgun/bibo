@@ -221,11 +221,21 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - `POST /api/placement` (sabit banka, `kind = placement`), ustalık tohumlama, `level_est`.
 - "Tahmini zayıf noktalar" kartı, ardından ilk günlük oturumun üretimi.
 - `/ilerleme` (ızgara, haftalık sayı, en sık 3 hata) · `POST /api/school-topic` ve haftalık soru · `app/manifest.ts` (PWA).
+- **Tasarım geçişi** (yeni özellik değil; M6–M9 ekranlarının cilası):
+  - Tek tema: shadcn değişkenleriyle renk, köşe yuvarlaklığı ve boşluk ölçüsü; tek yazı tipi (`next/font`, Türkçe karakter desteğiyle).
+  - Ortak durumlar: yükleniyor (iskelet), boş, hata, `limit_hit` ve `tts_unavailable` mesajları; hepsi Türkçe ve "sen" dilinde.
+  - Dokunma hedefleri ≥ 44 px; birincil düğme başparmak bölgesinde (ekranın alt kısmı).
+  - İlerleme ızgarasının dört seviyesi yalnızca renkle değil, simge ya da desenle de ayırt edilir (renk körlüğü).
+  - Arayüz metinlerinin pedagoji sahibiyle tek seferlik gözden geçirilmesi.
+  - İsteğe bağlı (Bitti testini engellemez): karanlık mod ve marka kimliği (logo, illüstrasyon). Taş sonunda hazırsa v1'e girer, değilse v2'ye kalır.
 
 **Bitti testi**
 - [ ] Ekip dışından 3 kişi davet linkinden ilk etkinliğe 10 dakikadan kısa sürede ulaşıyor.
 - [ ] Yerleştirmede yapay zekâ çağrısı yalnızca konuşma sorusunda yapılıyor (`llm_usage`).
 - [ ] Izgara dört renk seviyesini doğru gösteriyor.
+- [ ] Tüm öğrenci ekranlarında metin/arka plan kontrastı WCAG AA (≥ 4,5:1); Lighthouse erişilebilirlik puanı ≥ 90.
+- [ ] Izgara gri tonlamada da dört seviyeyi ayırt ettiriyor.
+- [ ] Her ekranın yükleniyor, boş ve hata durumu var; pedagoji sahibi metinleri onayladı.
 - [ ] Seçilen okul konusu sonraki 2 oturumun planında yer alıyor.
 - [ ] Uygulama iki platformda ana ekrana eklenebiliyor; 360 px'te yatay kaydırma yok.
 
