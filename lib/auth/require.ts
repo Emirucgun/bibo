@@ -1,0 +1,32 @@
+import "server-only";
+import { ApiError } from "@/lib/api/errors";
+import { getViewer, type Role, type ViewerProfile } from "@/lib/auth/viewer";
+
+export interface AuthedUser {
+  userId: string;
+  profile: ViewerProfile;
+}
+
+/**
+ * Route Handler'ların ilk satırı (SPEC Bölüm 7). Giriş yoksa ya da hesap silinmişse
+ * (`profiles` satırı yok) 401. Servis istemcisiyle yazma bundan sonra yapılır.
+ */
+export async function requireUser(): Promise<AuthedUser> {
+  const viewer = await getViewer();
+  if (!viewer || !viewer.profile) throw new ApiError("unauthenticated");
+  return { userId: viewer.userId, profile: viewer.profile };
+}
+
+/** `requireUser()` + rol kontrolü; rol tutmuyorsa 403. Rol ataması yalnızca SQL ile. */
+export async function requireRole(...roles: Role[]): Promise<AuthedUser> {
+  const user = await requireUser();
+  if (!roles.includes(user.profile.role)) throw new ApiError("forbidden");
+  return user;
+}
+
+/** `requireUser()` + başlangıç tamamlanmış mı; değilse 403 (oturum uç noktaları için, M6+). */
+export async function requireOnboarded(): Promise<AuthedUser> {
+  const user = await requireUser();
+  if (user.profile.onboardingStep !== "done") throw new ApiError("onboarding_incomplete");
+  return user;
+}
