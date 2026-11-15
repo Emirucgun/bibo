@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { LlmUsageRow } from "@/lib/ai/store";
-import { TOPIC_IDS, L1_CODE_IDS } from "@/lib/content/taxonomy";
-import { GoldenSet, percentile, sample, summarizeUsage, tagAgrees } from "../../scripts/lib/eval";
+import { TOPIC_IDS, TOPICS, L1_CODE_IDS } from "@/lib/content/taxonomy";
+import { GoldenSet, goldenFromCsv, percentile, sample, summarizeUsage, tagAgrees } from "../../scripts/lib/eval";
+import { parseCsv } from "../../scripts/lib/seed";
 
 const row = (o: Partial<LlmUsageRow>): LlmUsageRow => ({
   user_id: null, session_id: null, purpose: "generate", provider: "openrouter", model: "m",
@@ -51,5 +52,53 @@ describe("eval yardımcıları", () => {
       expect(TOPIC_IDS as readonly string[]).toContain(g.topic_id);
       for (const c of g.expected.l1_codes) expect(L1_CODE_IDS as readonly string[]).toContain(c);
     }
+  });
+});
+
+const TAX = { topics: TOPICS, codes: L1_CODE_IDS };
+const csvRow = (o: Record<string, string> = {}) => ({
+  id: "g01", etkinlik_turu: "translate_tr_en", konu: "g.present_simple_3sg", seviye: "A1",
+  gorev: "Kardeşim futbol oynar.", model_cevap: "My brother plays football.", ogrenci_cevabi: "My brother play football.",
+  dogru_mu: "hayir", birincil_kod: "L1.3SG_S", diger_kodlar: "", not: "", ...o,
+});
+
+describe("altın set CSV'si", () => {
+  it("satırı GoldenItem'a çevirir; birincil kod ilk sırada", () => {
+    const { items, errors } = goldenFromCsv([csvRow({ diger_kodlar: "GEN.SPELLING; GEN.VOCAB" })], TAX);
+    expect(errors).toEqual([]);
+    expect(items[0]).toMatchObject({
+      id: "g01", topic_id: "g.present_simple_3sg", task: "Kardeşim futbol oynar.", student_text: "My brother play football.",
+      expected: { is_correct: false, l1_codes: ["L1.3SG_S", "GEN.SPELLING", "GEN.VOCAB"] },
+    });
+    const right = goldenFromCsv([csvRow({ dogru_mu: "evet", birincil_kod: "", ogrenci_cevabi: "My brother plays football." })], TAX);
+    expect(right.items[0].expected).toEqual({ is_correct: true, l1_codes: [] });
+  });
+
+  it("yanlış yazılmış kod, konu, tür ve tutarsız etiket reddedilir", () => {
+    const bad = (o: Record<string, string>) => goldenFromCsv([csvRow(o)], TAX);
+    expect(bad({ birincil_kod: "L1.3sg_s" }).errors).toEqual(["g01: bilinmeyen kod 'L1.3sg_s'"]);
+    expect(bad({ konu: "g.nope" }).errors[0]).toContain("bilinmeyen konu");
+    expect(bad({ etkinlik_turu: "gap_fill" }).errors[0]).toContain("bilinmeyen etkinlik türü");
+    expect(bad({ dogru_mu: "evet" }).errors[0]).toContain("doğru cevapta kod olmamalı");
+    expect(bad({ birincil_kod: "" }).errors[0]).toContain("birincil_kod boş");
+    expect(bad({ ogrenci_cevabi: "My brother plays football." }).errors[0]).toContain("model cevapla aynı");
+    expect(bad({ dogru_mu: "yes" }).errors[0]).toContain("evet/hayir");
+    expect(bad({ birincil_kod: "L1.3SG_S" }).items).toHaveLength(1);
+    expect(goldenFromCsv([csvRow(), csvRow()], TAX).errors).toEqual(["g01: id tekrar ediyor"]);
+    expect(goldenFromCsv([{ id: "x" }], TAX).errors[0]).toContain("eksik sütun");
+  });
+
+  it("seviye konu seviyesinden farklıysa ve cevap tekrar ediyorsa uyarır", () => {
+    const { warnings, errors } = goldenFromCsv([csvRow({ seviye: "A2" }), csvRow({ id: "g02" })], TAX);
+    expect(errors).toEqual([]);
+    expect(warnings).toEqual(["g01: seviye A2, konu g.present_simple_3sg ise A1", "g02: öğrenci cevabı g01 ile aynı"]);
+  });
+
+  it("golden.json, docs/pedagoji/altin-set.csv ile eşit ve hatasız", () => {
+    const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
+    const { items, errors } = goldenFromCsv(parseCsv(read("../../docs/pedagoji/altin-set.csv")), TAX);
+    expect(errors).toEqual([]);
+    expect(GoldenSet.parse(JSON.parse(read("../../scripts/data/golden.json")))).toEqual(items);
+    expect(items.length).toBeGreaterThanOrEqual(40);
   });
 });

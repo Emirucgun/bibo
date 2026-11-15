@@ -26,6 +26,7 @@ npm run dev                  # http://localhost:3000
 | Seed + `lib/content/taxonomy.ts`'i CSV'lerden üret | `npx tsx scripts/build-seed.ts` |
 | Sağlayıcı merhaba (gerçek API, < 0,01 $) | `npx tsx --env-file=.env.local scripts/hello-providers.ts` |
 | Üretim değerlendirmesi (gerçek API, ≈ 0,10–0,25 $; önce onay) | `npx tsx --env-file=.env.local scripts/eval-generation.ts [--no-db]` |
+| Altın seti CSV'den üret (`docs/pedagoji/altin-set.csv` → `scripts/data/golden.json`) | `npx tsx scripts/build-golden.ts [--check]` |
 | Etiketleme değerlendirmesi (gerçek API, ≈ 0,03 $; altın set `scripts/data/golden.json`) | `npx tsx --env-file=.env.local scripts/eval-tagging.ts [--no-db]` |
 
 ## Ortamlar
