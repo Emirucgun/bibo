@@ -2,10 +2,13 @@
 
 `rls.sql` M3 bitti testinin veritabanı tarafını doğrular: seed sayıları, `L1.*` → `topic_id`, `item_keys`'in kimseye görünmemesi, öğrenci / öğretmen / admin RLS kapsamı, öğrencinin doğrudan yazamaması, RLS'i kapalı tablo olmaması ve hesap silme zinciri. Tamamı tek işlemde çalışır ve `rollback` ile biter; bir doğrulama tutmazsa `BAŞARISIZ: …` hatasıyla sıfır olmayan kodla çıkar.
 
+`m2-auth.sql` M2 bitti testinin veritabanı tarafını doğrular: yeni kullanıcıda `profiles` satırı (tetikleyici), geçersiz davet kodu, kapasite 1 iken ikinci kullanıcının reddi, rıza alanları, `profiles` / `cohorts` RLS'i (öğrenci rolünü ya da adımını değiştiremez) ve hesap silme. Aynı biçimde tek işlemde çalışır ve geri alınır.
+
 ## `dev` projesinde
 
 ```bash
 psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql
+psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/m2-auth.sql
 ```
 
 ## Docker'sız yerel Postgres'te
@@ -18,6 +21,7 @@ psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/supabase-stub.sql
 for f in supabase/migrations/*.sql; do psql -d m3test -v ON_ERROR_STOP=1 -f "$f"; done
 psql -d m3test -v ON_ERROR_STOP=1 -f supabase/seed.sql
 psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/rls.sql
+psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/m2-auth.sql
 ```
 
 Aynı veritabanından tür üretimi (Docker gerekmez):

@@ -48,12 +48,36 @@ npx supabase login                               # bir kez
 npx supabase migration new <ad>                  # yeni göç (yalnızca eklenir)
 npx supabase link --project-ref <dev-ref>
 npx supabase db push --remote --include-seed     # dev'e uygula (CLI 3.x: --remote olmadan yerel yığını hedefler)
-psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql   # RLS ve seed doğrulaması (geri alınır)
+psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql       # RLS ve seed doğrulaması (geri alınır)
+psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/m2-auth.sql   # giriş, davet, onam, hesap silme (geri alınır)
 ```
 
 İçerik (konular, hata kodları, yerleştirme soruları) `supabase/seed/` altındadır ve pedagoji sahibi tarafından düzenlenir. CSV değişince `npx tsx scripts/build-seed.ts` ile `supabase/seed.sql` yeniden üretilir; `npm test` ikisinin eşit olduğunu denetler. Seed upsert'tür, tekrar çalıştırılabilir. Türler: `tests/db/README.md`.
 
 `prod`'a yalnızca `dev`'de doğrulandıktan ve ana dala birleştirildikten sonra, aynı komutlarla `<prod-ref>`'e bağlanarak uygulanır; ardından bağlantı `dev`'e geri alınır.
+
+## Google ile giriş kurulumu (insan işi)
+
+Kod hazır; aşağıdakiler panellerden bir kez yapılır (SPEC Bölüm 7).
+
+1. **Google Cloud Console** → yeni proje (faturalandırma gerekmez) → *Google Auth Platform*: uygulama adı, destek e-postası, kullanıcı türü *External*; kapsamlar yalnızca `openid`, `email`, `profile`; yayın durumu *In production* (hassas kapsam olmadığı için doğrulama istenmez).
+2. *Clients* → *Create client* → *Web application*. **Authorized redirect URIs:** `https://<dev-ref>.supabase.co/auth/v1/callback` ve `https://<prod-ref>.supabase.co/auth/v1/callback` (istenirse `dev` ve `prod` için ayrı istemci).
+3. **Supabase** (`dev` ve `prod` ayrı ayrı) → *Authentication* → *Sign In / Providers* → **Google**: aç, Client ID ve Client Secret'ı gir. Aynı sayfada **Email** sağlayıcısını kapat (v1'de yalnızca Google).
+4. **Supabase** → *Authentication* → *URL Configuration*:
+   - `dev`: Site URL `http://localhost:3000`; Redirect URLs: `http://localhost:3000/auth/callback` ve `https://bibo-*-<vercel-ekip-slug>.vercel.app/auth/callback` (önizleme adresleri).
+   - `prod`: Site URL = `APP_URL`; Redirect URLs: `<APP_URL>/auth/callback`.
+5. Ortam değişkenleri: `CONSENT_VERSION` (Vercel Production + Preview'da tanımlı; `.env.local`'a da ekle), `APP_URL` (Production'da tanımlı; yerelde `http://localhost:3000`).
+
+Davet linki `<adres>/davet/<invite_code>` biçimindedir; kodlar `cohorts.invite_code`'da durur (4–64 karakter: harf, rakam, `-`, `_`).
+
+M9'a kadar profil ve yerleştirme adımları yer tutucudur. M6–M8 denemelerinde bir test hesabını `dev`'de başlangıcı bitmiş saymak için:
+
+```sql
+update public.profiles
+   set onboarding_step = 'done', level_self = 'A1', level_est = 'A1',
+       interests = '{football,music}', updated_at = now()
+ where id = (select id from auth.users where email = '<e-posta>');
+```
 
 ## Sağlık kontrolü
 

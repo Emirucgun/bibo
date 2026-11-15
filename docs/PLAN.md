@@ -1,82 +1,86 @@
-# PLAN — M5 (Yapay zekâ katmanı ve maliyet koruması)
+# PLAN — M2 (Giriş, davet ve onam)
 
 | | |
 | --- | --- |
-| Tarih | 11 Kasım 2026 |
-| Kapsam | `ROADMAP.md` M5 · `SPEC.md` Bölüm 5 (5.1–5.4), 3 (`llm_usage`, `app_settings`), 8 (maliyet modeli), 12 · `PRD.md` F3, F4, F12, Bölüm 8 |
-| Durum | Uygulandı; çevrimdışı Bitti testi maddeleri Vitest ile yeşil. `eval-generation` 11.11.2026'da geçti (karar 13). Pedagoji incelemesi 13.11.2026'da geçti (20/20). `eval-tagging` 15.11.2026'da geçti (94 cümle, %94,7 uyum, p90 3,4 sn). M5 Bitti testi tamam. |
-| Bağımlılık | M3 (şema, seed), M4 (`PlanSlot`, `ItemKey`, normalizasyon). M4 dalı (`claude/m4-analysis-implementation-2449d8`) bu dala ileri sarıldı; ana dala henüz birleşmemişti. |
+| Tarih | 15 Kasım 2026 |
+| Kapsam | `ROADMAP.md` M2 · `SPEC.md` Bölüm 3 (`cohorts`, `profiles`, RLS), 6 ("Kimlik ve başlangıç", `DELETE /api/account`), 7, 9, 11 · `PRD.md` F1, F13, A1, A8 |
+| Durum | Uygulandı. Göç `bibo-dev`'de; `npm test` (698), lint, tür ve derleme yeşil. Bitti testinin beş maddesi yerelde uçtan uca (tarayıcı) ve `bibo-dev`'de SQL ile doğrulandı. **Açık:** Google OAuth kurulumu (insan işi) ve gerçek Google girişiyle önizlemede elle kontrol; ROADMAP kutuları ondan sonra işaretlenir. `prod`'a göç ana dala birleştikten sonra. |
+| Bağımlılık | M1 (`cohorts`, `profiles`), M3 (`private.user_role()`, öğrenci tablolarındaki `on delete cascade`). M6 bu taşın `requireUser()` / `requireOnboarded()` yardımcılarını kullanır. |
 
-M1, M3 ve M4 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`).
+M1, M3, M4 ve M5 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`, `8b9c67f`).
 
 ---
 
 ## 1. Yaklaşım
 
-- **Sağlayıcı:** SCOPE günlüğü (11.11.2026) gereği Claude Haiku 5.5 OpenRouter üzerinden (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı, `data_collection: deny`). SPEC'teki `ai` + `@ai-sdk/anthropic` OpenRouter'a bağlanamadığı için **ince bir fetch istemcisi + Zod 4** kullanıldı (kullanıcı onayı, 11.11.2026). Tek yeni bağımlılık `zod@4.6.7`.
-- `lib/ai/*` dosyalarının kararları saf fonksiyonlarda (şema dönüştürme, kod kontrolleri, maliyet, guard kararı); veritabanı ve ağ `AiStore` ve `fetch` arayüzleriyle enjekte edilir. Böylece guard ve üretim akışı veritabanı ya da API olmadan test edilir.
-- Her çağrı tek yoldan geçer: `withAiCall()` → `guard` → çağrı → `llm_usage` satırı → `sessions.cost_usd`. Guard'ı atlayan yol yok.
-- Konu ve hata kodu listesi (`TOPIC_IDS`, `L1_CODE_IDS`, kurallar) CSV'den üretilen `lib/content/taxonomy.ts` dosyasında; seed.sql gibi `scripts/build-seed.ts` üretir, test eşitliği denetler. Çalışma zamanında dosya okunmaz.
+- **Oturum:** `@supabase/ssr` 0.12.7, çerez tabanlı. `proxy.ts` her istekte `getClaims()` ile JWT'yi doğrular ve oturumu yeniler; girişsiz kullanıcıyı `/giris`'e yönlendirir. API yolları yönlendirilmez, Route Handler kendi `401` yanıtını döner.
+- **Kapı:** SPEC Bölüm 7'deki gibi `(app)` düzeninde; `onboarding_step` → sayfa eşlemesi `lib/onboarding/steps.ts`'te. Başlangıç sayfaları kendi adımını denetler (`StepGate`). Kapı yalnızca yönlendirmedir: veri erişimi `requireUser()` / `requireOnboarded()` ve RLS ile korunur.
+- **Cache Components:** oturum okuyan her bileşen bir `<Suspense>` içinde. `lib/db/server.ts` istemciyi oluşturmadan önce `connection()` bekler: oturum yalnızca istek anında okunur, kapı kararı çerezli ön-render'a (kısmi ön getirme) girmez.
+- **Kararlar saf fonksiyonlarda:** davet, onam ve hesap silme `lib/onboarding/service.ts`'te, veritabanı `OnboardingStore` arayüzüyle enjekte edilir (M5'teki `AiStore` kalıbı). Route Handler yalnızca `requireUser()` → servis → yanıt.
+- **Okuma / yazma:** profil kullanıcının kendi istemcisiyle (RLS) okunur; `claim_invite`, rıza kaydı ve silme `requireUser()` sonrası servis istemcisiyle.
 
 ## 2. Dosyalar
 
 | Dosya | Ne |
 | --- | --- |
-| `lib/content/taxonomy.ts` | ÜRETİLMİŞ: `TOPICS`, `L1_CODES`, `TOPIC_IDS`, `L1_CODE_IDS` (komut ve Zod enum'ları için) |
-| `scripts/lib/seed.ts`, `scripts/build-seed.ts` | + `buildTaxonomyTs()`; build-seed iki dosyayı yazar |
-| `lib/ai/schemas.ts` | `GeneratedItem`, `SessionGen`, `SlotRegen`, `GradeResult` (SPEC 5.2, `z.record` yok) |
-| `lib/ai/json-schema.ts` | Zod → katı JSON şeması: `additionalProperties: false`; `maxLength`/`minItems`… gibi desteklenmeyen sınırlar açıklamaya taşınır (cevap yine Zod'la doğrulanır) |
-| `lib/ai/settings.ts` | `app_settings` satırlarını türlü `AiSettings`'e çevirir (değerler koda sabit yazılmaz) |
-| `lib/ai/cost.ts` | Fiyat tablosu (girdi, çıktı, önbellek okuma/yazma; transkript dakikası) ve `llmCostUsd()` |
-| `lib/ai/client.ts` | OpenRouter chat çağrısı: model kimliği eşlemesi, `reasoning.effort`, `cache_control`, `json_schema` (strict), zaman aşımı, kullanım ayrıştırma, `refusal` tespiti. `temperature`/`top_p`/`top_k` yok |
-| `lib/ai/guard.ts` | `evaluateGuard()` (saf, SPEC 5.4 sırası), `withAiCall()` (guard → çağrı → `llm_usage` → oturum maliyeti), `istanbulDayStart()`, `utcMonthStart()` |
-| `lib/ai/store.ts` | `AiStore` arayüzü + Supabase uygulaması (servis istemcisi parametreyle gelir) |
-| `lib/ai/checks.ts` | Üretim sonrası kod kontrolleri (SPEC 5.2) + slot/tür/konu eşleşmesi + türe göre zorunlu alanlar |
-| `lib/ai/prompts/generate.ts`, `lib/ai/prompts/grade.ts` | Sabit sistem komutları (taksonomi, içerik kuralları, stil) + öğrenciye özgü son kısım |
-| `lib/ai/generate-session.ts` | Tek çağrıda üretim → kontroller → başarısız slotlar için tek yeniden üretim → ≥ 8 kontrolü |
-| `lib/ai/grade.ts` | Serbest cevap değerlendirme (`translate_tr_en`, `short_write`, `speak_answer` transkripti) |
-| `supabase/migrations/20261111170000_m5_ai_usage_functions.sql` | `llm_cost_since(ts)`, `add_session_cost(uuid, numeric)`; yalnızca `service_role` çalıştırır |
-| `scripts/eval-generation.ts`, `scripts/eval-tagging.ts`, `scripts/lib/eval.ts`, `scripts/lib/eval-env.ts` | Gerçek API; maliyet, gecikme (p50/p90), şema geçerliliği, uyum raporu |
-| `scripts/data/golden.example.json` | Altın set biçimi (2 örnek). Gerçek 40 cümle P4 ile `scripts/data/golden.json`'a gelir |
-| `scripts/hello-providers.ts` | Korundu: Speechify ve transkript için `lib/tts` / `lib/stt` M7–M8'de gelecek; o zaman silinir |
-| `tests/ai/*.test.ts`, `tests/content/taxonomy.test.ts` | Bitti testinin çevrimdışı maddeleri |
+| `supabase/migrations/20261115172508_m2_auth_profiles_cohorts.sql` | `private.handle_new_user()` + `auth.users` tetikleyicisi; `private.user_cohort_id()`; `profiles` ve `cohorts` politikaları; `public.claim_invite(uuid, text)` (yalnızca `service_role`); `profiles_cohort_id_idx` |
+| `lib/db/server.ts`, `lib/db/env.ts` | Kullanıcı istemcisi (çerez, RLS); herkese açık Supabase ayarları |
+| `proxy.ts` | Oturum yenileme, `/giris` yönlendirmesi, `/davet/[code]` kodunu `invite_code` çerezine yazma (httpOnly, 7 gün) |
+| `lib/auth/paths.ts`, `lib/auth/origin.ts` | Saf: herkese açık yollar, yönlendirme kararı, davet kodu biçimi; OAuth dönüş adresi |
+| `lib/auth/viewer.ts`, `lib/auth/require.ts` | `getViewer()`; `requireUser()`, `requireRole()`, `requireOnboarded()` |
+| `lib/api/errors.ts`, `lib/api/respond.ts`, `lib/api/client.ts` | `{ error: { code, message_tr } }` biçimi, `withApi()`, tarayıcı tarafı `callApi()` |
+| `lib/onboarding/{steps,schemas,service,store}.ts` | Adımlar, Zod girdileri, kararlar, Supabase uygulaması |
+| `app/(auth)/giris`, `app/(auth)/davet`, `app/(auth)/davet/[code]`, `app/(auth)/actions.ts` | Giriş, davet kodu formu, Google ile giriş ve çıkış (Server Function) |
+| `app/auth/callback/route.ts` | Kodu oturuma çevirir; davet çerezi varsa `/davet/<kod>`'a, yoksa ana sayfaya |
+| `app/(onboarding)/baslangic/onam` | 18+ beyanı ve açık rıza formu |
+| `app/(onboarding)/baslangic/{profil,yerlestirme}` | **Yer tutucu**; gerçek sayfalar M9'da |
+| `app/(app)/layout.tsx` | Başlangıç kapısı |
+| `app/gizlilik/page.tsx` | Aydınlatma metni **taslağı** (P8); veri sorumlusu ve iletişim yer tutucu |
+| `app/api/onboarding/{invite,consent}/route.ts`, `app/api/account/route.ts` | SPEC Bölüm 6 uç noktaları |
+| `components/auth/*`, `components/onboarding/*` | Ortak iskelet, Google düğmesi, formlar, `StepGate` |
+| `tests/{auth,api,onboarding}/*.test.ts` | 98 birim testi |
+| `tests/db/m2-auth.sql`, `tests/db/supabase-stub.sql` | 40 SQL doğrulaması; stub'a `raw_user_meta_data` eklendi |
 
-## 3. Verilen kararlar (SPEC'te açık ya da OpenRouter'a uyarlanan noktalar)
+## 3. Verilen kararlar
 
 | # | Konu | Karar |
 | --- | --- | --- |
-| 1 | SDK | İnce fetch istemcisi (yukarıda). Doğrudan Anthropic'e dönülürse yalnızca `lib/ai/client.ts` değişir. |
-| 2 | Model kimliği | `app_settings` SPEC'teki Anthropic kimliğini tutar (`claude-haiku-5-5`); istemci `anthropic/claude-haiku-5.5`'e çevirir. `/` içeren değer olduğu gibi gönderilir (bir üst modele geçiş ayardan). |
-| 3 | `llm_usage.provider` | `openrouter` (faturayı kesen); `model` = ayardaki kimlik. M10 panelinde "sağlayıcıya göre" kırılım buna göre. |
-| 4 | Token alanları | Anthropic anlamı: `input_tokens` önbelleğe girmeyen girdi; `cache_read_tokens` / `cache_write_tokens` ayrı. OpenRouter `prompt_tokens`'ı toplam verdiği için çıkarılır. Maliyet yalnızca `cost.ts` ile; OpenRouter'ın `usage.cost` değeri yazılmaz (eval raporunda karşılaştırma için gösterilir). |
-| 5 | Ay ve gün | Aylık tavan UTC ayı; günlük sınır Europe/Istanbul günü (UTC+3, yaz saati yok). |
-| 6 | Günlük sınır | SPEC 5.4 harfiyen: `purpose = generate` ve `kind = daily` için bugün **başlatılan** (`started_at`) oturum sayısı `≥ daily_session_limit` → red. PLAN #15 (ön üretimin engellenmesi) M6'da ele alınacak. |
-| 7 | Toplamlar | `sum(cost_usd)` PostgREST'in 1000 satır sınırına takılmasın diye SQL fonksiyonu; `sessions.cost_usd` yarışsız artırım için `add_session_cost`. |
-| 8 | Yeniden deneme | İstemci: ağ hatası, zaman aşımı, 429/5xx'te bir kez. Üretim: JSON/şema geçersizse tüm çağrı bir kez; geçmeyen slotlar tek bir `SlotRegen` çağrısıyla bir kez. Her HTTP çağrısı kendi guard'ı ve `llm_usage` satırıyla. |
-| 9 | `refusal` | Tüm üretim reddedilirse bir kez tekrar, yine red → `GenerationError('refusal')` (oturum `failed`). Slot yeniden üretimi reddedilirse o slotlar çıkarılır. Değerlendirmede `{ kind: 'refusal' }` döner; çağıran "Bu cevabı şu an değerlendiremedik" gösterir, ustalık güncellemez. |
-| 10 | Kod kontrolleri | SPEC 5.2'dekiler + slot planla eşleşir (konum, tür, konu) + türe göre zorunlu alanlar + `gap_fill`'de tek `___` + dikte cümlesi `text_en` ile aynı + `target_words` cümlede. Cümle uzunluğu İngilizce alanlarda (metin, soru, şıklar, kabul edilenler, model cevap) cümle başına sayılır. |
-| 11 | Değerlendirme çıktısı | Model `errors`/`evidence`'ta listede olmayan kod/konu döndüremez (enum). `errors` boşsa ve `is_correct = false` ise hata etiketi `GEN.OTHER` ile çağıran tarafta tamamlanır (M6). |
-| 12 | Stil rehberi (P3) | Henüz yok; SPEC 5.3'teki kurallar komuta yazıldı. Rehber gelince `prompts/*` sistem metnine eklenir (önbellek bir kez yeniden yazılır). |
-| 13 | Üretim şeması ve bölme (eval-generation sonrası, kullanıcı onayı 11.11.2026) | Katı şema `minItems > 1` desteklemediğinden model ilk çağrıların %20–50'sinde 8'den az etkinlik döndü. `SessionGen` artık slot anahtarlı (`{ slot_1: item, … }`, her anahtar zorunlu); 6+ slotlu şema Anthropic'te "Schema is too complex for compilation" verdiği için oturum en çok 5 slotluk paralel çağrılara bölünür (10 → 5+5, 9 → 5+4, 8 → 4+4), model yerel `slot_1…slot_k` görür. Şemadan kısmen geçen yanıtta geçerli slotlar tutulur; bozuk, eksik ya da reddedilen slotlar tek bir yeniden üretim turunda (yine ≤ 5'lik paralel parçalar) üretilir. `llm_usage.error` yalnızca yol/kod/sınır içerir (ör. `invalid_output:slot_4.key.hint_tr:too_big(max 140)`). **SPEC 5.1/5.2 önerisi:** "tek çağrı" ve `SessionGen` dizi tanımı bu biçimde güncellenmeli. |
+| 1 | Kodsuz giriş (kullanıcı onayı, 15.11.2026) | `onboarding_step = 'invite'` olan kullanıcı `/davet`'e düşer: kod kutusu, linkten gelindiyse dolu. **SPEC önerisi:** dizin yapısına `(auth)/davet/page.tsx` eklenmeli. |
+| 2 | M9'a kadar rıza sonrası (kullanıcı onayı, 15.11.2026) | Kapı tam çalışır; `/baslangic/profil` ve `/baslangic/yerlestirme` yer tutucu. M6–M8 denemelerinde test hesabı SQL ile `done` yapılır (README). Geçici istisna kodu yok. |
+| 3 | Gizlilik taslağı (kullanıcı onayı, 15.11.2026) | "TASLAK" etiketiyle yayında; veri sorumlusu, iletişim ve transkriptin işlendiği bölge `[pilot öncesi eklenecek]`. Son metin M10 (hukuki görüş). |
+| 4 | Davetin kullanılması | Callback kodu kendisi kullanmaz; `/davet/<kod>` sayfasına döner, kullanıcı "Devam et" ile `POST /api/onboarding/invite` çağırır (SPEC Bölüm 7, PRD A1 adım 2). Kapasite hatası böylece formda gösterilir. |
+| 5 | Kapasite | `claim_invite` kohort satırını `for update` ile kilitler, kohorttaki **tüm** `profiles` satırlarını sayar (rol ayrımı yok). Zaten kohortta olan kullanıcı için `already_joined` → `{ ok: true }` (yer yeniden ayrılmaz). **SPEC önerisi:** fonksiyon Bölüm 3'e not edilmeli. |
+| 6 | Durum kodları | Geçersiz kod `404 invalid_code`; kapasite `409 cohort_full`; davetsiz onam `403 invite_required`; sayfadaki sürüm `CONSENT_VERSION` değilse `409 consent_version_mismatch`; `CONSENT_VERSION` tanımsızsa `500` (rıza sürümsüz kaydedilmez); onay metni `"SİL"` değilse `400`. |
+| 7 | Rızanın tekrarı | Rızası kayıtlı kullanıcı yeniden gönderirse `{ ok: true }`, ilk sürüm ve zaman korunur. Güncelleme `onboarding_step = 'consent'` koşuluyla yapılır. |
+| 8 | OAuth dönüş adresi | Canlıda `APP_URL`; önizleme ve yerelde isteğin kendi adresi (Vercel Preview'da `APP_URL` yok, adresler değişken, PKCE çerezi girişin başladığı alan adında). Supabase izin listesi yine de son sözü söyler. |
+| 9 | `CONSENT_VERSION` | `2026-11-pilot-v1`; Vercel Production ve Preview'a eklendi (15.11.2026). Metin değişince artırılır. |
+| 10 | `getClaims()` | JWT her istekte doğrulanır; silinmiş hesap, profil satırı RLS ile okunamadığı için `401` alır. Token var, profil yoksa sayfalar "Hesabını bulamadık" + çıkış gösterir. |
+| 11 | Çıkış | SPEC'te uç nokta yok; `signOut` Server Function olarak eklendi (davet, onam ve ana sayfa yer tutucusunda düğme). Ayarlar sayfası sonraki taşlarda. |
+| 12 | Tetikleyici ve yardımcılar | `private` şemasında, `security definer`, `search_path = ''` (M3'teki `private.user_role()` kalıbı). `display_name` Google `full_name` / `name` alanından, 80 karakterle sınırlı. |
+| 13 | Dal | Oturumun dalı `claude/m2-completion-plan-ll9u9u` (`m2-…` yerine). |
 
 ## 4. Bitti testi eşlemesi
 
+Bu ortamdan Supabase adresine ağ erişimi ve servis anahtarı olmadığı için uçtan uca deneme yerelde yapıldı: gerçek uygulama derlemesi + gerçek Postgres (tüm göçler, tetikleyici, RLS, `claim_invite`) + Supabase Auth/REST yerine küçük bir yerel taklit sunucu (Google yerine sahte kimlik). Taklit sunucu repoda değil. Gerçek Supabase Auth ve Google ayağı elle kontrol listesinde.
+
 | ROADMAP maddesi | Kanıt |
 | --- | --- |
-| `eval-generation` 20 oturum, %100 şema, ≤ 0,02 $, p90 ≤ 60 sn | `npx tsx --env-file=<.env.local> scripts/eval-generation.ts` — **çalıştırılmadı** (onay + maliyet ≈ 0,10–0,25 $) |
-| Pedagoji 20 etkinlik ≥ 18 uygun | 13.11.2026: 20/20 uygun — `docs/pedagoji/M5-inceleme-sonucu.md`; boş açıklama/ipucu artık `checks.ts`'te reddediliyor |
-| `eval-tagging` ≥ %80 uyum, p90 ≤ 6 sn | 15.11.2026: 94 cümle, %94,7 (89/94), p90 3,4 sn, 0,026 $ — `docs/pedagoji/M5-altin-set-sonucu.md`; altın set `docs/pedagoji/altin-set.csv` → `scripts/build-golden.ts` → `scripts/data/golden.json` |
-| `temperature`/`top_p` yok; ikinci çağrıdan itibaren `cache_read_tokens > 0` | `tests/ai/client.test.ts` (istek gövdesi) + kod incelemesi; önbellek isabeti eval-generation raporunda |
-| Guard testleri | `tests/ai/guard.test.ts` |
-| `llm_usage`'da içerik yok | `tests/ai/guard.test.ts` (satır yalnızca sayısal/kimlik alanları) |
+| Davet kodu olmadan giriş yapan kullanıcı onam sayfasına geçemiyor | Yerel uçtan uca: `/` ve `/baslangic/onam` → `/davet`; `POST /api/onboarding/consent` → `403 invite_required`; yanlış kod → `404`. `tests/onboarding/service.test.ts`. `bibo-dev` SQL: davetsiz kullanıcıda rıza güncellemesi 0 satır. |
+| Kapasite 1'e düşürüldüğünde ikinci kullanıcı `409` alıyor | Yerel uçtan uca: A kabul, B `409 cohort_full` + "Bu grubun kontenjanı doldu" mesajı. `bibo-dev` SQL: `claim_invite` ikinci kullanıcıda `full`. |
+| Rıza sürümü ve zamanı `profiles`'ta | Yerel uçtan uca: `consent_version = 2026-11-pilot-v1`, `consent_at` ve `adult_confirmed_at` dolu, adım `profile`. `bibo-dev` SQL: aynı güncelleme. |
+| İki test kullanıcısıyla RLS: A, B'nin profilini okuyamıyor | **`bibo-dev` SQL (gerçek RLS):** A 1 satır görür, B'nin satırı 0; öğrenci `cohorts` göremez, rolünü ve adımını değiştiremez. Yerel uçtan uca: A'nın oturum tokenıyla REST sorgusu 0 satır. |
+| Hesap silme sonrası `auth.users` ve `profiles` satırı yok | Yerel uçtan uca: `DELETE /api/account` → `{ ok: true }`, iki tabloda 0 satır, oturum kapanır, kohortta yer açılır. `bibo-dev` SQL: `auth.users` silinince `profiles` gider. |
 
-## 5. Açık sorular
+Komutlar: `npm test` (698) · `psql -d <db> -f tests/db/m2-auth.sql` (40 doğrulama; yerelde ve `bibo-dev`'de geçti) · yerel uçtan uca 45/45.
 
-1. ~~SPEC'te OpenRouter + fetch istemcisi ve `provider = openrouter`.~~ SPEC rev. 3'te güncellendi (11.11.2026).
-2. ~~OpenRouter komisyonu tavana dahil mi?~~ Evet: `app_settings.openrouter_fee_rate` (varsayılan 0,055, oran OpenRouter'dan doğrulanacak), SPEC rev. 3. Uygulandı: göç `20261111190000_openrouter_fee_rate.sql` (`bibo-dev`'de), `withFee()` ile `llm_usage.cost_usd` ve `sessions.cost_usd` komisyonlu.
-3. ~~Göç `dev`'e uygulanmadı.~~ 11.11.2026'da `bibo-dev`'e uygulandı, `lib/db/types.ts` güncellendi (PR #6).
-4. ~~PLAN #14 ve #15.~~ Karar verildi (aşağıdaki tablo); M6'da uygulanır.
-5. ~~`reasoning.effort` ve `json_schema` (strict) doğrulanacak.~~ eval-generation'da doğrulandı; sınır: en çok 5 slotluk slot anahtarlı şema (karar 13).
+## 5. Açık sorular ve elle kontrol
+
+1. **Google OAuth kurulumu (insan işi):** adımlar README "Google ile giriş kurulumu" bölümünde. Kurulmadan giriş düğmesi çalışmaz.
+2. **Elle kontrol (önizleme, gerçek Google hesabıyla):** davet linki → giriş → kod dolu → onam → yer tutucu; ikinci hesapla kapasite 1 kohortta `409`; `profiles`'ta rıza alanları; iOS Safari ve Android Chrome'da Google ekranı ve dönüş. Geçince ROADMAP M2 ve SCOPE F1 kutuları işaretlenir.
+3. **`prod`:** göç ana dala birleştikten sonra uygulanır; pilot kohortu ve davet kodu M10'da.
+4. **SPEC önerileri (uygulanmadı, onay bekliyor):** Bölüm 2 dizin yapısına `(auth)/davet/page.tsx`, `lib/auth/*`, `lib/api/*`, `lib/onboarding/*`; Bölüm 3'e `claim_invite`; Bölüm 6'ya M2 hata kodları.
+5. **Gizlilik metni:** veri sorumlusu, iletişim adresi ve MAI-Transcribe-2'nin OpenRouter üzerinden işlendiği bölge M10'dan önce doldurulmalı (SCOPE günlüğü 11.11.2026).
+6. **Supabase'de e-posta ile kayıt:** varsayılan olarak açık; SPEC yalnızca Google dediği için panelden kapatılmalı (README).
 
 ## 9. Sonraki taşlar için açık kararlar
 

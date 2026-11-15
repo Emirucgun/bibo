@@ -83,8 +83,10 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - [ ] Davet kodu olmadan giriş yapan kullanıcı onam sayfasına geçemiyor.
 - [ ] Kapasite test için 1'e düşürüldüğünde ikinci kullanıcı `409` alıyor.
 - [ ] Rıza sürümü ve zamanı `profiles`'ta.
-- [ ] İki test kullanıcısıyla RLS: A, B'nin profilini okuyamıyor.
+- [x] İki test kullanıcısıyla RLS: A, B'nin profilini okuyamıyor. _(15.11.2026: `tests/db/m2-auth.sql` `bibo-dev`'de 40/40)_
 - [ ] Hesap silme sonrası `auth.users` ve `profiles` satırı yok.
+
+_15.11.2026: işaretsiz dört madde yerelde uçtan uca ve `bibo-dev`'de SQL ile doğrulandı (`docs/PLAN.md` Bölüm 4); kutular Google OAuth kurulup önizlemede gerçek girişle elle doğrulanınca işaretlenecek._
 
 ---
 
