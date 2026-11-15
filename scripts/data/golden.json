@@ -1,0 +1,1375 @@
+[
+  {
+    "id": "g01",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Kardeşim her gün futbol oynar.",
+    "model_answer_en": "My brother plays football every day.",
+    "student_text": "My brother play football every day.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.3SG_S"
+      ]
+    }
+  },
+  {
+    "id": "g02",
+    "activity_type": "short_write",
+    "topic_id": "g.articles_a_an",
+    "level": "A1",
+    "task": "Describe your room in 2-3 sentences.",
+    "model_answer_en": "I have a small room. There is a bed and a desk.",
+    "student_text": "I have a small room. There is a bed and a desk.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g03",
+    "activity_type": "short_write",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Write 2 sentences about your best friend.",
+    "model_answer_en": "My best friend lives in Izmir. She likes music.",
+    "student_text": "My best friend lives in Izmir. She like music.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.3SG_S"
+      ]
+    }
+  },
+  {
+    "id": "g04",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Annem bir bankada çalışır.",
+    "model_answer_en": "My mother works in a bank.",
+    "student_text": "My mother work in a bank.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.3SG_S"
+      ]
+    }
+  },
+  {
+    "id": "g05",
+    "activity_type": "short_write",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Write 2 sentences about your uncle or aunt.",
+    "model_answer_en": "My uncle drives a taxi. He works at night.",
+    "student_text": "My uncle drive a taxi. He works at nigth.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.3SG_S",
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g06",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.articles_a_an",
+    "level": "A1",
+    "task": "Benim bir köpeğim var.",
+    "model_answer_en": "I have a dog.",
+    "student_text": "I have dog.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g07",
+    "activity_type": "short_write",
+    "topic_id": "g.articles_a_an",
+    "level": "A1",
+    "task": "What do your parents do? Write 2 sentences.",
+    "model_answer_en": "My father is a driver. My mother is a nurse.",
+    "student_text": "My father is driver. My mother is nurse.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g08",
+    "activity_type": "short_write",
+    "topic_id": "g.articles_a_an",
+    "level": "A1",
+    "task": "What is in your bag? Write 1-2 sentences.",
+    "model_answer_en": "There is a book in my bag. I also have an apple.",
+    "student_text": "There is a book in my bag. I also have apple.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g09",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.articles_the",
+    "level": "A1",
+    "task": "Kediler sevimli hayvanlardır.",
+    "model_answer_en": "Cats are cute animals.",
+    "student_text": "The cats are cute animals.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_THE"
+      ]
+    }
+  },
+  {
+    "id": "g10",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.articles_the",
+    "level": "A1",
+    "task": "İstanbul büyük bir şehirdir.",
+    "model_answer_en": "Istanbul is a big city.",
+    "student_text": "The Istanbul is a big city.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_THE"
+      ]
+    }
+  },
+  {
+    "id": "g11",
+    "activity_type": "short_write",
+    "topic_id": "g.articles_the",
+    "level": "A1",
+    "task": "What is your favourite sport? Write 1-2 sentences.",
+    "model_answer_en": "My favourite sport is football. I play it every weekend.",
+    "student_text": "My favourite sport is the football. I play it every weekend.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.ART_THE"
+      ]
+    }
+  },
+  {
+    "id": "g12",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.be_present",
+    "level": "A1",
+    "task": "Odam çok küçük.",
+    "model_answer_en": "My room is very small.",
+    "student_text": "My room very small.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.BE_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g13",
+    "activity_type": "short_write",
+    "topic_id": "g.be_present",
+    "level": "A1",
+    "task": "Introduce yourself in 2 sentences.",
+    "model_answer_en": "I am a student. I am 19 years old.",
+    "student_text": "I am a student. I 19 years old.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.BE_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g14",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_continuous",
+    "level": "A1",
+    "task": "Kardeşim şu anda kitap okuyor.",
+    "model_answer_en": "My brother is reading a book now.",
+    "student_text": "My brother reading a book now.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.BE_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g15",
+    "activity_type": "short_write",
+    "topic_id": "g.past_be",
+    "level": "A2",
+    "task": "How was your day yesterday? Write 2 sentences.",
+    "model_answer_en": "I was very tired yesterday. I went to bed early.",
+    "student_text": "I very tired yesterday. I went to bed early.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.BE_OMIT"
+      ]
+    }
+  },
+  {
+    "id": "g16",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.some_any_much_many",
+    "level": "A1",
+    "task": "Çok param yok.",
+    "model_answer_en": "I don't have much money.",
+    "student_text": "I don't have many money.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.COUNT_UNCOUNT"
+      ]
+    }
+  },
+  {
+    "id": "g17",
+    "activity_type": "short_write",
+    "topic_id": "g.some_any_much_many",
+    "level": "A1",
+    "task": "What do you do after school? Write 1-2 sentences.",
+    "model_answer_en": "I go home after school. I have a lot of homework.",
+    "student_text": "I go home after school. I have a lot of homeworks.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.COUNT_UNCOUNT"
+      ]
+    }
+  },
+  {
+    "id": "g18",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.some_any_much_many",
+    "level": "A1",
+    "task": "Biraz bilgiye ihtiyacım var.",
+    "model_answer_en": "I need some information.",
+    "student_text": "I need some informations.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.COUNT_UNCOUNT"
+      ]
+    }
+  },
+  {
+    "id": "g19",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.do_does_q_neg",
+    "level": "A1",
+    "task": "Balık sevmem.",
+    "model_answer_en": "I don't like fish.",
+    "student_text": "I not like fish.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.DO_SUPPORT"
+      ]
+    }
+  },
+  {
+    "id": "g20",
+    "activity_type": "short_write",
+    "topic_id": "g.do_does_q_neg",
+    "level": "A1",
+    "task": "What does your sister or brother not like? Write 1-2 sentences.",
+    "model_answer_en": "My sister doesn't like coffee. She drinks tea.",
+    "student_text": "My sister don't like coffee. She drinks tea.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.DO_SUPPORT"
+      ]
+    }
+  },
+  {
+    "id": "g21",
+    "activity_type": "short_write",
+    "topic_id": "g.past_q_neg",
+    "level": "A2",
+    "task": "What didn't you do yesterday? Write 2 sentences.",
+    "model_answer_en": "I didn't go to school yesterday. I stayed at home.",
+    "student_text": "I not went to school yesterday. I stayed at home.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.DO_SUPPORT"
+      ]
+    }
+  },
+  {
+    "id": "g22",
+    "activity_type": "short_write",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Write 2 sentences about your mother or sister.",
+    "model_answer_en": "My sister is a nurse. She works in a hospital.",
+    "student_text": "My sister is a nurse. He works in a hospital.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HE_SHE"
+      ]
+    }
+  },
+  {
+    "id": "g23",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Babam evde. O şimdi uyuyor.",
+    "model_answer_en": "My father is at home. He is sleeping now.",
+    "student_text": "My father is at home. She is sleeping now.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HE_SHE"
+      ]
+    }
+  },
+  {
+    "id": "g24",
+    "activity_type": "short_write",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Describe your grandmother in 2 sentences.",
+    "model_answer_en": "My grandmother is 70 years old. She is very kind.",
+    "student_text": "My grandmother is 70 years old. He is very kind.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HE_SHE"
+      ]
+    }
+  },
+  {
+    "id": "g25",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.possessives",
+    "level": "A1",
+    "task": "Annem işini seviyor.",
+    "model_answer_en": "My mother loves her job.",
+    "student_text": "My mother loves his job.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HIS_HER"
+      ]
+    }
+  },
+  {
+    "id": "g26",
+    "activity_type": "short_write",
+    "topic_id": "g.possessives",
+    "level": "A1",
+    "task": "Write 2 sentences about something your brother or sister has.",
+    "model_answer_en": "My brother has a new bike. His bike is red.",
+    "student_text": "My brother has a new bike. Her bike is red.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HIS_HER"
+      ]
+    }
+  },
+  {
+    "id": "g27",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.possessives",
+    "level": "A1",
+    "task": "Kız kardeşim odasını temizliyor.",
+    "model_answer_en": "My sister is cleaning her room.",
+    "student_text": "My sister is cleaning his room.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.HIS_HER"
+      ]
+    }
+  },
+  {
+    "id": "g28",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple",
+    "level": "A1",
+    "task": "Sana katılıyorum.",
+    "model_answer_en": "I agree with you.",
+    "student_text": "I am agree with you.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.LITERAL"
+      ]
+    }
+  },
+  {
+    "id": "g29",
+    "activity_type": "short_write",
+    "topic_id": "g.present_simple",
+    "level": "A1",
+    "task": "What do you do to stay healthy? Write 1-2 sentences.",
+    "model_answer_en": "I do sport every morning. I also eat vegetables.",
+    "student_text": "I make sport every morning. I also eat vegetables.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.LITERAL"
+      ]
+    }
+  },
+  {
+    "id": "g30",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.can",
+    "level": "A1",
+    "task": "Işığı açabilir misin?",
+    "model_answer_en": "Can you turn on the light?",
+    "student_text": "Can you open the light?",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.LITERAL"
+      ]
+    }
+  },
+  {
+    "id": "g31",
+    "activity_type": "short_write",
+    "topic_id": "g.comparatives",
+    "level": "A2",
+    "task": "Compare yourself with a family member. Write 2 sentences.",
+    "model_answer_en": "My brother is taller than me. I am older than him.",
+    "student_text": "My brother is taller from me. I am older from him.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.LITERAL"
+      ]
+    }
+  },
+  {
+    "id": "g32",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_perfect",
+    "level": "A2",
+    "task": "Dün onu gördüm.",
+    "model_answer_en": "I saw him yesterday.",
+    "student_text": "I have seen him yesterday.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PERFECT_PAST"
+      ]
+    }
+  },
+  {
+    "id": "g33",
+    "activity_type": "short_write",
+    "topic_id": "g.present_perfect",
+    "level": "A2",
+    "task": "Have you ever been to another city? Write 2 sentences.",
+    "model_answer_en": "I have been to Antalya. I went there last summer.",
+    "student_text": "I have been to Antalya. I have gone there last summer.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PERFECT_PAST"
+      ]
+    }
+  },
+  {
+    "id": "g34",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.past_simple_regular",
+    "level": "A2",
+    "task": "Geçen hafta bir film izledik.",
+    "model_answer_en": "We watched a film last week.",
+    "student_text": "We have watched a film last week.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PERFECT_PAST"
+      ]
+    }
+  },
+  {
+    "id": "g35",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.plurals",
+    "level": "A1",
+    "task": "İki kitabım var.",
+    "model_answer_en": "I have two books.",
+    "student_text": "I have two book.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PLURAL_NUM"
+      ]
+    }
+  },
+  {
+    "id": "g36",
+    "activity_type": "short_write",
+    "topic_id": "g.plurals",
+    "level": "A1",
+    "task": "How many brothers and sisters do you have? Write 1-2 sentences.",
+    "model_answer_en": "I have three brothers. They are students.",
+    "student_text": "I have three brother. They are students.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PLURAL_NUM"
+      ]
+    }
+  },
+  {
+    "id": "g37",
+    "activity_type": "short_write",
+    "topic_id": "g.plurals",
+    "level": "A1",
+    "task": "Describe your class in 2 sentences.",
+    "model_answer_en": "There are twenty students in my class. We have four lessons every day.",
+    "student_text": "There are twenty student in my class. We have four lesson every day.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PLURAL_NUM"
+      ]
+    }
+  },
+  {
+    "id": "g38",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.prep_time",
+    "level": "A1",
+    "task": "Pazartesi günü sınavım var.",
+    "model_answer_en": "I have an exam on Monday.",
+    "student_text": "I have an exam in Monday.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PREP_IN_ON_AT"
+      ]
+    }
+  },
+  {
+    "id": "g39",
+    "activity_type": "short_write",
+    "topic_id": "g.prep_time",
+    "level": "A1",
+    "task": "What time do you get up and go to bed? Write 2 sentences.",
+    "model_answer_en": "I get up at seven o'clock. I go to bed at eleven.",
+    "student_text": "I get up in seven o'clock. I go to bed at eleven.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PREP_IN_ON_AT"
+      ]
+    }
+  },
+  {
+    "id": "g40",
+    "activity_type": "short_write",
+    "topic_id": "g.prep_time",
+    "level": "A1",
+    "task": "When is your birthday? Write 1-2 sentences.",
+    "model_answer_en": "My birthday is in July. I usually have a party.",
+    "student_text": "My birthday is at July. I usually have a party.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PREP_IN_ON_AT"
+      ]
+    }
+  },
+  {
+    "id": "g41",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.prep_place",
+    "level": "A1",
+    "task": "Kitap masada.",
+    "model_answer_en": "The book is on the table.",
+    "student_text": "The book is in the table.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.PREP_IN_ON_AT"
+      ]
+    }
+  },
+  {
+    "id": "g42",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.wh_questions",
+    "level": "A1",
+    "task": "Nerede yaşıyorsun?",
+    "model_answer_en": "Where do you live?",
+    "student_text": "Where you live?",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.Q_INVERSION"
+      ]
+    }
+  },
+  {
+    "id": "g43",
+    "activity_type": "short_write",
+    "topic_id": "g.wh_questions",
+    "level": "A1",
+    "task": "Write 2 questions to ask a new classmate.",
+    "model_answer_en": "What is your name? Where are you from?",
+    "student_text": "What is your name? Where you are from?",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.Q_INVERSION"
+      ]
+    }
+  },
+  {
+    "id": "g44",
+    "activity_type": "short_write",
+    "topic_id": "g.past_q_neg",
+    "level": "A2",
+    "task": "Write 2 questions to ask a friend about the weekend.",
+    "model_answer_en": "What did you do at the weekend? Where did you go?",
+    "student_text": "What you did at the weekend? Where you went?",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.Q_INVERSION"
+      ]
+    }
+  },
+  {
+    "id": "g45",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple",
+    "level": "A1",
+    "task": "Her gün okula giderim.",
+    "model_answer_en": "I go to school every day.",
+    "student_text": "I am going to school every day.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SIMPLE_CONT"
+      ]
+    }
+  },
+  {
+    "id": "g46",
+    "activity_type": "short_write",
+    "topic_id": "g.present_simple",
+    "level": "A1",
+    "task": "What do you do at the weekend? Write 2 sentences.",
+    "model_answer_en": "I play football on Saturdays. I visit my grandparents on Sundays.",
+    "student_text": "I am playing football on Saturdays. I visit my grandparents on Sundays.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SIMPLE_CONT"
+      ]
+    }
+  },
+  {
+    "id": "g47",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_continuous",
+    "level": "A1",
+    "task": "Şu anda televizyon izliyorum.",
+    "model_answer_en": "I am watching TV now.",
+    "student_text": "I watch TV now.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SIMPLE_CONT"
+      ]
+    }
+  },
+  {
+    "id": "g48",
+    "activity_type": "short_write",
+    "topic_id": "g.present_continuous",
+    "level": "A1",
+    "task": "What are you doing right now? Write 1-2 sentences.",
+    "model_answer_en": "I am sitting in my room. I am doing my homework now.",
+    "student_text": "I am sitting in my room. I do my homework now.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SIMPLE_CONT"
+      ]
+    }
+  },
+  {
+    "id": "g49",
+    "activity_type": "short_write",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Describe your school in 2 sentences.",
+    "model_answer_en": "I like my school. It is very big.",
+    "student_text": "I like my school. Is very big.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SUBJ_DROP"
+      ]
+    }
+  },
+  {
+    "id": "g50",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Bugün yağmur yağıyor.",
+    "model_answer_en": "It is raining today.",
+    "student_text": "Is raining today.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SUBJ_DROP"
+      ]
+    }
+  },
+  {
+    "id": "g51",
+    "activity_type": "short_write",
+    "topic_id": "g.subject_pronouns",
+    "level": "A1",
+    "task": "Write 2 sentences about a classmate.",
+    "model_answer_en": "My classmate is very funny. We are in the same class.",
+    "student_text": "My classmate is very funny. Are in the same class.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.SUBJ_DROP"
+      ]
+    }
+  },
+  {
+    "id": "g52",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.there_is_are",
+    "level": "A1",
+    "task": "Şehrimde büyük bir park var.",
+    "model_answer_en": "There is a big park in my city.",
+    "student_text": "In my city has a big park.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.THERE_HAVE"
+      ]
+    }
+  },
+  {
+    "id": "g53",
+    "activity_type": "short_write",
+    "topic_id": "g.there_is_are",
+    "level": "A1",
+    "task": "Describe your street in 2 sentences.",
+    "model_answer_en": "My street is very long. There are many shops in my street.",
+    "student_text": "My street is very long. There have many shops in my street.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.THERE_HAVE"
+      ]
+    }
+  },
+  {
+    "id": "g54",
+    "activity_type": "short_write",
+    "topic_id": "g.there_is_are",
+    "level": "A1",
+    "task": "What is in your bedroom? Write 2 sentences.",
+    "model_answer_en": "My bedroom is small. There are two windows in my bedroom.",
+    "student_text": "My bedroom is small. In my bedroom have two windows.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.THERE_HAVE"
+      ]
+    }
+  },
+  {
+    "id": "g55",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.verb_patterns",
+    "level": "A2",
+    "task": "Yeni bir telefon almak istiyorum.",
+    "model_answer_en": "I want to buy a new phone.",
+    "student_text": "I want buy a new phone.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.VERB_PATTERN"
+      ]
+    }
+  },
+  {
+    "id": "g56",
+    "activity_type": "short_write",
+    "topic_id": "g.verb_patterns",
+    "level": "A2",
+    "task": "What do you like doing in your free time? Write 2 sentences.",
+    "model_answer_en": "I enjoy reading books. I also like swimming.",
+    "student_text": "I enjoy read books. I also like swimming.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.VERB_PATTERN"
+      ]
+    }
+  },
+  {
+    "id": "g57",
+    "activity_type": "short_write",
+    "topic_id": "g.verb_patterns",
+    "level": "A2",
+    "task": "What do you need to do this week? Write 1-2 sentences.",
+    "model_answer_en": "I need to study for my exam. I also want to clean my room.",
+    "student_text": "I need study for my exam. I also want to clean my room.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.VERB_PATTERN"
+      ]
+    }
+  },
+  {
+    "id": "g58",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.word_order_svo",
+    "level": "A1",
+    "task": "Ben çay severim.",
+    "model_answer_en": "I like tea.",
+    "student_text": "I tea like.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.WORD_ORDER_SOV"
+      ]
+    }
+  },
+  {
+    "id": "g59",
+    "activity_type": "short_write",
+    "topic_id": "g.word_order_svo",
+    "level": "A1",
+    "task": "What do you eat for breakfast? Write 1 sentence.",
+    "model_answer_en": "I eat eggs and cheese for breakfast.",
+    "student_text": "I for breakfast eggs and chese eat.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.WORD_ORDER_SOV",
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g60",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.word_order_svo",
+    "level": "A1",
+    "task": "Annem her sabah kahve içer.",
+    "model_answer_en": "My mother drinks coffee every morning.",
+    "student_text": "My mother every morning coffee drinks.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "L1.WORD_ORDER_SOV"
+      ]
+    }
+  },
+  {
+    "id": "g61",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Arkadaşım Ankara'da yaşar.",
+    "model_answer_en": "My friend lives in Ankara.",
+    "student_text": "My freind lives in Ankara.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g62",
+    "activity_type": "short_write",
+    "topic_id": "g.be_present",
+    "level": "A1",
+    "task": "Describe your city in 2 sentences.",
+    "model_answer_en": "My city is very beautiful. It is near the sea.",
+    "student_text": "My city is very beatiful. It is near the sea.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g63",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.will_future",
+    "level": "A2",
+    "task": "Yarın seni arayacağım.",
+    "model_answer_en": "I will call you tomorrow.",
+    "student_text": "I will call you tommorow.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g64",
+    "activity_type": "short_write",
+    "topic_id": "g.past_simple_regular",
+    "level": "A2",
+    "task": "What did you do last weekend? Write 2 sentences.",
+    "model_answer_en": "I stayed at home because it rained. I watched a film.",
+    "student_text": "I stayed at home becuase it rained. I watched a film.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g65",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.past_simple_irregular",
+    "level": "A2",
+    "task": "Geçen yaz İzmir'e gittik.",
+    "model_answer_en": "We went to Izmir last summer.",
+    "student_text": "We goed to Izmir last summer.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VERB_FORM"
+      ]
+    }
+  },
+  {
+    "id": "g66",
+    "activity_type": "short_write",
+    "topic_id": "g.past_simple_irregular",
+    "level": "A2",
+    "task": "What did you eat yesterday? Write 2 sentences.",
+    "model_answer_en": "I ate chicken and rice for dinner. I drank orange juice.",
+    "student_text": "I eated chicken and rice for diner. I drank orange juice.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VERB_FORM",
+        "GEN.SPELLING"
+      ]
+    }
+  },
+  {
+    "id": "g67",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.will_future",
+    "level": "A2",
+    "task": "O yarın gelecek.",
+    "model_answer_en": "He will come tomorrow.",
+    "student_text": "He will comes tomorrow.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VERB_FORM"
+      ]
+    }
+  },
+  {
+    "id": "g68",
+    "activity_type": "short_write",
+    "topic_id": "g.going_to",
+    "level": "A2",
+    "task": "What are your plans for the weekend? Write 2 sentences.",
+    "model_answer_en": "I am going to visit my grandmother. We are going to cook together.",
+    "student_text": "I am going to visiting my grandmother. We are going to cook together.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VERB_FORM"
+      ]
+    }
+  },
+  {
+    "id": "g69",
+    "activity_type": "short_write",
+    "topic_id": "g.be_present",
+    "level": "A1",
+    "task": "What does your father or mother do well? Write 1-2 sentences.",
+    "model_answer_en": "My father is a good cook. He makes dinner every evening.",
+    "student_text": "My father is a good cooker. He makes dinner every evening.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VOCAB"
+      ]
+    }
+  },
+  {
+    "id": "g70",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.past_be",
+    "level": "A2",
+    "task": "Derste çok sıkıldım.",
+    "model_answer_en": "I was very bored in the lesson.",
+    "student_text": "I was very boring in the lesson.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VOCAB"
+      ]
+    }
+  },
+  {
+    "id": "g71",
+    "activity_type": "short_write",
+    "topic_id": "g.past_be",
+    "level": "A2",
+    "task": "How was your last holiday? Write 2 sentences.",
+    "model_answer_en": "My holiday was great. The beach was really fun.",
+    "student_text": "My holiday was great. The beach was very funny.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VOCAB"
+      ]
+    }
+  },
+  {
+    "id": "g72",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Öğretmenimiz bize İngilizce öğretir.",
+    "model_answer_en": "Our teacher teaches us English.",
+    "student_text": "Our teacher learns us English.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.VOCAB"
+      ]
+    }
+  },
+  {
+    "id": "g73",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.comparatives",
+    "level": "A2",
+    "task": "İstanbul Ankara'dan daha büyük.",
+    "model_answer_en": "Istanbul is bigger than Ankara.",
+    "student_text": "Istanbul is more big than Ankara.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.OTHER"
+      ]
+    }
+  },
+  {
+    "id": "g74",
+    "activity_type": "short_write",
+    "topic_id": "g.adverbs_frequency",
+    "level": "A1",
+    "task": "How do you go to school? Write 1-2 sentences.",
+    "model_answer_en": "I always go to school by bus. It takes twenty minutes.",
+    "student_text": "I go always to school by bus. It takes twenty minutes.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.OTHER"
+      ]
+    }
+  },
+  {
+    "id": "g75",
+    "activity_type": "short_write",
+    "topic_id": "g.object_pronouns",
+    "level": "A1",
+    "task": "Write 2 sentences about your grandparents.",
+    "model_answer_en": "My grandparents live in a village. I visit them every summer.",
+    "student_text": "My grandparents live in a village. I visit they every summer.",
+    "expected": {
+      "is_correct": false,
+      "l1_codes": [
+        "GEN.OTHER"
+      ]
+    }
+  },
+  {
+    "id": "g76",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.present_simple_3sg",
+    "level": "A1",
+    "task": "Ablam bir hastanede çalışır.",
+    "model_answer_en": "My sister works in a hospital.",
+    "student_text": "My sister works at a hospital.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g77",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.do_does_q_neg",
+    "level": "A1",
+    "task": "Kahve içmem.",
+    "model_answer_en": "I don't drink coffee.",
+    "student_text": "I do not drink coffee.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g78",
+    "activity_type": "short_write",
+    "topic_id": "g.present_continuous",
+    "level": "A1",
+    "task": "What is your family doing now? Write 2 sentences.",
+    "model_answer_en": "My mother is cooking dinner. My father is watching TV.",
+    "student_text": "My mother is cooking dinner. My father is watching TV.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g79",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.past_simple_irregular",
+    "level": "A2",
+    "task": "Dün yeni bir çanta aldım.",
+    "model_answer_en": "I bought a new bag yesterday.",
+    "student_text": "Yesterday I bought a new bag.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g80",
+    "activity_type": "short_write",
+    "topic_id": "g.present_perfect",
+    "level": "A2",
+    "task": "Write 2 sentences about cities you have or haven't visited.",
+    "model_answer_en": "I have been to Izmir twice. I have never been to Ankara.",
+    "student_text": "I have been to Izmir twice. I have never been to Ankara.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g81",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.there_is_are",
+    "level": "A1",
+    "task": "Mutfakta bir masa var.",
+    "model_answer_en": "There is a table in the kitchen.",
+    "student_text": "There is a table in the kitchen.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g82",
+    "activity_type": "short_write",
+    "topic_id": "g.comparatives",
+    "level": "A2",
+    "task": "Compare two cities in 2 sentences.",
+    "model_answer_en": "Istanbul is bigger than Bursa. Bursa is quieter than Istanbul.",
+    "student_text": "Istanbul is bigger than Bursa. Bursa is quieter than Istanbul.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g83",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.wh_questions",
+    "level": "A1",
+    "task": "Okulun nerede?",
+    "model_answer_en": "Where is your school?",
+    "student_text": "Where is your school?",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g84",
+    "activity_type": "short_write",
+    "topic_id": "g.verb_patterns",
+    "level": "A2",
+    "task": "What do you want to do this summer? Write 2 sentences.",
+    "model_answer_en": "I want to learn to swim. I also enjoy playing tennis.",
+    "student_text": "I want to learn to swim. I also enjoy playing tennis.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g85",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.possessives",
+    "level": "A1",
+    "task": "Babam arabasını çok seviyor.",
+    "model_answer_en": "My father loves his car very much.",
+    "student_text": "My father loves his car a lot.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g86",
+    "activity_type": "short_write",
+    "topic_id": "g.prep_time",
+    "level": "A1",
+    "task": "When do you study? Write 1-2 sentences.",
+    "model_answer_en": "I study in the evening. I have English lessons on Mondays.",
+    "student_text": "I study in the evening. I have English lessons on Mondays.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g87",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.modals_obligation",
+    "level": "A2",
+    "task": "Daha çok su içmelisin.",
+    "model_answer_en": "You should drink more water.",
+    "student_text": "You should drink more water.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g88",
+    "activity_type": "short_write",
+    "topic_id": "g.going_to",
+    "level": "A2",
+    "task": "What are you going to do tomorrow? Write 2 sentences.",
+    "model_answer_en": "I am going to meet my friends. We are going to watch a film.",
+    "student_text": "I am going to meet my friends. We are going to watch a film.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g89",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.past_be",
+    "level": "A2",
+    "task": "Dün hava çok soğuktu.",
+    "model_answer_en": "It was very cold yesterday.",
+    "student_text": "The weather was very cold yesterday.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g90",
+    "activity_type": "short_write",
+    "topic_id": "g.have_has",
+    "level": "A1",
+    "task": "Write 2 sentences about your family.",
+    "model_answer_en": "I have two sisters. My father has a small shop.",
+    "student_text": "I have two sisters. My father has a small shop.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g91",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.can",
+    "level": "A1",
+    "task": "Yüzebilirim ama araba kullanamam.",
+    "model_answer_en": "I can swim but I can't drive.",
+    "student_text": "I can swim, but I cannot drive a car.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g92",
+    "activity_type": "short_write",
+    "topic_id": "g.some_any_much_many",
+    "level": "A1",
+    "task": "What is in your fridge? Write 2 sentences.",
+    "model_answer_en": "There is some milk in the fridge. We don't have any eggs.",
+    "student_text": "There is some milk in the fridge. We don't have any eggs.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g93",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.will_future",
+    "level": "A2",
+    "task": "Sanırım yarın yağmur yağacak.",
+    "model_answer_en": "I think it will rain tomorrow.",
+    "student_text": "I think it will rain tomorrow.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  },
+  {
+    "id": "g94",
+    "activity_type": "translate_tr_en",
+    "topic_id": "g.object_pronouns",
+    "level": "A1",
+    "task": "Onu çok seviyorum.",
+    "model_answer_en": "I love him very much.",
+    "student_text": "I love her very much.",
+    "expected": {
+      "is_correct": true,
+      "l1_codes": []
+    }
+  }
+]

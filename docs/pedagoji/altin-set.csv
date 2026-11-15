@@ -1,0 +1,95 @@
+﻿id,etkinlik_turu,konu,seviye,gorev,model_cevap,ogrenci_cevabi,dogru_mu,birincil_kod,diger_kodlar,not
+g01,translate_tr_en,g.present_simple_3sg,A1,Kardeşim her gün futbol oynar.,My brother plays football every day.,My brother play football every day.,hayir,L1.3SG_S,,3. tekil -s yok
+g02,short_write,g.articles_a_an,A1,Describe your room in 2-3 sentences.,I have a small room. There is a bed and a desk.,I have a small room. There is a bed and a desk.,evet,,,örnek doğru cevap
+g03,short_write,g.present_simple_3sg,A1,Write 2 sentences about your best friend.,My best friend lives in Izmir. She likes music.,My best friend lives in Izmir. She like music.,hayir,L1.3SG_S,,ikinci cümlede -s yok
+g04,translate_tr_en,g.present_simple_3sg,A1,Annem bir bankada çalışır.,My mother works in a bank.,My mother work in a bank.,hayir,L1.3SG_S,,3. tekil -s yok
+g05,short_write,g.present_simple_3sg,A1,Write 2 sentences about your uncle or aunt.,My uncle drives a taxi. He works at night.,My uncle drive a taxi. He works at nigth.,hayir,L1.3SG_S,GEN.SPELLING,-s yok; ayrıca night yazımı
+g06,translate_tr_en,g.articles_a_an,A1,Benim bir köpeğim var.,I have a dog.,I have dog.,hayir,L1.ART_OMIT,,a yok
+g07,short_write,g.articles_a_an,A1,What do your parents do? Write 2 sentences.,My father is a driver. My mother is a nurse.,My father is driver. My mother is nurse.,hayir,L1.ART_OMIT,,meslekten önce a yok (iki kez)
+g08,short_write,g.articles_a_an,A1,What is in your bag? Write 1-2 sentences.,There is a book in my bag. I also have an apple.,There is a book in my bag. I also have apple.,hayir,L1.ART_OMIT,,an yok
+g09,translate_tr_en,g.articles_the,A1,Kediler sevimli hayvanlardır.,Cats are cute animals.,The cats are cute animals.,hayir,L1.ART_THE,,genel anlamda the
+g10,translate_tr_en,g.articles_the,A1,İstanbul büyük bir şehirdir.,Istanbul is a big city.,The Istanbul is a big city.,hayir,L1.ART_THE,,özel isimle the
+g11,short_write,g.articles_the,A1,What is your favourite sport? Write 1-2 sentences.,My favourite sport is football. I play it every weekend.,My favourite sport is the football. I play it every weekend.,hayir,L1.ART_THE,,spor adıyla the
+g12,translate_tr_en,g.be_present,A1,Odam çok küçük.,My room is very small.,My room very small.,hayir,L1.BE_OMIT,,is yok
+g13,short_write,g.be_present,A1,Introduce yourself in 2 sentences.,I am a student. I am 19 years old.,I am a student. I 19 years old.,hayir,L1.BE_OMIT,,ikinci cümlede am yok
+g14,translate_tr_en,g.present_continuous,A1,Kardeşim şu anda kitap okuyor.,My brother is reading a book now.,My brother reading a book now.,hayir,L1.BE_OMIT,,"-ing var, is yok"
+g15,short_write,g.past_be,A2,How was your day yesterday? Write 2 sentences.,I was very tired yesterday. I went to bed early.,I very tired yesterday. I went to bed early.,hayir,L1.BE_OMIT,,was yok
+g16,translate_tr_en,g.some_any_much_many,A1,Çok param yok.,I don't have much money.,I don't have many money.,hayir,L1.COUNT_UNCOUNT,,sayılamaz isimle many
+g17,short_write,g.some_any_much_many,A1,What do you do after school? Write 1-2 sentences.,I go home after school. I have a lot of homework.,I go home after school. I have a lot of homeworks.,hayir,L1.COUNT_UNCOUNT,,homework çoğul yapılmış
+g18,translate_tr_en,g.some_any_much_many,A1,Biraz bilgiye ihtiyacım var.,I need some information.,I need some informations.,hayir,L1.COUNT_UNCOUNT,,information çoğul yapılmış
+g19,translate_tr_en,g.do_does_q_neg,A1,Balık sevmem.,I don't like fish.,I not like fish.,hayir,L1.DO_SUPPORT,,do yok
+g20,short_write,g.do_does_q_neg,A1,What does your sister or brother not like? Write 1-2 sentences.,My sister doesn't like coffee. She drinks tea.,My sister don't like coffee. She drinks tea.,hayir,L1.DO_SUPPORT,,doesn't yerine don't
+g21,short_write,g.past_q_neg,A2,What didn't you do yesterday? Write 2 sentences.,I didn't go to school yesterday. I stayed at home.,I not went to school yesterday. I stayed at home.,hayir,L1.DO_SUPPORT,,did yok
+g22,short_write,g.subject_pronouns,A1,Write 2 sentences about your mother or sister.,My sister is a nurse. She works in a hospital.,My sister is a nurse. He works in a hospital.,hayir,L1.HE_SHE,,she yerine he
+g23,translate_tr_en,g.subject_pronouns,A1,Babam evde. O şimdi uyuyor.,My father is at home. He is sleeping now.,My father is at home. She is sleeping now.,hayir,L1.HE_SHE,,he yerine she
+g24,short_write,g.subject_pronouns,A1,Describe your grandmother in 2 sentences.,My grandmother is 70 years old. She is very kind.,My grandmother is 70 years old. He is very kind.,hayir,L1.HE_SHE,,she yerine he
+g25,translate_tr_en,g.possessives,A1,Annem işini seviyor.,My mother loves her job.,My mother loves his job.,hayir,L1.HIS_HER,,her yerine his
+g26,short_write,g.possessives,A1,Write 2 sentences about something your brother or sister has.,My brother has a new bike. His bike is red.,My brother has a new bike. Her bike is red.,hayir,L1.HIS_HER,,his yerine her
+g27,translate_tr_en,g.possessives,A1,Kız kardeşim odasını temizliyor.,My sister is cleaning her room.,My sister is cleaning his room.,hayir,L1.HIS_HER,,her yerine his
+g28,translate_tr_en,g.present_simple,A1,Sana katılıyorum.,I agree with you.,I am agree with you.,hayir,L1.LITERAL,,am agree kalıbı
+g29,short_write,g.present_simple,A1,What do you do to stay healthy? Write 1-2 sentences.,I do sport every morning. I also eat vegetables.,I make sport every morning. I also eat vegetables.,hayir,L1.LITERAL,,spor yapmak → make sport
+g30,translate_tr_en,g.can,A1,Işığı açabilir misin?,Can you turn on the light?,Can you open the light?,hayir,L1.LITERAL,,ışığı açmak → open the light
+g31,short_write,g.comparatives,A2,Compare yourself with a family member. Write 2 sentences.,My brother is taller than me. I am older than him.,My brother is taller from me. I am older from him.,hayir,L1.LITERAL,,benden → from me (than yerine)
+g32,translate_tr_en,g.present_perfect,A2,Dün onu gördüm.,I saw him yesterday.,I have seen him yesterday.,hayir,L1.PERFECT_PAST,,yesterday ile present perfect
+g33,short_write,g.present_perfect,A2,Have you ever been to another city? Write 2 sentences.,I have been to Antalya. I went there last summer.,I have been to Antalya. I have gone there last summer.,hayir,L1.PERFECT_PAST,,last summer ile present perfect
+g34,translate_tr_en,g.past_simple_regular,A2,Geçen hafta bir film izledik.,We watched a film last week.,We have watched a film last week.,hayir,L1.PERFECT_PAST,,last week ile present perfect
+g35,translate_tr_en,g.plurals,A1,İki kitabım var.,I have two books.,I have two book.,hayir,L1.PLURAL_NUM,,sayıdan sonra çoğul yok
+g36,short_write,g.plurals,A1,How many brothers and sisters do you have? Write 1-2 sentences.,I have three brothers. They are students.,I have three brother. They are students.,hayir,L1.PLURAL_NUM,,sayıdan sonra çoğul yok
+g37,short_write,g.plurals,A1,Describe your class in 2 sentences.,There are twenty students in my class. We have four lessons every day.,There are twenty student in my class. We have four lesson every day.,hayir,L1.PLURAL_NUM,,sayıdan sonra çoğul yok (iki kez)
+g38,translate_tr_en,g.prep_time,A1,Pazartesi günü sınavım var.,I have an exam on Monday.,I have an exam in Monday.,hayir,L1.PREP_IN_ON_AT,,günle in
+g39,short_write,g.prep_time,A1,What time do you get up and go to bed? Write 2 sentences.,I get up at seven o'clock. I go to bed at eleven.,I get up in seven o'clock. I go to bed at eleven.,hayir,L1.PREP_IN_ON_AT,,saatle in
+g40,short_write,g.prep_time,A1,When is your birthday? Write 1-2 sentences.,My birthday is in July. I usually have a party.,My birthday is at July. I usually have a party.,hayir,L1.PREP_IN_ON_AT,,ayla at
+g41,translate_tr_en,g.prep_place,A1,Kitap masada.,The book is on the table.,The book is in the table.,hayir,L1.PREP_IN_ON_AT,,yer: on yerine in
+g42,translate_tr_en,g.wh_questions,A1,Nerede yaşıyorsun?,Where do you live?,Where you live?,hayir,L1.Q_INVERSION,,do yok
+g43,short_write,g.wh_questions,A1,Write 2 questions to ask a new classmate.,What is your name? Where are you from?,What is your name? Where you are from?,hayir,L1.Q_INVERSION,,are özneden sonra
+g44,short_write,g.past_q_neg,A2,Write 2 questions to ask a friend about the weekend.,What did you do at the weekend? Where did you go?,What you did at the weekend? Where you went?,hayir,L1.Q_INVERSION,,"did yok, düz cümle sırası"
+g45,translate_tr_en,g.present_simple,A1,Her gün okula giderim.,I go to school every day.,I am going to school every day.,hayir,L1.SIMPLE_CONT,,alışkanlık için continuous
+g46,short_write,g.present_simple,A1,What do you do at the weekend? Write 2 sentences.,I play football on Saturdays. I visit my grandparents on Sundays.,I am playing football on Saturdays. I visit my grandparents on Sundays.,hayir,L1.SIMPLE_CONT,,alışkanlık için continuous
+g47,translate_tr_en,g.present_continuous,A1,Şu anda televizyon izliyorum.,I am watching TV now.,I watch TV now.,hayir,L1.SIMPLE_CONT,,şu an için geniş zaman
+g48,short_write,g.present_continuous,A1,What are you doing right now? Write 1-2 sentences.,I am sitting in my room. I am doing my homework now.,I am sitting in my room. I do my homework now.,hayir,L1.SIMPLE_CONT,,şu an için geniş zaman
+g49,short_write,g.subject_pronouns,A1,Describe your school in 2 sentences.,I like my school. It is very big.,I like my school. Is very big.,hayir,L1.SUBJ_DROP,,it yok
+g50,translate_tr_en,g.subject_pronouns,A1,Bugün yağmur yağıyor.,It is raining today.,Is raining today.,hayir,L1.SUBJ_DROP,,it yok
+g51,short_write,g.subject_pronouns,A1,Write 2 sentences about a classmate.,My classmate is very funny. We are in the same class.,My classmate is very funny. Are in the same class.,hayir,L1.SUBJ_DROP,,we yok
+g52,translate_tr_en,g.there_is_are,A1,Şehrimde büyük bir park var.,There is a big park in my city.,In my city has a big park.,hayir,L1.THERE_HAVE,,there is yerine has
+g53,short_write,g.there_is_are,A1,Describe your street in 2 sentences.,My street is very long. There are many shops in my street.,My street is very long. There have many shops in my street.,hayir,L1.THERE_HAVE,,there are yerine there have
+g54,short_write,g.there_is_are,A1,What is in your bedroom? Write 2 sentences.,My bedroom is small. There are two windows in my bedroom.,My bedroom is small. In my bedroom have two windows.,hayir,L1.THERE_HAVE,,there are yerine have
+g55,translate_tr_en,g.verb_patterns,A2,Yeni bir telefon almak istiyorum.,I want to buy a new phone.,I want buy a new phone.,hayir,L1.VERB_PATTERN,,want'tan sonra to yok
+g56,short_write,g.verb_patterns,A2,What do you like doing in your free time? Write 2 sentences.,I enjoy reading books. I also like swimming.,I enjoy read books. I also like swimming.,hayir,L1.VERB_PATTERN,,enjoy'dan sonra -ing yok
+g57,short_write,g.verb_patterns,A2,What do you need to do this week? Write 1-2 sentences.,I need to study for my exam. I also want to clean my room.,I need study for my exam. I also want to clean my room.,hayir,L1.VERB_PATTERN,,need'den sonra to yok
+g58,translate_tr_en,g.word_order_svo,A1,Ben çay severim.,I like tea.,I tea like.,hayir,L1.WORD_ORDER_SOV,,fiil sonda
+g59,short_write,g.word_order_svo,A1,What do you eat for breakfast? Write 1 sentence.,I eat eggs and cheese for breakfast.,I for breakfast eggs and chese eat.,hayir,L1.WORD_ORDER_SOV,GEN.SPELLING,fiil sonda; ayrıca cheese yazımı
+g60,translate_tr_en,g.word_order_svo,A1,Annem her sabah kahve içer.,My mother drinks coffee every morning.,My mother every morning coffee drinks.,hayir,L1.WORD_ORDER_SOV,,fiil sonda; -s doğru
+g61,translate_tr_en,g.present_simple_3sg,A1,Arkadaşım Ankara'da yaşar.,My friend lives in Ankara.,My freind lives in Ankara.,hayir,GEN.SPELLING,,friend yazımı; -s doğru
+g62,short_write,g.be_present,A1,Describe your city in 2 sentences.,My city is very beautiful. It is near the sea.,My city is very beatiful. It is near the sea.,hayir,GEN.SPELLING,,beautiful yazımı
+g63,translate_tr_en,g.will_future,A2,Yarın seni arayacağım.,I will call you tomorrow.,I will call you tommorow.,hayir,GEN.SPELLING,,tomorrow yazımı
+g64,short_write,g.past_simple_regular,A2,What did you do last weekend? Write 2 sentences.,I stayed at home because it rained. I watched a film.,I stayed at home becuase it rained. I watched a film.,hayir,GEN.SPELLING,,because yazımı
+g65,translate_tr_en,g.past_simple_irregular,A2,Geçen yaz İzmir'e gittik.,We went to Izmir last summer.,We goed to Izmir last summer.,hayir,GEN.VERB_FORM,,went yerine goed
+g66,short_write,g.past_simple_irregular,A2,What did you eat yesterday? Write 2 sentences.,I ate chicken and rice for dinner. I drank orange juice.,I eated chicken and rice for diner. I drank orange juice.,hayir,GEN.VERB_FORM,GEN.SPELLING,ate yerine eated; ayrıca dinner yazımı
+g67,translate_tr_en,g.will_future,A2,O yarın gelecek.,He will come tomorrow.,He will comes tomorrow.,hayir,GEN.VERB_FORM,,will'den sonra yalın fiil
+g68,short_write,g.going_to,A2,What are your plans for the weekend? Write 2 sentences.,I am going to visit my grandmother. We are going to cook together.,I am going to visiting my grandmother. We are going to cook together.,hayir,GEN.VERB_FORM,,going to'dan sonra yalın fiil
+g69,short_write,g.be_present,A1,What does your father or mother do well? Write 1-2 sentences.,My father is a good cook. He makes dinner every evening.,My father is a good cooker. He makes dinner every evening.,hayir,GEN.VOCAB,,cook yerine cooker
+g70,translate_tr_en,g.past_be,A2,Derste çok sıkıldım.,I was very bored in the lesson.,I was very boring in the lesson.,hayir,GEN.VOCAB,,bored yerine boring
+g71,short_write,g.past_be,A2,How was your last holiday? Write 2 sentences.,My holiday was great. The beach was really fun.,My holiday was great. The beach was very funny.,hayir,GEN.VOCAB,,fun yerine funny
+g72,translate_tr_en,g.present_simple_3sg,A1,Öğretmenimiz bize İngilizce öğretir.,Our teacher teaches us English.,Our teacher learns us English.,hayir,GEN.VOCAB,,teach yerine learn; -s doğru
+g73,translate_tr_en,g.comparatives,A2,İstanbul Ankara'dan daha büyük.,Istanbul is bigger than Ankara.,Istanbul is more big than Ankara.,hayir,GEN.OTHER,,karşılaştırma biçimi; listede özel kodu yok
+g74,short_write,g.adverbs_frequency,A1,How do you go to school? Write 1-2 sentences.,I always go to school by bus. It takes twenty minutes.,I go always to school by bus. It takes twenty minutes.,hayir,GEN.OTHER,,sıklık zarfının yeri; fiil sonda değil
+g75,short_write,g.object_pronouns,A1,Write 2 sentences about your grandparents.,My grandparents live in a village. I visit them every summer.,My grandparents live in a village. I visit they every summer.,hayir,GEN.OTHER,,them yerine they; listede özel kodu yok
+g76,translate_tr_en,g.present_simple_3sg,A1,Ablam bir hastanede çalışır.,My sister works in a hospital.,My sister works at a hospital.,evet,,,doğru; at da kabul
+g77,translate_tr_en,g.do_does_q_neg,A1,Kahve içmem.,I don't drink coffee.,I do not drink coffee.,evet,,,doğru; kısaltmasız biçim
+g78,short_write,g.present_continuous,A1,What is your family doing now? Write 2 sentences.,My mother is cooking dinner. My father is watching TV.,My mother is cooking dinner. My father is watching TV.,evet,,,doğru
+g79,translate_tr_en,g.past_simple_irregular,A2,Dün yeni bir çanta aldım.,I bought a new bag yesterday.,Yesterday I bought a new bag.,evet,,,doğru; zaman ifadesi başta
+g80,short_write,g.present_perfect,A2,Write 2 sentences about cities you have or haven't visited.,I have been to Izmir twice. I have never been to Ankara.,I have been to Izmir twice. I have never been to Ankara.,evet,,,doğru
+g81,translate_tr_en,g.there_is_are,A1,Mutfakta bir masa var.,There is a table in the kitchen.,There is a table in the kitchen.,evet,,,doğru
+g82,short_write,g.comparatives,A2,Compare two cities in 2 sentences.,Istanbul is bigger than Bursa. Bursa is quieter than Istanbul.,Istanbul is bigger than Bursa. Bursa is quieter than Istanbul.,evet,,,doğru
+g83,translate_tr_en,g.wh_questions,A1,Okulun nerede?,Where is your school?,Where is your school?,evet,,,doğru
+g84,short_write,g.verb_patterns,A2,What do you want to do this summer? Write 2 sentences.,I want to learn to swim. I also enjoy playing tennis.,I want to learn to swim. I also enjoy playing tennis.,evet,,,doğru
+g85,translate_tr_en,g.possessives,A1,Babam arabasını çok seviyor.,My father loves his car very much.,My father loves his car a lot.,evet,,,doğru; a lot da kabul
+g86,short_write,g.prep_time,A1,When do you study? Write 1-2 sentences.,I study in the evening. I have English lessons on Mondays.,I study in the evening. I have English lessons on Mondays.,evet,,,doğru
+g87,translate_tr_en,g.modals_obligation,A2,Daha çok su içmelisin.,You should drink more water.,You should drink more water.,evet,,,doğru
+g88,short_write,g.going_to,A2,What are you going to do tomorrow? Write 2 sentences.,I am going to meet my friends. We are going to watch a film.,I am going to meet my friends. We are going to watch a film.,evet,,,doğru
+g89,translate_tr_en,g.past_be,A2,Dün hava çok soğuktu.,It was very cold yesterday.,The weather was very cold yesterday.,evet,,,doğru; farklı ama geçerli çeviri
+g90,short_write,g.have_has,A1,Write 2 sentences about your family.,I have two sisters. My father has a small shop.,I have two sisters. My father has a small shop.,evet,,,doğru
+g91,translate_tr_en,g.can,A1,Yüzebilirim ama araba kullanamam.,I can swim but I can't drive.,"I can swim, but I cannot drive a car.",evet,,,doğru; cannot ve a car da kabul
+g92,short_write,g.some_any_much_many,A1,What is in your fridge? Write 2 sentences.,There is some milk in the fridge. We don't have any eggs.,There is some milk in the fridge. We don't have any eggs.,evet,,,doğru
+g93,translate_tr_en,g.will_future,A2,Sanırım yarın yağmur yağacak.,I think it will rain tomorrow.,I think it will rain tomorrow.,evet,,,doğru
+g94,translate_tr_en,g.object_pronouns,A1,Onu çok seviyorum.,I love him very much.,I love her very much.,evet,,,"doğru; Türkçe ""o"" cinsiyetsiz, him de her de kabul"

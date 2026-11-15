@@ -1,7 +1,8 @@
 /**
  * M5 Bitti testi: etiketleme uyumu ve değerlendirme gecikmesi (docs/SPEC.md Bölüm 12).
  * Altın set (P4, pedagoji sahibi): scripts/data/golden.json — biçim için golden.example.json.
- * GERÇEK API, PARA HARCAR (40 cümle ≈ 0,03 $). Çalıştırmadan önce onay al.
+ * Altın seti CSV'den üret: npx tsx scripts/build-golden.ts (kaynak: docs/pedagoji/altin-set.csv).
+ * GERÇEK API, PARA HARCAR (94 cümle ≈ 0,03 $). Çalıştırmadan önce onay al.
  *
  *   npx tsx --env-file=.env.local scripts/eval-tagging.ts [--golden <yol>] [--limit N] [--no-db]
  *

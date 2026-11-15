@@ -140,3 +140,89 @@ export function tagAgrees(expected: GoldenItem["expected"], got: GradeResult): b
   if (expected.l1_codes.length === 0) return got.is_correct && got.errors.length === 0;
   return got.errors.some((e) => e.l1_code === expected.l1_codes[0]);
 }
+
+// --- Altın set CSV'si (docs/pedagoji/altin-set.csv → scripts/data/golden.json) ----------
+
+export interface GoldenTaxonomy {
+  topics: readonly { id: string; level: string }[];
+  codes: readonly string[];
+}
+
+export interface GoldenCsvResult {
+  items: GoldenItem[];
+  /** Dönüştürmeyi durduran sorunlar (`<id>: <açıklama>`). */
+  errors: string[];
+  /** Bilgi amaçlı; ölçümü bozmaz. */
+  warnings: string[];
+}
+
+export const GOLDEN_CSV_COLUMNS = [
+  "id", "etkinlik_turu", "konu", "seviye", "gorev", "model_cevap", "ogrenci_cevabi",
+  "dogru_mu", "birincil_kod", "diger_kodlar", "not",
+] as const;
+
+/** Pedagoji sahibinin doldurduğu tabloyu doğrular ve `GoldenItem` listesine çevirir. */
+export function goldenFromCsv(rows: Record<string, string>[], tax: GoldenTaxonomy): GoldenCsvResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const items: GoldenItem[] = [];
+  const topicLevel = new Map(tax.topics.map((t) => [t.id, t.level]));
+  const codes = new Set(tax.codes);
+  const seen = new Set<string>();
+  const texts = new Map<string, string>();
+
+  if (rows[0]) {
+    const missing = GOLDEN_CSV_COLUMNS.filter((c) => !(c in rows[0]));
+    if (missing.length > 0) return { items, errors: [`eksik sütun: ${missing.join(", ")}`], warnings };
+  }
+
+  rows.forEach((raw, n) => {
+    const r = Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, v.trim()]));
+    const id = r.id || `satır ${n + 2}`;
+    const bad = (msg: string) => errors.push(`${id}: ${msg}`);
+    const before = errors.length;
+
+    if (!r.id) bad("id boş");
+    else if (seen.has(r.id)) bad("id tekrar ediyor");
+    seen.add(r.id);
+
+    const type = GoldenItem.shape.activity_type.safeParse(r.etkinlik_turu);
+    if (!type.success) bad(`bilinmeyen etkinlik türü '${r.etkinlik_turu}'`);
+    if (!topicLevel.has(r.konu)) bad(`bilinmeyen konu '${r.konu}'`);
+    if (r.seviye !== "A1" && r.seviye !== "A2") bad(`seviye A1/A2 olmalı, '${r.seviye}' geldi`);
+    else if (topicLevel.has(r.konu) && topicLevel.get(r.konu) !== r.seviye) {
+      warnings.push(`${id}: seviye ${r.seviye}, konu ${r.konu} ise ${topicLevel.get(r.konu)}`);
+    }
+    for (const col of ["gorev", "model_cevap", "ogrenci_cevabi"] as const) if (!r[col]) bad(`${col} boş`);
+
+    const others = r.diger_kodlar ? r.diger_kodlar.split(";").map((c) => c.trim()).filter(Boolean) : [];
+    for (const c of [r.birincil_kod, ...others].filter(Boolean)) if (!codes.has(c)) bad(`bilinmeyen kod '${c}'`);
+    if (others.includes(r.birincil_kod)) bad("birincil kod diger_kodlar'da da var");
+
+    if (r.dogru_mu === "evet") {
+      if (r.birincil_kod || others.length > 0) bad("doğru cevapta kod olmamalı");
+    } else if (r.dogru_mu === "hayir") {
+      if (!r.birincil_kod) bad("hatalı cevapta birincil_kod boş");
+      if (r.ogrenci_cevabi && r.ogrenci_cevabi === r.model_cevap) bad("hatalı denmiş ama cevap model cevapla aynı");
+    } else bad(`dogru_mu evet/hayir olmalı, '${r.dogru_mu}' geldi`);
+
+    const dup = texts.get(r.ogrenci_cevabi);
+    if (dup && r.ogrenci_cevabi) warnings.push(`${id}: öğrenci cevabı ${dup} ile aynı`);
+    else texts.set(r.ogrenci_cevabi, id);
+
+    if (errors.length === before && type.success) {
+      items.push({
+        id: r.id,
+        activity_type: type.data,
+        topic_id: r.konu,
+        level: r.seviye as "A1" | "A2",
+        task: r.gorev,
+        model_answer_en: r.model_cevap,
+        student_text: r.ogrenci_cevabi,
+        expected: { is_correct: r.dogru_mu === "evet", l1_codes: r.birincil_kod ? [r.birincil_kod, ...others] : [] },
+      });
+    }
+  });
+
+  return { items, errors, warnings };
+}
