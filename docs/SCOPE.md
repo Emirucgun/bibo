@@ -36,9 +36,9 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 
 ### Giriş ve başlangıç
 
-- [ ] **F1** Google ile giriş (Supabase Auth)
-- [ ] **F1** Davet kodu, kohort kapasitesi (60), davetsiz erişimin engellenmesi
-- [ ] **F1** 18+ beyanı, KVKK aydınlatma ve açık rıza (sürüm + zaman kaydı)
+- [x] **F1** Google ile giriş (Supabase Auth)
+- [x] **F1** Davet kodu, kohort kapasitesi (60), davetsiz erişimin engellenmesi
+- [x] **F1** 18+ beyanı, KVKK aydınlatma ve açık rıza (sürüm + zaman kaydı) _(16.11.2026: aydınlatma metni taslak; son hâli M10'da, "Gizlilik sayfası" maddesi o zaman işaretlenir)_
 - [ ] **F2** Seviye beyanı (A1 / A2 / emin değilim), en az 2 ilgi alanı (12 seçenek)
 - [ ] **F2** 14 soruluk sabit yerleştirme testi ve ustalık tohumlama
 - [ ] **F2** "Tahmini zayıf noktalar" kartı (3 konu, "tahmin" etiketli)
