@@ -78,7 +78,7 @@ export function FeedbackCard({
       {result.feedbackShortTr ? <p className="text-sm leading-relaxed">{result.feedbackShortTr}</p> : null}
       {result.correction ? (
         <p className="text-sm">
-          <span className="text-muted-foreground">Doğrusu: </span>
+          <span className="text-muted-foreground">Doğru cevap: </span>
           <span lang="en" className="font-medium">
             {result.correction}
           </span>
