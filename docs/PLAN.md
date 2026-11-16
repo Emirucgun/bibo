@@ -4,7 +4,7 @@
 | --- | --- |
 | Tarih | 15 Kasım 2026 |
 | Kapsam | `ROADMAP.md` M2 · `SPEC.md` Bölüm 3 (`cohorts`, `profiles`, RLS), 6 ("Kimlik ve başlangıç", `DELETE /api/account`), 7, 9, 11 · `PRD.md` F1, F13, A1, A8 |
-| Durum | Uygulandı. Göç `bibo-dev`'de; `npm test` (698), lint, tür ve derleme yeşil. Bitti testinin beş maddesi yerelde uçtan uca, `bibo-dev`'de SQL ile ve 16.11.2026'da önizlemede **gerçek Google girişiyle** doğrulandı; ROADMAP M2 ve SCOPE F1 kutuları işaretli. Google OAuth istemcisi kuruldu (`Testing` durumunda, test kullanıcılarıyla); `bibo-dev`'de Google açık. **Açık:** `prod` (göç + Supabase ayarları, ana dala birleştikten sonra), Google tarafında yayınlama (M10), telefonda Google ekranı kontrolü. |
+| Durum | Uygulandı. Göç `bibo-dev`'de; `npm test` (698), lint, tür ve derleme yeşil. Bitti testinin beş maddesi yerelde uçtan uca, `bibo-dev`'de SQL ile ve 16.11.2026'da önizlemede **gerçek Google girişiyle** doğrulandı; ROADMAP M2 ve SCOPE F1 kutuları işaretli. Google OAuth istemcisi kuruldu (`Testing` durumunda, test kullanıcılarıyla); `bibo-dev`'de Google açık. **Açık:** `prod` (göç + Supabase ayarları, ana dala birleştikten sonra), Google tarafında yayınlama (M10). |
 | Bağımlılık | M1 (`cohorts`, `profiles`), M3 (`private.user_role()`, öğrenci tablolarındaki `on delete cascade`). M6 bu taşın `requireUser()` / `requireOnboarded()` yardımcılarını kullanır. |
 
 M1, M3, M4 ve M5 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`, `8b9c67f`).
@@ -76,7 +76,7 @@ Komutlar: `npm test` (698) · `psql -d <db> -f tests/db/m2-auth.sql` (40 doğrul
 ## 5. Açık sorular ve elle kontrol
 
 1. ~~Google OAuth kurulumu.~~ 16.11.2026'da yapıldı: Google Cloud istemcisi (`Testing`, test kullanıcılarıyla) ve `bibo-dev`'de Google sağlayıcısı. Yayınlama için Google "App domain" alanlarını (ana sayfa, gizlilik linki, kullanım koşulları linki) istiyor; son gizlilik metniyle birlikte M10'da.
-2. ~~Elle kontrol (önizleme, gerçek Google hesabıyla).~~ 16.11.2026'da geçti: davet linki → giriş → kod dolu → onam; hesap silme; davetsiz giriş `/davet`'te kalıyor; dolu 1 kişilik kohortta kontenjan mesajı. **Kalan:** iOS Safari ve Android Chrome'da Google ekranı ve dönüş.
+2. ~~Elle kontrol (önizleme, gerçek Google hesabıyla).~~ 16.11.2026'da geçti: davet linki → giriş → kod dolu → onam; hesap silme; davetsiz giriş `/davet`'te kalıyor; dolu 1 kişilik kohortta kontenjan mesajı. Telefonda da Google ekranı ve dönüş sorunsuz (mühendisin bildirimi, 16.11.2026); iki platformun ayrı ayrı kontrolü M10 cihaz listesinde.
 3. **`prod`:** göç ana dala birleştikten sonra uygulanır; pilot kohortu ve davet kodu M10'da.
 4. **SPEC önerileri (uygulanmadı, onay bekliyor):** Bölüm 2 dizin yapısına `(auth)/davet/page.tsx`, `lib/auth/*`, `lib/api/*`, `lib/onboarding/*`; Bölüm 3'e `claim_invite`; Bölüm 6'ya M2 hata kodları.
 5. **Gizlilik metni:** veri sorumlusu, iletişim adresi ve MAI-Transcribe-2'nin OpenRouter üzerinden işlendiği bölge M10'dan önce doldurulmalı (SCOPE günlüğü 11.11.2026).
