@@ -163,7 +163,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 **Bitti testi**
 - [ ] Gerçek telefonda bir oturum baştan sona tamamlanıyor.
-- [ ] Her cevap için `attempts`, gerekiyorsa `error_events`, ve `mastery` satırları yazılıyor.
+- [x] Her cevap için `attempts`, gerekiyorsa `error_events`, ve `mastery` satırları yazılıyor. _(16.11.2026: önizleme + `bibo-dev`, gerçek oturum: 10/10 cevap, 4 yanlış cevapta 6 hata olayı (`llm` ve `rule`), 8 ustalık satırı)_
 - [ ] Yerel değerlendirme ≤ 1 sn; yapay zekâ değerlendirmesi p90 ≤ 6 sn.
 - [ ] Oturum bittikten sonra 60 sn içinde sonraki oturum `ready`; "Başla" ≤ 2 sn'de açılıyor.
 - [ ] Sayfa yenilenince oturum kaldığı etkinlikten devam ediyor.
