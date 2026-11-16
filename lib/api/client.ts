@@ -5,14 +5,15 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; code: string; me
 
 export async function callApi<T>(
   path: string,
-  init: { method: "POST" | "PATCH" | "DELETE"; body: unknown },
+  init: { method: "POST" | "PATCH" | "DELETE"; body: unknown } | { method: "GET" },
 ): Promise<ApiResult<T>> {
   try {
-    const response = await fetch(path, {
-      method: init.method,
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(init.body),
-    });
+    const response = await fetch(
+      path,
+      init.method === "GET"
+        ? { method: "GET", cache: "no-store" }
+        : { method: init.method, headers: { "content-type": "application/json" }, body: JSON.stringify(init.body) },
+    );
     const json: unknown = await response.json().catch(() => null);
     if (response.ok) return { ok: true, data: json as T };
     const error = (json as { error?: { code?: unknown; message_tr?: unknown } } | null)?.error;

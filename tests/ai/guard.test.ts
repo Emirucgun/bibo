@@ -82,6 +82,20 @@ describe("withAiCall", () => {
     expect(ran).toBe(1);
   });
 
+  it("ön üretim (`prefetch`) günlük sınıra takılmaz ama acil durdurma ve tavana takılır (SPEC 5.4 madde 3)", async () => {
+    const store = new FakeStore();
+    store.startedToday = 2;
+    let ran = 0;
+    await withAiCall(store, { ...GEN, prefetch: true }, spec(() => ran++));
+    expect(ran).toBe(1);
+    store.settings.kill_switch = true;
+    await expect(withAiCall(store, { ...GEN, prefetch: true }, spec(() => ran++))).rejects.toMatchObject({ code: "kill_switch" });
+    store.settings.kill_switch = false;
+    store.monthCost = 40;
+    await expect(withAiCall(store, { ...GEN, prefetch: true }, spec(() => ran++))).rejects.toMatchObject({ code: "budget" });
+    expect(ran).toBe(1);
+  });
+
   it("başarılı çağrı yalnızca sayısal/kimlik alanlı bir llm_usage satırı yazar ve oturum maliyetini artırır", async () => {
     const store = new FakeStore();
     await withAiCall(store, GEN, spec(() => {}), { clock: (() => { let t = 0; return () => (t += 50); })() });

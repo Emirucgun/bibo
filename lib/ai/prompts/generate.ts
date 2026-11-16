@@ -10,7 +10,7 @@ import { EXPLANATION_STYLE, L1_CODE_LIST_TEXT, TOPIC_LIST_TEXT } from "./taxonom
 const ACTIVITY_SPECS: Record<ActivityType, string> = {
   mcq_read: `payload: text_en (short reading text), question_en, options (3–4). key: correct (exact text of the right option), distractors (one entry per wrong option: option text, L1 code of the typical error it represents, feedback_tr).`,
   listen_choose: `payload: text_en (what will be spoken aloud, 1–3 sentences), question_en, options (3–4). key: correct, distractors (one per wrong option, as above). Distractors should reflect listening confusions (e.g. -s endings, can/can't, th) mapped to an L1 code.`,
-  gap_fill: `payload: text_en with exactly one gap written as "${GAP_MARK}". key: accepted (all correct fillers), wrong_patterns (typical wrong fillers with their L1 code).`,
+  gap_fill: `payload: text_en with exactly one gap written as "${GAP_MARK}". The gap must have one clear answer: the sentence must not be completable correctly with a different structure (bad: "Ella wants ${GAP_MARK} piano." also accepts "to play"; good: "Ella has ${GAP_MARK} piano in her room."). key: accepted (every correct filler), wrong_patterns (typical wrong fillers with their L1 code).`,
   word_order: `payload: tokens (the words of the sentence, shuffled, NOT in the correct order; punctuation attached to its word). key: accepted (correct sentences using exactly these tokens).`,
   dictation: `payload: text_en (one sentence to be spoken and written down). key: correct (identical to text_en), target_words (the 1–3 words in the sentence that test the target topic).`,
   translate_tr_en: `payload: source_tr (one Turkish sentence). key: model_answer_en, accepted (other acceptable translations).`,
@@ -32,7 +32,8 @@ Content rules:
 - No culturally sensitive, political, religious or adult content.
 - Each activity tests one target topic; the rest of the sentence must be easy.
 - Theme each activity with the interest given for its slot ("general" = neutral everyday theme). Vary names, places and situations; use the variety seed to pick different ones each session.
-- instruction_tr: a short Turkish instruction in "sen" form (e.g. "Doğru seçeneği işaretle.").
+- instruction_tr: the complete task in Turkish, in "sen" form. A beginner who cannot read the English task must understand what to do from instruction_tr alone. Say exactly what is expected: for gap_fill name the kind of word or the choices (e.g. "Boşluğa a ya da an yaz."); for short_write and speak_answer restate the whole task and the structure to use (e.g. "Sevdiğin müzik hakkında 2–3 cümle yaz; am / is / are kullan."); for mcq_read say what to read and choose (e.g. "Metni oku ve soruya uygun cevabı seç."). Never a vague instruction such as "Boşluğa doğru kelimeyi yaz." or "Kısa bir paragraf yaz.".
+- Texts must make sense on their own: natural, coherent sentences about one simple situation. A question must be answerable from its text and must have exactly one defensible answer.
 - options: all different, similar length, exactly one correct. Never put the correct answer in a distractor entry.
 - Use L1.* codes only when the error is really caused by Turkish; otherwise GEN.* codes. Prefer the slot's l1_target code when it fits.
 - If a slot's purpose is "review" or "retest", test the same topic with a fresh sentence; "stretch" may be slightly harder within the student's level.

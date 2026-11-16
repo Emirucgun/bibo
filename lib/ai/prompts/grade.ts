@@ -28,7 +28,8 @@ L1 error codes (code (topic): name, rule, example):
 ${L1_CODE_LIST_TEXT}`;
 
 export interface GradeUserInput {
-  activity_type: Extract<ActivityType, "translate_tr_en" | "short_write" | "speak_answer">;
+  /** `gap_fill`: anahtarda olmayan cevabın hakemliği (öğrenci metni = tamamlanmış cümle). */
+  activity_type: Extract<ActivityType, "translate_tr_en" | "short_write" | "speak_answer" | "gap_fill">;
   topic_id: string;
   level: "A1" | "A2";
   /** `payload.source_tr` ya da `payload.prompt_en`. */
@@ -50,7 +51,9 @@ export function buildGradeUser(input: GradeUserInput): string {
       ? "Translate the Turkish sentence into English."
       : input.activity_type === "short_write"
         ? "Write 2–3 sentences for the task."
-        : "Answer the question aloud (verbatim transcript below).";
+        : input.activity_type === "gap_fill"
+          ? "The student completed the gap in the task sentence; the answer below is the completed sentence. is_correct = true if the completed sentence is correct, natural English, even when it differs from the model answer."
+          : "Answer the question aloud (verbatim transcript below).";
   return [
     `Activity: ${input.activity_type} — ${kind}`,
     `Student level: ${input.level}`,

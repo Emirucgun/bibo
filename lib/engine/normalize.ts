@@ -48,3 +48,17 @@ export function tokenizeWords(input: string): string[] {
 export function answersMatch(a: string, b: string): boolean {
   return normalizeAnswer(a) === normalizeAnswer(b);
 }
+
+/**
+ * İki metin yalnızca büyük/küçük harf, noktalama ya da kesme işaretiyle mi ayrılıyor?
+ * (`she` / `She`, `dont` / `don't`.) Bu farklar hata sayılmaz (SPEC 5.3).
+ */
+export function sameIgnoringCaseAndPunctuation(a: string, b: string): boolean {
+  const strip = (x: string) =>
+    x
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}\s]/gu, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  return strip(a) === strip(b);
+}

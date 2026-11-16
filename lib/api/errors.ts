@@ -19,6 +19,17 @@ export const API_ERRORS = {
     status: 409,
     message_tr: "Metin güncellendi. Sayfayı yenileyip yeniden onayla.",
   },
+  not_found: { status: 404, message_tr: "Aradığın şeyi bulamadık." },
+  session_not_ready: { status: 409, message_tr: "Bu oturum şu an açılamıyor. Ana sayfaya dönüp yeniden dene." },
+  session_not_active: { status: 409, message_tr: "Bu oturum açık değil. Ana sayfaya dönüp yeniden dene." },
+  daily_limit: {
+    status: 429,
+    message_tr: "Bugünlük bu kadar yeter. Yarın yeni oturumun hazır olacak.",
+  },
+  ai_unavailable: {
+    status: 503,
+    message_tr: "Şu an yeni oturum hazırlayamıyoruz. Biraz sonra yeniden dene.",
+  },
   server_error: { status: 500, message_tr: "Bir şeyler ters gitti. Biraz sonra yeniden dene." },
 } as const;
 
