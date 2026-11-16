@@ -5,7 +5,7 @@ import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
 import type { PlanSlot } from "@/lib/engine/types";
 import { nextExplainMode } from "@/lib/session/explain-mode";
-import { applyTextFallback, TEXT_FALLBACK } from "@/lib/session/fallback";
+import { applyTextFallback, LISTENING_FALLBACK, SPEAKING_FALLBACK } from "@/lib/session/fallback";
 import { splitGeneratedItem, splitGeneratedItems } from "@/lib/session/save-items";
 import { validItem } from "../ai/fixtures";
 import { plannerInput } from "../engine/fixtures";
@@ -24,10 +24,17 @@ const slot = (position: number, activity_type: PlanSlot["activity_type"]): PlanS
 
 describe("applyTextFallback (M6 geçici bayrağı)", () => {
   it("dinleme ve konuşma türleri aynı moddaki metin türüne düşer", () => {
-    expect(TEXT_FALLBACK).toEqual({ listen_choose: "mcq_read", dictation: "gap_fill", speak_answer: "short_write" });
-    for (const [from, to] of Object.entries(TEXT_FALLBACK)) {
-      expect(ACTIVITY_TYPE_INFO[to].mode).toBe(ACTIVITY_TYPE_INFO[from as keyof typeof TEXT_FALLBACK].mode);
+    expect(LISTENING_FALLBACK).toEqual({ listen_choose: "mcq_read", dictation: "gap_fill" });
+    expect(SPEAKING_FALLBACK).toEqual(["short_write", "translate_tr_en"]);
+    for (const [from, to] of Object.entries(LISTENING_FALLBACK)) {
+      expect(ACTIVITY_TYPE_INFO[to].mode).toBe(ACTIVITY_TYPE_INFO[from as "listen_choose"].mode);
     }
+    for (const to of SPEAKING_FALLBACK) expect(ACTIVITY_TYPE_INFO[to].mode).toBe(ACTIVITY_TYPE_INFO.speak_answer.mode);
+  });
+
+  it("konuşma slotları sırayla kısa yazma ve çeviriye düşer", () => {
+    const out = applyTextFallback([1, 2, 3, 4, 5].map((p) => slot(p, p === 3 ? "gap_fill" : "speak_answer")));
+    expect(out.map((s) => s.activity_type)).toEqual(["short_write", "translate_tr_en", "gap_fill", "short_write", "translate_tr_en"]);
   });
 
   it("beceri ve mod yeni türden gelir; diğer alanlar ve metin türleri değişmez", () => {
