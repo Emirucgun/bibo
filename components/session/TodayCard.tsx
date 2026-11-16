@@ -44,7 +44,12 @@ export function TodayCard() {
           if (cancelled) return;
           if (!view.ok) return setState({ name: "message", text: view.message });
           const status = view.data.session.status;
-          if (status === "ready" || status === "active") return setState({ name: "ready", view: view.data });
+          if (status === "ready" || status === "active") {
+            // Ana sayfaya geri dönüldüğünde önceki "Başla" dokunuşunun durumu kalmasın.
+            setStarting(false);
+            setStartError(null);
+            return setState({ name: "ready", view: view.data });
+          }
           if (status !== "generating") break; // failed / abandoned: yeniden dene
           await sleep(POLL_MS);
         }
@@ -101,6 +106,8 @@ export function TodayCard() {
       }
     }
     router.push(`/oturum/${session.id}`);
+    // Sayfa bellekte tutulursa (geri dönüşte) düğme "Açılıyor…"da takılı kalmasın.
+    setStarting(false);
   }
 
   return (

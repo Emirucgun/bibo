@@ -162,7 +162,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - Geçici bayrak: dinleme ve konuşma slotları bu taşta metin türlerine düşürülür (M7–M8'de kaldırılır; dinleme için aynı mekanizma `tts_enabled` ile kalıcı olur).
 
 **Bitti testi**
-- [ ] Gerçek telefonda bir oturum baştan sona tamamlanıyor.
+- [x] Gerçek telefonda bir oturum baştan sona tamamlanıyor. _(16.11.2026: önizlemede telefonda iki oturum; 10/10 ve 9/9 cevap)_
 - [x] Her cevap için `attempts`, gerekiyorsa `error_events`, ve `mastery` satırları yazılıyor. _(16.11.2026: önizleme + `bibo-dev`, gerçek oturum: 10/10 cevap, 4 yanlış cevapta 6 hata olayı (`llm` ve `rule`), 8 ustalık satırı)_
 - [ ] Yerel değerlendirme ≤ 1 sn; yapay zekâ değerlendirmesi p90 ≤ 6 sn.
 - [x] Oturum bittikten sonra 60 sn içinde sonraki oturum `ready`; "Başla" ≤ 2 sn'de açılıyor. _(16.11.2026: önizlemede iki ölçüm, 57 sn (şemanın ilk derlenmesi) ve 21 sn; "Başla" elle denendi, ilk etkinlik hemen geliyor)_

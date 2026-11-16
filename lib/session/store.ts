@@ -5,7 +5,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isActivityType, type ActivityType, type Mode, type Purpose, type Skill } from "@/lib/content/activity-types";
 import { isInterest } from "@/lib/content/interests";
-import type { ItemKey } from "@/lib/engine/types";
+import type { EngineL1Code, EngineTopic, ItemKey } from "@/lib/engine/types";
 import type {
   AttemptRow,
   DiagnosisRow,
@@ -92,6 +92,11 @@ const toDiagnosis = (r: Row): DiagnosisRow => ({
   evidence: r.evidence,
   user_feedback: (r.user_feedback as DiagnosisRow["user_feedback"]) ?? null,
 });
+
+/** `topics` ve `l1_codes` seed verisidir; her cevapta yeniden okunmasın diye kısa süre bellekte tutulur. */
+const TAXONOMY_TTL_MS = 10 * 60_000;
+let topicsCache: { at: number; rows: EngineTopic[] } | null = null;
+let codesCache: { at: number; rows: EngineL1Code[] } | null = null;
 
 export function createSessionStore(db: SupabaseClient): SessionStore {
   return {
@@ -452,11 +457,12 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
     },
 
     async loadTopics() {
+      if (topicsCache && performance.now() - topicsCache.at < TAXONOMY_TTL_MS) return topicsCache.rows;
       const { data, error } = await db
         .from("topics")
         .select("id, level, kind, title_tr, l1_risk, prereqs, sort, active");
       if (error) fail("topics", error);
-      return (data ?? []).map((r) => ({
+      const rows = (data ?? []).map((r) => ({
         id: r.id as string,
         level: r.level as "A1" | "A2",
         kind: r.kind as "grammar" | "pron",
@@ -466,12 +472,17 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
         sort: Number(r.sort),
         active: Boolean(r.active),
       }));
+      if (rows.length > 0) topicsCache = { at: performance.now(), rows };
+      return rows;
     },
 
     async loadL1Codes() {
+      if (codesCache && performance.now() - codesCache.at < TAXONOMY_TTL_MS) return codesCache.rows;
       const { data, error } = await db.from("l1_codes").select("code, topic_id");
       if (error) fail("l1_codes", error);
-      return (data ?? []).map((r) => ({ code: r.code as string, topic_id: (r.topic_id as string | null) ?? null }));
+      const rows = (data ?? []).map((r) => ({ code: r.code as string, topic_id: (r.topic_id as string | null) ?? null }));
+      if (rows.length > 0) codesCache = { at: performance.now(), rows };
+      return rows;
     },
 
     async listActivityStats(userId) {

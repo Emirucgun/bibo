@@ -69,6 +69,13 @@ const answer = (env: Env, item: ItemRow, correct = true, extra: { hintUsed?: boo
     hintUsed: extra.hintUsed ?? false,
   });
 
+/** Yapay zekâ ile değerlendirilen ilk etkinlik (çeviri ya da kısa yazma; plan tohuma göre değişir). */
+const firstFree = (env: Env, sessionId: string) => {
+  const item = itemsOf(env, sessionId).find((i) => i.activity_type === "translate_tr_en" || i.activity_type === "short_write");
+  if (!item) throw new Error("oturumda serbest cevaplı etkinlik yok");
+  return item;
+};
+
 const firstOfType = (env: Env, sessionId: string, type: string) => {
   const item = itemsOf(env, sessionId).find((i) => i.activity_type === type);
   if (!item) throw new Error(`oturumda ${type} yok`);
@@ -328,7 +335,7 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     env.deps.rng = () => 0.05; // < review_sample_rate
     env.llm.grade = GRADE_WRONG;
     const id = await openSession(env);
-    const item = firstOfType(env, id, "translate_tr_en");
+    const item = firstFree(env, id);
     const res = await answer(env, item, false);
     expect(res).toMatchObject({ isCorrect: false, score: 0.4, correction: "He plays football every day." });
     expect(env.llm.gradeCalls).toBe(1);
@@ -351,11 +358,48 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     expect(rows.find((r) => r.topic_id === item.topic_id)).toMatchObject({ n: 1, correct: 0 });
   });
 
+  it("yalnızca büyük harf / noktalama farkı hata sayılmaz: cevap doğru kabul edilir (deneme, 16.11.2026)", async () => {
+    const env = setup();
+    // Modelin gerçek denemede döndürdüğü biçim: doğru çeviri, cümle başında küçük `she`.
+    env.llm.grade = {
+      ...GRADE_WRONG,
+      score: 0.8,
+      corrected: "He plays football every day.",
+      errors: [{ span: "he", correction: "He", l1_code: "GEN.SPELLING", topic_id: TOPIC }],
+      evidence: [],
+    };
+    const id = await openSession(env);
+    const item = firstFree(env, id);
+    const res = await submitAttempt(env.deps, actor, item.id, {
+      response: { text: "he plays football every day" },
+      timeMs: 1000,
+      hintUsed: false,
+    });
+    expect(res).toMatchObject({ isCorrect: true, score: 1, correction: null });
+    expect(env.store.errorEvents).toHaveLength(0);
+    expect(env.store.mastery.get(USER)!.find((m) => m.topic_id === item.topic_id)).toMatchObject({ n: 1, correct: 1 });
+  });
+
+  it("kesme işareti farkı hata olayı yazmaz ama gerçek hatalar kalır", async () => {
+    const env = setup();
+    env.llm.grade = {
+      ...GRADE_WRONG,
+      errors: [
+        { span: "I dont like rap", correction: "I don't like rap", l1_code: "GEN.SPELLING", topic_id: TOPIC },
+        { span: "play", correction: "plays", l1_code: "L1.3SG_S", topic_id: TOPIC },
+      ],
+    };
+    const id = await openSession(env);
+    const res = await answer(env, firstFree(env, id), false);
+    expect(res.isCorrect).toBe(false);
+    expect(env.store.errorEvents.map((e) => e.l1_code)).toEqual(["L1.3SG_S"]);
+  });
+
   it("örneklem oranı: rng ≥ oran ise `review_sampled = false`", async () => {
     const env = setup();
     env.llm.grade = GRADE_WRONG;
     const id = await openSession(env);
-    await answer(env, firstOfType(env, id, "translate_tr_en"), false);
+    await answer(env, firstFree(env, id), false);
     expect(env.store.errorEvents[0].review_sampled).toBe(false);
   });
 
@@ -366,7 +410,7 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     const env = setup();
     env.llm.grade = grade;
     const id = await openSession(env);
-    const item = firstOfType(env, id, "translate_tr_en");
+    const item = firstFree(env, id);
     const res = await answer(env, item, true);
     expect(res).toMatchObject({ isCorrect: null, score: null, feedbackShortTr: GRADE_UNAVAILABLE_TR });
     expect(env.store.attempts).toHaveLength(1);
@@ -378,7 +422,7 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     const env = setup();
     const id = await openSession(env);
     env.aiStore.settings.kill_switch = true;
-    const res = await answer(env, firstOfType(env, id, "translate_tr_en"), true);
+    const res = await answer(env, firstFree(env, id), true);
     expect(res.isCorrect).toBeNull();
     expect(env.llm.gradeCalls).toBe(0);
     // Yerel etkinlik çalışmaya devam eder.
@@ -460,7 +504,7 @@ describe("ipucu ve açıklama", () => {
     env.llm.grade = GRADE_WRONG;
     const id = await openSession(env);
     const local = await answer(env, firstOfType(env, id, "gap_fill"), false);
-    const llm = await answer(env, firstOfType(env, id, "translate_tr_en"), false);
+    const llm = await answer(env, firstFree(env, id), false);
     expect(await getExplanation(env.deps, actor, local.attemptId)).toEqual({
       explanationLongTr: "Üçüncü tekil şahısta fiile -s eklenir.",
     });

@@ -5,6 +5,7 @@ import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
 import type { ExplainMode } from "@/lib/session/explain-mode";
+import { feedbackHeading } from "@/lib/session/feedback-heading";
 import type { AttemptResult } from "@/lib/session/service";
 
 type Explanation = { state: "closed" } | { state: "loading" } | { state: "open"; text: string } | { state: "error" };
@@ -73,7 +74,7 @@ export function FeedbackCard({
       )}
     >
       {gradable ? (
-        <h2 className="text-base font-semibold">{result.isCorrect ? "Doğru" : "Henüz değil"}</h2>
+        <h2 className="text-base font-semibold">{feedbackHeading(result)}</h2>
       ) : null}
       {result.feedbackShortTr ? <p className="text-sm leading-relaxed">{result.feedbackShortTr}</p> : null}
       {result.correction ? (

@@ -4,6 +4,8 @@ import { ACTIVITY_TYPE_INFO, ACTIVITY_TYPES } from "@/lib/content/activity-types
 import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
 import type { PlanSlot } from "@/lib/engine/types";
+import { sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
+import { feedbackHeading } from "@/lib/session/feedback-heading";
 import { nextExplainMode } from "@/lib/session/explain-mode";
 import { applyTextFallback, LISTENING_FALLBACK, SPEAKING_FALLBACK } from "@/lib/session/fallback";
 import { splitGeneratedItem, splitGeneratedItems } from "@/lib/session/save-items";
@@ -113,5 +115,25 @@ describe("nextExplainMode (PRD F4)", () => {
   it("yanlış cevap yoksa mod değişmez", () => {
     expect(nextExplainMode("short", { wrong: 0, opened: 0 })).toBe("short");
     expect(nextExplainMode("long", { wrong: 0, opened: 0 })).toBe("long");
+  });
+});
+
+describe("sameIgnoringCaseAndPunctuation", () => {
+  it("yalnızca büyük/küçük harf, noktalama ve kesme işareti farkını aynı sayar", () => {
+    expect(sameIgnoringCaseAndPunctuation("she", "She")).toBe(true);
+    expect(sameIgnoringCaseAndPunctuation("I dont like rap", "I don't like rap.")).toBe(true);
+    expect(sameIgnoringCaseAndPunctuation("Ayse is a player. she is fast", "Ayse is a player. She is fast.")).toBe(true);
+    expect(sameIgnoringCaseAndPunctuation("He play football", "He plays football")).toBe(false);
+    expect(sameIgnoringCaseAndPunctuation("roc and roll", "rock and roll")).toBe(false);
+  });
+});
+
+describe("feedbackHeading", () => {
+  it("başlık hatanın derecesine göre değişir", () => {
+    expect(feedbackHeading({ isCorrect: true, score: 1 })).toBe("Doğru");
+    expect(feedbackHeading({ isCorrect: false, score: 0.8 })).toBe("Çok yakın");
+    expect(feedbackHeading({ isCorrect: false, score: 0.4 })).toBe("Az kaldı, bir daha bakalım");
+    expect(feedbackHeading({ isCorrect: false, score: 0 })).toBe("Buna birlikte bakalım");
+    expect(feedbackHeading({ isCorrect: false, score: null })).toBe("Buna birlikte bakalım");
   });
 });

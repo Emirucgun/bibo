@@ -11,6 +11,7 @@ import { ACTIVITY_TYPE_INFO, SKILL_LABELS_TR } from "@/lib/content/activity-type
 import { diagnoseTopic, diagnosisMessage, reconcileDiagnoses, type MasteryBySkill } from "@/lib/engine/diagnosis";
 import { creditRetest } from "@/lib/engine/effectiveness";
 import { gradeLocal } from "@/lib/engine/grade-local";
+import { sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
 import { applyEvidence, emptyMastery, evidenceFromAttempt } from "@/lib/engine/mastery";
 import { planSession, RECENT_ERROR_DAYS } from "@/lib/engine/planner";
 import { createRng, seedFromString } from "@/lib/engine/random";
@@ -438,14 +439,19 @@ async function gradeWithLlm(
   }
   if (outcome.kind !== "ok") return UNGRADED;
   const r = outcome.result;
+  // Büyük/küçük harf, noktalama ve kesme işareti hata değildir (SPEC 5.3). Model bunu zaman
+  // zaman yine de hata sayıyor (ör. cümle başında `she`); bu kural kodla da uygulanır.
+  const errors = r.errors.filter((e) => !sameIgnoringCaseAndPunctuation(e.span, e.correction));
+  const cosmeticOnly = !r.is_correct && errors.length === 0 && sameIgnoringCaseAndPunctuation(text, r.corrected);
+  const isCorrect = r.is_correct || cosmeticOnly;
   return {
-    is_correct: r.is_correct,
-    score: r.score,
+    is_correct: isCorrect,
+    score: cosmeticOnly ? 1 : r.score,
     graded_by: "llm",
     feedback_short_tr: r.feedback_short_tr,
     explanation_long_tr: r.explanation_long_tr,
-    correction: r.is_correct ? null : r.corrected,
-    errors: r.errors.map((e) => ({
+    correction: isCorrect ? null : r.corrected,
+    errors: errors.map((e) => ({
       topic_id: e.topic_id,
       l1_code: e.l1_code,
       wrong_span: e.span,
@@ -513,20 +519,24 @@ export async function submitAttempt(
   const field = RESPONSE_FIELD[item.activity_type as keyof typeof RESPONSE_FIELD];
   if (!field || !(field in input.response)) throw new ApiError("invalid_input");
 
-  const previous = (await store.listAttempts([item.id])).find((a) => a.try_no === 1);
+  // Bağımsız okumalar tek turda (her biri ayrı bir ağ gidiş-dönüşü).
+  const isLocal = ACTIVITY_TYPE_INFO[item.activity_type].grading === "local";
+  const [attempts, key, hintOpened, settings] = await Promise.all([
+    store.listAttempts([item.id]),
+    store.getItemKey(item.id),
+    input.hintUsed ? true : store.hintOpened(actor.userId, item.id),
+    isLocal ? null : store.loadSessionSettings(),
+  ]);
+  const previous = attempts.find((a) => a.try_no === 1);
   if (previous) return toAttemptResult(previous);
-
-  const key = await store.getItemKey(item.id);
   if (!key) throw new ApiError("server_error");
 
-  const isLocal = ACTIVITY_TYPE_INFO[item.activity_type].grading === "local";
-  const settings = isLocal ? null : await store.loadSessionSettings();
   const graded = isLocal
     ? gradeLocally(item, key, input.response)
     : await gradeWithLlm(deps, item, key, (input.response as { text: string }).text, settings!.review_sample_rate);
 
   const now = deps.now();
-  const hintUsed = input.hintUsed || (await store.hintOpened(actor.userId, item.id));
+  const hintUsed = hintOpened;
   const attemptId = await store.insertAttempt({
     item_id: item.id,
     user_id: actor.userId,
@@ -548,35 +558,44 @@ export async function submitAttempt(
     return toAttemptResult(first);
   }
 
+  // Hata olayları, ustalık ve etkinlik verimi birbirinden bağımsız: birlikte yazılır.
+  const writes: Promise<void>[] = [];
   if (graded.errors.length > 0) {
-    await store.insertErrorEvents(
-      graded.errors.map((e) => ({
-        ...e,
-        attempt_id: attemptId,
-        user_id: actor.userId,
-        skill: item.skill,
-        activity_type: item.activity_type,
-        mode: item.mode,
-      })),
+    writes.push(
+      store.insertErrorEvents(
+        graded.errors.map((e) => ({
+          ...e,
+          attempt_id: attemptId,
+          user_id: actor.userId,
+          skill: item.skill,
+          activity_type: item.activity_type,
+          mode: item.mode,
+        })),
+      ),
     );
   }
-
   if (graded.is_correct !== null && graded.score !== null) {
-    await updateMastery(deps, item, { ...graded, is_correct: graded.is_correct, score: graded.score }, hintUsed, now);
+    const done = { ...graded, is_correct: graded.is_correct, score: graded.score };
+    writes.push(updateMastery(deps, item, done, hintUsed, now));
     if (item.purpose === "retest") {
-      const credit = creditRetest(
-        {
-          topic_id: item.topic_id,
-          activity_type: item.activity_type,
-          purpose: item.purpose,
-          is_correct: graded.is_correct,
-          created_at: now,
-        },
-        await store.listFocusCandidates(actor.userId, item.topic_id),
+      writes.push(
+        (async () => {
+          const credit = creditRetest(
+            {
+              topic_id: item.topic_id,
+              activity_type: item.activity_type,
+              purpose: item.purpose,
+              is_correct: done.is_correct,
+              created_at: now,
+            },
+            await store.listFocusCandidates(actor.userId, item.topic_id),
+          );
+          if (credit) await store.applyCredit(actor.userId, credit, now);
+        })(),
       );
-      if (credit) await store.applyCredit(actor.userId, credit, now);
     }
   }
+  await Promise.all(writes);
 
   return {
     attemptId,

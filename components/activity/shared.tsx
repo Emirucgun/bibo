@@ -63,6 +63,8 @@ export function FreeTextForm({
       {children}
       <textarea
         {...ANSWER_INPUT_PROPS}
+        // Tam cümle yazılan kutuda klavye cümle başını büyütsün; tek kelimelik boşlukta kapalı kalır.
+        autoCapitalize="sentences"
         aria-label={label}
         rows={rows}
         maxLength={1000}
