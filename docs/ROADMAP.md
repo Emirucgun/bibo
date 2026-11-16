@@ -80,11 +80,11 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - `DELETE /api/account` (erken eklemek ucuz, sonradan unutulması pahalı).
 
 **Bitti testi**
-- [ ] Davet kodu olmadan giriş yapan kullanıcı onam sayfasına geçemiyor.
-- [ ] Kapasite test için 1'e düşürüldüğünde ikinci kullanıcı `409` alıyor.
-- [ ] Rıza sürümü ve zamanı `profiles`'ta.
-- [ ] İki test kullanıcısıyla RLS: A, B'nin profilini okuyamıyor.
-- [ ] Hesap silme sonrası `auth.users` ve `profiles` satırı yok.
+- [x] Davet kodu olmadan giriş yapan kullanıcı onam sayfasına geçemiyor. _(16.11.2026: önizlemede gerçek Google girişiyle; `/baslangic/onam` → `/davet`)_
+- [x] Kapasite test için 1'e düşürüldüğünde ikinci kullanıcı `409` alıyor. _(16.11.2026: `bibo-dev`'de 1 kişilik dolu kohort; gerçek kullanıcı "kontenjan doldu" mesajını aldı, kohorta eklenmedi)_
+- [x] Rıza sürümü ve zamanı `profiles`'ta. _(16.11.2026: `consent_version = 2026-11-pilot-v1`, `consent_at` ve `adult_confirmed_at` dolu)_
+- [x] İki test kullanıcısıyla RLS: A, B'nin profilini okuyamıyor. _(15.11.2026: `tests/db/m2-auth.sql` `bibo-dev`'de 40/40)_
+- [x] Hesap silme sonrası `auth.users` ve `profiles` satırı yok. _(16.11.2026: `DELETE /api/account` sonrası `bibo-dev`'de eski hesabın iki satırı da yok; yeniden girişte yeni hesap açıldı)_
 
 ---
 

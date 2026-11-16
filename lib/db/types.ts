@@ -822,6 +822,13 @@ export type Database = {
         Args: { p_session_id: string; p_usd: number };
         Returns: undefined;
       };
+      claim_invite: {
+        Args: { p_code: string; p_user_id: string };
+        Returns: {
+          cohort_name: string;
+          status: string;
+        }[];
+      };
       llm_cost_since: { Args: { since: string }; Returns: number };
     };
     Enums: {

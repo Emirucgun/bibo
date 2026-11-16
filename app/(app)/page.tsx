@@ -1,3 +1,4 @@
+import { SignOutButton } from "@/components/auth/SignOutButton";
 import { APP_NAME, APP_TAGLINE } from "@/lib/content/app";
 
 // Yer tutucu ana sayfa. "Bugünkü oturum" kartı M6'da gelir.
@@ -7,6 +8,9 @@ export default function HomePage() {
       <h1 className="text-2xl font-semibold">{APP_NAME}</h1>
       <p className="text-sm opacity-70">{APP_TAGLINE}</p>
       <p className="text-sm opacity-70">Çok yakında burada olacağız.</p>
+      <div className="mt-4 w-full max-w-xs">
+        <SignOutButton />
+      </div>
     </main>
   );
 }
