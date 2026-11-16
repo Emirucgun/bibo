@@ -7,11 +7,13 @@ import { generateSession } from "@/lib/ai/generate-session";
 import { gradeFreeAnswer, GRADE_UNAVAILABLE_TR } from "@/lib/ai/grade";
 import { assertGuard, GuardError, istanbulDayStart, type AiDeps } from "@/lib/ai/guard";
 import { ApiError } from "@/lib/api/errors";
+import { GAP_MARK } from "@/lib/ai/checks";
 import { ACTIVITY_TYPE_INFO, SKILL_LABELS_TR } from "@/lib/content/activity-types";
+import { L1_CODES } from "@/lib/content/taxonomy";
 import { diagnoseTopic, diagnosisMessage, reconcileDiagnoses, type MasteryBySkill } from "@/lib/engine/diagnosis";
 import { creditRetest } from "@/lib/engine/effectiveness";
 import { gradeLocal } from "@/lib/engine/grade-local";
-import { sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
+import { answersMatch, sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
 import { applyEvidence, emptyMastery, evidenceFromAttempt } from "@/lib/engine/mastery";
 import { planSession, RECENT_ERROR_DAYS } from "@/lib/engine/planner";
 import { createRng, seedFromString } from "@/lib/engine/random";
@@ -326,6 +328,8 @@ export interface AttemptResult {
   score: number | null;
   feedbackShortTr: string | null;
   correction: string | null;
+  /** Hatanın Türkçe adı (`l1_codes.name_tr`); geri bildirim kartının başlığında gösterilir. */
+  errorNameTr: string | null;
 }
 
 const toAttemptResult = (a: AttemptRow): AttemptResult => ({
@@ -334,7 +338,17 @@ const toAttemptResult = (a: AttemptRow): AttemptResult => ({
   score: a.score,
   feedbackShortTr: a.feedback_short_tr,
   correction: a.correction,
+  errorNameTr: null, // yinelenen gönderimde hata adı yeniden hesaplanmaz
 });
+
+/** Öğrenciye bir şey söylemeyen genel kodlar başlıkta gösterilmez. */
+const UNNAMED_CODES = new Set(["GEN.OTHER"]);
+const L1_NAME_TR = new Map(L1_CODES.map((c) => [c.code, c.name_tr]));
+
+function errorName(errors: readonly { l1_code: string }[]): string | null {
+  const code = errors.find((e) => !UNNAMED_CODES.has(e.l1_code))?.l1_code;
+  return (code && L1_NAME_TR.get(code)) || null;
+}
 
 /** Etkinlik türünün beklediği cevap biçimi. */
 const RESPONSE_FIELD = {
@@ -415,6 +429,7 @@ async function gradeWithLlm(
   key: ItemKey,
   text: string,
   sampleRate: number,
+  override?: { activity_type: "gap_fill"; task: string },
 ): Promise<Graded> {
   const learner = await deps.store.getLearner(item.user_id);
   let outcome;
@@ -423,10 +438,10 @@ async function gradeWithLlm(
       deps.ai,
       { userId: item.user_id, sessionId: item.session_id, now: deps.now() },
       {
-        activity_type: item.activity_type as "translate_tr_en" | "short_write",
+        activity_type: override?.activity_type ?? (item.activity_type as "translate_tr_en" | "short_write"),
         topic_id: item.topic_id,
         level: learner.level_est,
-        task: item.payload.source_tr ?? item.payload.prompt_en ?? "",
+        task: override?.task ?? item.payload.source_tr ?? item.payload.prompt_en ?? "",
         model_answer_en: key.model_answer_en ?? null,
         accepted: key.accepted ?? [],
         student_text: text,
@@ -461,6 +476,47 @@ async function gradeWithLlm(
     })),
     incidental: r.evidence,
   };
+}
+
+/** Geçerli ama hedef dışı boşluk cevabında gösterilen mesaj; ustalık güncellenmez. */
+export const GAP_VALID_OTHER_TR = "Bu cümle de doğru. Ama bu etkinlikte aradığımız cevap başkaydı.";
+
+/**
+ * Boşluk doldurmada anahtarda ve bilinen yanlışlar listesinde OLMAYAN cevap yapay zekâya sorulur
+ * (SPEC 4.6 değişikliği, 16.11.2026: "Ella wants ___ piano" → "to play" yanlış sayılmıştı).
+ * - Tamamlanan cümle doğruysa: cevap değerlendirilmemiş sayılır (ustalık ve hata yazılmaz).
+ * - Yanlışsa: hata etiketleri modelden gelir (`l1_target` varsayımı yerine).
+ * - Model yanıt veremezse yerel sonuç geçerli kalır.
+ */
+async function adjudicateGap(
+  deps: SessionDeps,
+  item: ItemRow,
+  key: ItemKey,
+  text: string,
+  local: Graded,
+  sampleRate: number,
+): Promise<Graded> {
+  const sentence = item.payload.text_en ?? "";
+  const complete = (filler: string) => sentence.split(GAP_MARK).join(filler);
+  const accepted = key.accepted ?? [];
+  if (!sentence.includes(GAP_MARK) || accepted.length === 0 || text.trim() === "") return local;
+  const graded = await gradeWithLlm(
+    deps,
+    item,
+    { model_answer_en: complete(accepted[0]), accepted: accepted.slice(1).map(complete) },
+    complete(text),
+    sampleRate,
+    { activity_type: "gap_fill", task: sentence },
+  );
+  if (graded.is_correct === null) return local;
+  if (graded.is_correct) {
+    return {
+      ...UNGRADED,
+      feedback_short_tr: [GAP_VALID_OTHER_TR, key.explanation_short_tr].filter(Boolean).join(" "),
+      correction: accepted[0],
+    };
+  }
+  return { ...graded, score: 0, correction: accepted[0], incidental: [] };
 }
 
 async function updateMastery(
@@ -525,15 +581,20 @@ export async function submitAttempt(
     store.listAttempts([item.id]),
     store.getItemKey(item.id),
     input.hintUsed ? true : store.hintOpened(actor.userId, item.id),
-    isLocal ? null : store.loadSessionSettings(),
+    isLocal && item.activity_type !== "gap_fill" ? null : store.loadSessionSettings(),
   ]);
   const previous = attempts.find((a) => a.try_no === 1);
   if (previous) return toAttemptResult(previous);
   if (!key) throw new ApiError("server_error");
 
-  const graded = isLocal
+  let graded = isLocal
     ? gradeLocally(item, key, input.response)
     : await gradeWithLlm(deps, item, key, (input.response as { text: string }).text, settings!.review_sample_rate);
+  if (item.activity_type === "gap_fill" && graded.is_correct === false) {
+    const text = (input.response as { text: string }).text;
+    const known = key.wrong_patterns?.some((p) => answersMatch(p.answer, text)) ?? false;
+    if (!known) graded = await adjudicateGap(deps, item, key, text, graded, settings!.review_sample_rate);
+  }
 
   const now = deps.now();
   const hintUsed = hintOpened;
@@ -603,6 +664,7 @@ export async function submitAttempt(
     score: graded.score,
     feedbackShortTr: graded.feedback_short_tr,
     correction: graded.correction,
+    errorNameTr: graded.is_correct === false ? errorName(graded.errors) : null,
   };
 }
 

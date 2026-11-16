@@ -74,7 +74,10 @@ export function FeedbackCard({
       )}
     >
       {gradable ? (
-        <h2 className="text-base font-semibold">{feedbackHeading(result)}</h2>
+        <div className="flex flex-col gap-0.5">
+          <h2 className="text-base font-semibold">{feedbackHeading(result)}</h2>
+          {result.errorNameTr ? <p className="text-sm font-medium text-muted-foreground">{result.errorNameTr}</p> : null}
+        </div>
       ) : null}
       {result.feedbackShortTr ? <p className="text-sm leading-relaxed">{result.feedbackShortTr}</p> : null}
       {result.correction ? (

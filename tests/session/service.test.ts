@@ -4,6 +4,7 @@ import { GRADE_UNAVAILABLE_TR } from "@/lib/ai/grade";
 import { ApiError, type ApiErrorCode } from "@/lib/api/errors";
 import {
   finishSession,
+  GAP_VALID_OTHER_TR,
   GENERATING_STALE_MS,
   getExplanation,
   getHint,
@@ -19,7 +20,8 @@ import {
 } from "@/lib/session/service";
 import type { ItemRow } from "@/lib/session/types";
 import { masteryFrom } from "../engine/fixtures";
-import { GRADE_WRONG, OTHER, setup, USER, uuid } from "./fake-store";
+import { L1_CODES as TAXONOMY_CODES } from "@/lib/content/taxonomy";
+import { GRADE_OK, GRADE_WRONG, OTHER, setup, USER, uuid } from "./fake-store";
 
 const actor = { userId: USER };
 const HOUR = 3_600_000;
@@ -395,6 +397,72 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     expect(env.store.errorEvents.map((e) => e.l1_code)).toEqual(["L1.3SG_S"]);
   });
 
+  describe("boşluk doldurmada anahtarda olmayan cevap (SPEC 4.6 değişikliği)", () => {
+    const gapAnswer = (env: Env, item: ItemRow, text: string) =>
+      submitAttempt(env.deps, actor, item.id, { response: { text }, timeMs: 1000, hintUsed: false });
+
+    it("tamamlanan cümle doğruysa yanlış sayılmaz: ustalık ve hata yazılmaz, aranan cevap gösterilir", async () => {
+      const env = setup();
+      env.llm.grade = { ...GRADE_OK, evidence: [] };
+      const id = await openSession(env);
+      const item = firstOfType(env, id, "gap_fill");
+      const res = await gapAnswer(env, item, "sometimes plays");
+      expect(res).toMatchObject({ isCorrect: null, score: null, correction: "plays", errorNameTr: null });
+      expect(res.feedbackShortTr).toContain(GAP_VALID_OTHER_TR);
+      expect(env.store.errorEvents).toHaveLength(0);
+      expect(env.store.mastery.get(USER) ?? []).toHaveLength(0);
+      // Model tamamlanmış cümleyi görür; görev boşluklu cümledir.
+      const call = env.llm.calls.at(-1)!;
+      expect(call.schemaName).toBe("grade_result");
+      expect(call.user).toContain("Activity: gap_fill");
+      expect(call.user).toContain("<student_answer>She sometimes plays tennis on Sundays.</student_answer>");
+      expect(call.user).toContain("Model answer: She plays tennis on Sundays.");
+    });
+
+    it("cümle yanlışsa hata etiketi modelden gelir, puan 0", async () => {
+      const env = setup();
+      env.llm.grade = GRADE_WRONG;
+      const id = await openSession(env);
+      const item = firstOfType(env, id, "gap_fill");
+      const res = await gapAnswer(env, item, "playing");
+      expect(res).toMatchObject({ isCorrect: false, score: 0, correction: "plays" });
+      expect(res.errorNameTr).toBe(TAXONOMY_CODES.find((c) => c.code === "L1.3SG_S")!.name_tr);
+      expect(env.store.errorEvents).toHaveLength(1);
+      expect(env.store.errorEvents[0]).toMatchObject({ source: "llm", l1_code: "L1.3SG_S", activity_type: "gap_fill" });
+      // Yan kanıt yazılmaz: yalnızca hedef konu.
+      expect(env.store.mastery.get(USER)!.map((m) => m.topic_id)).toEqual([item.topic_id]);
+    });
+
+    it("bilinen yanlış (wrong_patterns) ve doğru cevap modele sorulmaz", async () => {
+      const env = setup();
+      const id = await openSession(env);
+      const gaps = itemsOf(env, id).filter((i) => i.activity_type === "gap_fill");
+      const before = env.llm.gradeCalls;
+      const wrong = await gapAnswer(env, gaps[0], "play");
+      expect(wrong).toMatchObject({ isCorrect: false, errorNameTr: TAXONOMY_CODES.find((c) => c.code === "L1.3SG_S")!.name_tr });
+      if (gaps[1]) expect((await gapAnswer(env, gaps[1], "Plays ")).isCorrect).toBe(true);
+      expect(env.llm.gradeCalls).toBe(before);
+    });
+
+    it("model yanıt veremezse yerel sonuç geçerli kalır", async () => {
+      const env = setup();
+      env.llm.grade = "refusal";
+      const id = await openSession(env);
+      const res = await gapAnswer(env, firstOfType(env, id, "gap_fill"), "to play");
+      expect(res).toMatchObject({ isCorrect: false, score: 0, correction: "plays" });
+      expect(env.store.errorEvents).toHaveLength(1);
+      expect(env.store.errorEvents[0].source).toBe("rule");
+    });
+  });
+
+  it("çeldirici hatasında hatanın adı döner; doğru cevapta dönmez", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const mcqs = itemsOf(env, id).filter((i) => i.activity_type === "mcq_read");
+    expect((await answer(env, mcqs[0], false)).errorNameTr).toBe(TAXONOMY_CODES.find((c) => c.code === "L1.3SG_S")!.name_tr);
+    if (mcqs[1]) expect((await answer(env, mcqs[1], true)).errorNameTr).toBeNull();
+  });
+
   it("örneklem oranı: rng ≥ oran ise `review_sampled = false`", async () => {
     const env = setup();
     env.llm.grade = GRADE_WRONG;
@@ -435,7 +503,8 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     const item = firstOfType(env, id, "gap_fill");
     const first = await answer(env, item, false);
     const second = await answer(env, item, true);
-    expect(second).toEqual(first);
+    // Sonuç aynı; hata adı yalnızca ilk yanıtta hesaplanır.
+    expect(second).toEqual({ ...first, errorNameTr: null });
     expect(env.store.attempts).toHaveLength(1);
     expect(env.store.mastery.get(USER)![0].n).toBe(1);
   });
