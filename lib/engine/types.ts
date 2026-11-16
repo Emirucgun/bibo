@@ -74,6 +74,8 @@ export interface ItemKey {
   explanation_short_tr?: string;
   explanation_long_tr?: string;
   hint_tr?: string;
+  /** Dinleme türlerinde seslendirilen metin; `items.payload`'da tutulmaz (SPEC Bölüm 3). */
+  text_en?: string;
 }
 
 export type LocalActivityType = "mcq_read" | "listen_choose" | "gap_fill" | "word_order" | "dictation";

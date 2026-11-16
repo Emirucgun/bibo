@@ -61,13 +61,18 @@ export interface CallContext {
   userId: string | null;
   sessionId: string | null;
   now: Date;
+  /**
+   * `finish` sonrasındaki ön üretim (SPEC 5.4 madde 3, rev. 3): günlük sınıra takılmaz.
+   * Sınır `POST /api/sessions/:id/start`'ta ve öğrencinin istediği üretimden önce uygulanır.
+   */
+  prefetch?: boolean;
 }
 
 export async function loadGuardState(store: AiStore, ctx: CallContext): Promise<GuardState> {
   const settings = await store.loadSettings();
   const monthCostUsd = await store.costSince(utcMonthStart(ctx.now));
   const sessionsStartedToday =
-    ctx.purpose === "generate" && ctx.userId
+    ctx.purpose === "generate" && ctx.userId && !ctx.prefetch
       ? await store.sessionsStartedSince(ctx.userId, istanbulDayStart(ctx.now))
       : null;
   return { settings, monthCostUsd, sessionsStartedToday };
