@@ -47,22 +47,22 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 
 - [x] **F3** Planlayıcı: tekrar, odak, çapraz tekrar, kapsama, germe; 8–10 etkinlik, 900–1200 sn, dört beceri; seslendirme kapalıyken dinleme slotlarını metne düşürme
 - [ ] **F3** Oturum üretimi: en çok 5 slotluk paralel çağrılar (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim
-- [ ] **F3** Oturumun önceden hazırlanması (`after()`, p90 ≤ 60 sn), hazır oturumun ≤ 2 sn açılması
+- [x] **F3** Oturumun önceden hazırlanması (`after()`, p90 ≤ 60 sn), hazır oturumun ≤ 2 sn açılması _(17.11.2026, M6: önizlemede 2 ölçüm, 57 sn ve 21 sn; p90 asıl ölçümü `simulate` / pilot öncesi)_
 - [ ] **F3** Sekiz etkinlik türünün arayüzü: oku-seç, boşluk doldur, cümle diz, dinle-seç, dikte, çevir, kısa yaz, sesli cevapla
-- [ ] **F3** Kaldığı yerden devam (24 saat), kişi başı günlük oturum sınırı
-- [ ] **F3** İçeriğin %20'si genel (ilgi alanı etkisini ölçmek için), işaretli
-- [ ] **F4** Kısa Türkçe geri bildirim, doğru biçim, L1 karşılaştırması
-- [ ] **F4** "Daha fazla açıkla" (ek çağrı yok) ve açıklama modu öğrenimi
-- [ ] **F4** Türkçe ipucu, ipuçlu cevabın en fazla 0,5 sayılması
+- [x] **F3** Kaldığı yerden devam (24 saat), kişi başı günlük oturum sınırı _(17.11.2026, M6: önizlemede elle denendi; servis testleri)_
+- [x] **F3** İçeriğin %20'si genel (ilgi alanı etkisini ölçmek için), işaretli _(17.11.2026, M6: planlayıcı `general_content_rate` ve testleri)_
+- [x] **F4** Kısa Türkçe geri bildirim, doğru biçim, L1 karşılaştırması _(17.11.2026, M6: gerçek oturumlarda görüldü; boşluk hakemliği SPEC rev. 4)_
+- [x] **F4** "Daha fazla açıkla" (ek çağrı yok) ve açıklama modu öğrenimi _(17.11.2026, M6: servis testleri; `explain_open` yalnızca tıklamada)_
+- [x] **F4** Türkçe ipucu, ipuçlu cevabın en fazla 0,5 sayılması _(17.11.2026, M6: servis testleri; ipucu kullanımı sunucuda `hint_open` olayından doğrulanır)_
 - [ ] **F5** Bulut TTS (Speechify Simba 3.5), önbellek, imzalı URL, A1 hızı 0,9 (SSML), en çok 3 dinleme
 - [ ] **F5** Seslendirme kotası takibi (%80 uyarısı), servis yanıt vermezse oturumun kırılmaması
 - [ ] **F6** Bas-konuş WAV kaydı (16 kHz mono, ≤ 45 sn), ses saklanmaz
 - [ ] **F6** İki adımlı transkript (Azure MAI-Transcribe-2, `verbatim`) + değerlendirme (Claude), transkriptin gösterilmesi, 1 yeniden kayıt hakkı
-- [ ] **F7** Hata etiketleme (çeldirici kodu, kural, yapay zekâ), `error_events`
+- [x] **F7** Hata etiketleme (çeldirici kodu, kural, yapay zekâ), `error_events` _(17.11.2026, M6: Bitti testi maddesi 2: 4 yanlış cevapta 6 hata olayı)_
 - [x] **F7** Kademeli ustalık puanı, aralıklı tekrar, yan kanıt
 - [x] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6
-- [ ] **F7** Etkinlik verimi verisinin toplanması (`activity_stats`)
-- [ ] **F8** Oturum özeti, kanıtlı teşhis kartı, "Doğru / Bence değil", 1–5 puan ve not
+- [x] **F7** Etkinlik verimi verisinin toplanması (`activity_stats`) _(17.11.2026, M6: `applyCredit` + `retest` testi)_
+- [x] **F8** Oturum özeti, kanıtlı teşhis kartı, "Doğru / Bence değil", 1–5 puan ve not _(17.11.2026, M6: gerçek oturum + servis testleri)_
 
 ### Ölçüm, güvenlik ve işletim
 
@@ -179,7 +179,7 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 
 | Tarih | Fikir | Kim | Not |
 | --- | --- | --- | --- |
-| | | | |
+| 17.11.2026 | Uç nokta sürelerinin kalıcı ölçümü: `attempt` yanıtına `Server-Timing` başlığı ya da `events`'e süre (yalnızca sayı) | Mühendis | Vercel Hobby logları 1 saat tutuluyor; M6'da uç nokta süresi elle ölçüldü |
 
 ---
 
@@ -194,4 +194,5 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 11.11.2026 | Sağlayıcı erişimi: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı) ve MAI-Transcribe-2 (`microsoft/mai-transcribe-2`) OpenRouter üzerinden; Speechify Simba 3.5 doğrudan (OpenRouter'da yok). Hata ya da ölçüt kaybı olursa ilgili model kendi sağlayıcısına döner | Tek anahtar, tek fatura, kolay model değişimi; iki modelin fiyatı doğrudan sağlayıcıyla aynı. Açık: transkript AB içinde işlenmiyor (KVKK metni), `verbatim` davranışı M8'de ölçülecek, OpenRouter kredi komisyonu | Mühendis (pedagoji sahibinin itiraz hakkı saklı) |
 | 11.11.2026 | Supabase `prod` projesi Stockholm'de (`eu-north-1`); `dev` Frankfurt'ta kalıyor | Proje bu bölgede açılmıştı; yeniden açmamaya karar verildi. Bedeli: Vercel `fra1` ile her sorguda ≈ 20–30 ms ek gecikme. Her iki bölge de AB; aydınlatma metninde Supabase için "AB (Stockholm)" yazılmalı | Mühendis |
 | 11.11.2026 | `topics.csv` (32), `l1_codes.csv` (24), `placement.json` (14) geçici olarak onaylandı | M4'e geçmek için yeterli seviyede. Pilot öncesi yeniden kontrol edilecek; değişiklik olursa `scripts/build-seed.ts` + seed yeniden yüklenir | Pedagoji sahibi |
+| 17.11.2026 | SPEC rev. 4: boşluk doldurmada anahtarda ve bilinen yanlışlarda olmayan cevap yapay zekâya sorulur ("boşluk hakemliği"); geçerli başka cevap değerlendirilmemiş sayılır. M6 uç nokta ayrıntıları (`next` açık oturumu döner, `attempt` yanıtında `errorNameTr`, açıklamada `?via=auto\|dismiss`) ve hata kodları SPEC'e yazıldı | 16.11.2026 denemesinde doğru cevap ("Ella wants to play piano") yanlış sayıldı; üretim komutundaki tek cevap kuralı tek başına yetmeyebilir. Ek maliyet çağrı başı ≈ 0,0007 $, oran pilotta izlenir | Ekip |
 | 11.11.2026 | M6 öncesi SPEC rev. 3 kararları: oturum üretimi en çok 5 slotluk paralel çağrılarla ve slot anahtarlı şemayla; aylık tavan OpenRouter komisyonunu kapsar (`openrouter_fee_rate`); dinleme metni `item_keys`'te; günlük sınır `start`'ta, ön üretim serbest; `finish` `maxDuration = 300`; `sessions.status`'a `generating`; `PATCH /api/profile` ve `POST /api/events`; açıklama modu "kısa"ya da geri döner | eval-generation'da tek çağrı %100 şema hedefini tutturamadı, 6+ slotlu şema sağlayıcıda derlenmiyor; diğerleri M5 sırasında açık kalan PLAN #14–#23 | Ekip |

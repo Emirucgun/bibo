@@ -3,8 +3,8 @@
 | | |
 | --- | --- |
 | Tarih | 17 Kasım 2026 |
-| Kapsam | `ROADMAP.md` M6 · `SPEC.md` Bölüm 3, 4.6, 5.2, 6 · `PRD.md` F3, F4, F7, F8 |
-| Durum | Kod ana dalda (PR #13, `cbcb859`). Bitti testinde 4/6 madde işaretli (16.11.2026). Bu kapanış oturumunda: açık iki madde ölçüldü/incelendi, şık sırasından cevap sızıntısı bulunup düzeltildi. **M6 henüz kapanmadı**: aşağıdaki elle kontrol ve `eval-generation` yeniden çalıştırması bekleniyor. |
+| Kapsam | `ROADMAP.md` M6 · `SPEC.md` Bölüm 3, 4.6, 5.1, 5.2, 6 · `PRD.md` F3, F4, F7, F8 |
+| Durum | Kod ana dalda (PR #13, `cbcb859`); kapanış dalında şık karıştırma (`4f5f831`), bağımsız SPEC incelemesi ve düzeltmeleri, SPEC rev. 4 (boşluk hakemliği, onaylandı 17.11.2026), SCOPE işaretleri, `bibo-prod` M6 göçü. Bitti testinde 4/6 madde işaretli. **Kalan:** elle kontrol 1–3 ve `eval-generation` yeniden çalıştırması (Bölüm 3–4); bunlar giriş, gerçek cihaz ya da ücretli API anahtarı gerektiriyor. |
 | Bağımlılık | M5 (`generateSession`, `gradeFree`, guard), M2 (`requireUser()` / `requireOnboarded()`) |
 
 M1–M5 ve M2 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`, `8b9c67f`, `0627de2`). M6 uygulama planı ayrı kaydedilmedi; ayrıntı `adfc966..cbcb859` commit mesajlarında.
@@ -54,6 +54,27 @@ npx tsx --env-file=.env.local scripts/eval-generation.ts
 
 Çıktı `scripts/out/eval-generation.json` ve `scripts/out/review-sample.md` (pedagoji sahibine). Not: eval betiği `splitGeneratedItems`'ı kullanmadığı için şık karıştırmasından etkilenmez.
 
+### 2.4 Bağımsız SPEC incelemesi (`98b82d4..efa508b`, 17.11.2026)
+
+Mimari kuralların hepsi tuttu (`item_keys` sızmıyor, `select *` yok, her çağrı guard + `llm_usage`, loglarda içerik yok, ayarlar `app_settings`'ten, motor saf, yazmalar `requireUser()` sonrası servis istemcisiyle, `finish` `maxDuration = 300`). Bulgular ve sonuçları:
+
+| # | Bulgu | Tür | Sonuç |
+| --- | --- | --- | --- |
+| 1 | `gap_fill` yanlış cevabı yapay zekâya gidiyor; SPEC'te yok | SPEC | SPEC rev. 4 "Boşluk hakemliği" (4.6, 5.1, Bölüm 3 tür tablosu, maliyet modeli), PRD F4 ve ROADMAP notu |
+| 2 | Uzun modda kendiliğinden gösterilen açıklama `explain_open` olayı yazıyordu | hata | `?via=auto` → olay yok; `?via=dismiss` eski `?opened=0`'ın yerine (`service.ts` `getExplanation`, `FeedbackCard.tsx`) |
+| 3 | `attempt` yanıtında `errorNameTr`, `null` değerler | SPEC | SPEC 6'ya yazıldı |
+| 4 | `next` `active` oturumu da dönüyor | SPEC | SPEC 6'ya yazıldı |
+| 5 | Yeni dizinler, hata kodları, `maxDuration` değerleri | SPEC | SPEC 2 dizin yapısı ve SPEC 6 hata kodları tablosu (M2 kodları dahil) |
+| 6 | `finish` bozuk JSON'u `{}` sayıyordu | hata | `readOptionalJson` → 400 (`lib/api/respond.ts`, `tests/api/respond.test.ts`) |
+| 7 | Yalnızca puan gönderilince not siliniyordu | hata | `setRating` yalnızca verilen alanları yazar |
+| 8 | `prefetchNext` ilk adımları `after()` içinde yakalanmamış hata bırakabiliyordu | hata | `try/catch` + kısa günlük |
+
+Doğrulama: `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 26 dosya, 774 test · `npm run build` ✅.
+
+**`bibo-dev` veri kontrolü (Supabase, yalnızca sayılar):** 46 günlük etkinlikte `payload`'da SPEC 5.2 dışı alan 0, anahtar alanı adı 0; `word_order`'da sıralı gelen kelimeler 0; serbest türlerde model cevap `payload`'da 0; `gap_fill`'de cevabın cümlede başka yerde görünmesi 0. `mcq_read`'de doğru şık 10/10 ilk sırada: hepsi şık karıştırmadan (`4f5f831`) önce üretilmiş (son etkinlik 16.11.2026 20:05 UTC). `item_keys`: RLS açık, politika 0 (dev ve prod). `grade` çağrıları: n = 111, p90 3,16 sn (model süresi; uç nokta süresi değil).
+
+**`bibo-prod`:** M6 göçü uygulandı (sürüm `20261116190528`, `schema_migrations` kaydıyla; prod'da oturum yoktu).
+
 ## 3. Elle kontrol
 
 1. **Süre (bilgisayarda, önizleme, DevTools → Ağ):** bir oturumda `POST /api/items/<id>/attempt` isteklerinin "Time" sütunu. Yerel türler (`mcq_read`, `gap_fill`, `word_order`) ≤ 1 sn; serbest türler (`translate_tr_en`, `short_write`) en az 10 istekte p90 ≤ 6 sn.
@@ -63,11 +84,11 @@ npx tsx --env-file=.env.local scripts/eval-generation.ts
 ## 4. Kapanış sırası
 
 1. Elle kontrol 1–2 ve `eval-generation` → ROADMAP M6'daki iki kutu kanıtıyla işaretlenir.
-2. SPEC'e göre bağımsız diff incelemesi (`98b82d4..HEAD`), ayrı oturumda.
-3. SCOPE işaretleri (Bölüm 5'teki öneri onaylanınca).
-4. Ana dala PR.
+2. ~~SPEC'e göre bağımsız diff incelemesi~~ ✅ 17.11.2026 (Bölüm 2.4).
+3. ~~SCOPE işaretleri~~ ✅ 17.11.2026: Bölüm 5'teki "İşaretle" maddeleri; "Oturum üretimi" `eval-generation`'a, "Sekiz etkinlik türü" M7–M8'e bekliyor.
+4. Ana dala PR (bu dal). Elle kontrol 1–2 ve eval sonrası ROADMAP'teki iki kutu işaretlenir; M6 o zaman kapanır.
 
-## 5. SCOPE önerisi (uygulanmadı, onay bekliyor)
+## 5. SCOPE önerisi (uygulandı 17.11.2026; iki madde bekliyor)
 
 M6 sonunda işaretlenebilecekler (her biri bitti testi kanıtına dayanır):
 
@@ -87,9 +108,9 @@ M6 sonunda işaretlenebilecekler (her biri bitti testi kanıtına dayanır):
 
 ## 6. Önceki taşlardan açık kalanlar
 
-- **`prod`:** M2 ve M6 göçlerinin `bibo-prod`'a uygulanması (ana dala birleştikten sonra; durum doğrulanmadı).
-- **SPEC önerileri (M2, onay bekliyor):** Bölüm 2 dizin yapısına `(auth)/davet/page.tsx`, `lib/auth/*`, `lib/api/*`, `lib/onboarding/*`; Bölüm 3'e `claim_invite`; Bölüm 6'ya M2 hata kodları.
+- ~~**`prod`:** M2 ve M6 göçleri~~ ✅ 17.11.2026: `bibo-prod` göç listesi dev ile aynı (6 göç).
+- **SPEC önerileri (M2):** `lib/auth/*`, `lib/api/*`, `lib/onboarding/*` ve M2 hata kodları rev. 4'te SPEC'e girdi. Kalan: Bölüm 2'ye `(auth)/davet/page.tsx`, Bölüm 3'e `claim_invite`.
 - **Supabase e-posta kaydı** panelden kapatılmalı; **gizlilik metni** yer tutucuları M10'dan önce.
 - **Karar #18 (M8):** transkript gösterimi + iki deneme; önerilen varsayılan: iki deneme de değerlendirilir, ustalığa sonuncusu işlenir.
 - **Karar #22 (M9):** yerleştirme tohumlaması ve "3 zayıf konu"; önerilen varsayılan: normal kanıt gibi, en düşük ustalıklı üç konu.
-- **Gecikme ölçümü:** Vercel Hobby logları 1 saat; uç nokta süreleri için kalıcı kaynak yok. v2 havuzu önerisi: `attempt` yanıtına `Server-Timing` başlığı ya da `events`'e süre (yalnızca sayı).
+- **Gecikme ölçümü:** Vercel Hobby logları 1 saat; uç nokta süreleri için kalıcı kaynak yok. `Server-Timing` önerisi SCOPE v2 havuzuna yazıldı (17.11.2026).
