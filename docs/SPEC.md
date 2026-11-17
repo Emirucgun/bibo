@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 3 (11 Kasım 2026: OpenRouter erişimi, parçalı oturum üretimi, M6 öncesi kararlar; rev. 2: model yığını ve maliyet) |
+| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 4 (17 Kasım 2026: boşluk hakemliği, M6 uç nokta ayrıntıları ve hata kodları; rev. 3, 11 Kasım 2026: OpenRouter erişimi, parçalı oturum üretimi, M6 öncesi kararlar; rev. 2: model yığını ve maliyet) |
 | Okuyucu | Mühendis; ayrıca Claude Code gibi kodlama asistanları |
 | Bağlam | Ürün kararları `PRD.md`'de, kapsam `SCOPE.md`'de, sıra `ROADMAP.md`'de; maliyet ve fiyat hesabı finans tablosunda (Google Sheets: Özet, Model Seçimi (AA), Oturum Maliyeti, Pilot) |
 | Ana kısıt | 50 kişilik pilot, aylık altyapı ≤ 50 €, tek mühendis |
@@ -133,6 +133,8 @@ kaynak/
 │  └─ manifest.ts                     # PWA
 ├─ components/
 │  ├─ activity/{McqRead,GapFill,WordOrder,ListenChoose,Dictation,Translate,ShortWrite,SpeakAnswer}.tsx
+│  ├─ activity/shared.tsx            # etkinlik bileşenlerinin ortak parçaları
+│  ├─ session/{SessionRunner,TodayCard,FeedbackCard,ProgressBar,SessionSummary}.tsx
 │  └─ ui/                             # shadcn
 ├─ lib/
 │  ├─ engine/{types,mastery,diagnosis,planner,effectiveness,grade-local,normalize}.ts
@@ -142,7 +144,10 @@ kaynak/
 │  ├─ tts/{speechify,cache}.ts
 │  ├─ db/{server,admin}.ts           # kullanıcı istemcisi / servis istemcisi
 │  ├─ audio/wav-recorder.ts
-│  └─ content/{interests,activity-types}.ts
+│  ├─ content/{interests,activity-types}.ts
+│  ├─ auth/*, onboarding/*            # requireUser() / requireRole(), başlangıç adımları
+│  ├─ api/{errors,respond,client}.ts # hata biçimi (Bölüm 6), Route Handler sarmalayıcısı, istemci çağrısı
+│  └─ session/*                      # oturum akışı: uç noktaların kararları (service), veritabanı (store)
 ├─ supabase/
 │  ├─ migrations/*.sql
 │  ├─ seed.sql
@@ -174,7 +179,7 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | Kod | Beceri | Mod | Değerlendirme | `est_seconds` |
 | --- | --- | --- | --- | --- |
 | `mcq_read` | reading | recognition | local | 100 |
-| `gap_fill` | writing | controlled | local | 60 |
+| `gap_fill` | writing | controlled | local (+ boşluk hakemliği, Bölüm 4.6) | 60 |
 | `word_order` | writing | controlled | local | 60 |
 | `listen_choose` | listening | recognition | local | 75 |
 | `dictation` | listening | controlled | local | 90 |
@@ -572,9 +577,17 @@ purpose = 'retest' olan bir cevap r geldiğinde (konu T):
 | Tür | Kural | Hata etiketi |
 | --- | --- | --- |
 | `mcq_read`, `listen_choose` | `choice === key.correct` | seçilen şıkkın `key.distractors` içindeki kaydının `code` alanı, `source = distractor` |
-| `gap_fill` | normalize edilmiş cevap `key.accepted` içinde | `key.wrong_patterns` eşleşirse o kod; yoksa `item.l1_target` ya da `GEN.OTHER` |
+| `gap_fill` | normalize edilmiş cevap `key.accepted` içinde. Değilse ve `key.wrong_patterns` ile de eşleşmiyorsa **boşluk hakemliği** (aşağıda) | `key.wrong_patterns` eşleşirse o kod, `source = rule`. Hakemlik "yanlış" derse modelin `errors` listesi, `source = llm`. Hakemlik yapılamazsa `item.l1_target` ya da `GEN.OTHER` |
 | `word_order` | dizilen kelimeler `key.accepted` içindeki bir sıralamayla aynı | `item.l1_target` (çoğu zaman `L1.WORD_ORDER_SOV` / `L1.Q_INVERSION`) |
 | `dictation` | kelime düzeyi Levenshtein: `score = max(0, 1 − WER)`, `≥ 0.9` doğru | eksik/yanlış kelime `key.target_words` içindeyse `item.l1_target`; değilse `GEN.OTHER` |
+
+**Boşluk hakemliği (`gap_fill`, rev. 4).** Cevap anahtarda yoksa, bilinen yanlışlarda da yoksa ve boş değilse yapay zekâya sorulur. Modele tam cümleler verilir: görev = boşluklu cümle; model cevap = cümlenin `accepted[0]` ile tamamlanmış hâli; diğer kabul edilenler = `accepted[1..]` ile tamamlanmış hâlleri; öğrenci metni = cümlenin öğrencinin cevabıyla tamamlanmış hâli. Çağrı Bölüm 5.1'deki "Boşluk hakemliği" satırıdır. Sonuç:
+
+- **Cümle doğru** (model öyle derse ya da fark yalnızca büyük/küçük harf veya noktalamadaysa): cevap *değerlendirilmemiş* sayılır. `is_correct` ve `score` `null` kalır; ustalık ve `error_events` yazılmaz. Öğrenciye "Bu cümle de doğru. Ama bu etkinlikte aradığımız cevap başkaydı." mesajı ve `accepted[0]` gösterilir. Gerekçe: etkinlik hedef konuyu ölçmedi; doğru saymak ustalığı şişirir, yanlış saymak öğrenciyi haksız yere cezalandırır.
+- **Cümle yanlış:** `is_correct = false`, `score = 0`; doğru biçim `accepted[0]`. Hata etiketleri ve `explanation_long_tr` modelden gelir; `graded_by = 'llm'`. Ustalık yalnızca hedef konuya işlenir; modelin `evidence` alanındaki yan konular kullanılmaz.
+- **Model cevap veremezse** (guard reddi, zaman aşımı, refusal, geçersiz çıktı): yerel sonuç geçerli kalır.
+
+İlk savunma hattı üretim komutudur (tek cevaplı boşluk kuralı); bu yüzden hakemlik oranının düşük olması beklenir. `eval-generation` örnekleminde ve pilotta (`llm_usage`, `purpose = 'grade'`) hakemlik oranı ve "doğru" çıkan cevapların payı izlenir.
 
 Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk tek, kıvrık kesme işareti düz, sondaki noktalama yok sayılır, kısaltma eşdeğerleri (`don't` ↔ `do not`, `I'm` ↔ `I am` …).
 
@@ -588,10 +601,11 @@ Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk 
 | --- | --- | --- | --- | --- |
 | Oturum üretimi | Oturum bitince (`after()`) ve başlangıç sonunda | Claude (OpenRouter) · `model_generate`, `effort_generate` (medium); en çok 5 slotluk paralel çağrılar (Bölüm 5.2) | planlayıcı slotları, seviye, ilgi alanları, açıklama modu, ilgili L1 kodlarının kısa listesi | `SessionGen` |
 | Serbest cevap değerlendirme | `translate_tr_en`, `short_write` cevabında | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade` | etkinlik, model cevap, öğrenci metni (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
+| Boşluk hakemliği | `gap_fill` cevabı anahtarda ve `wrong_patterns`'ta yokken (Bölüm 4.6) | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade`; `llm_usage.purpose = 'grade'` | boşluklu cümle, tamamlanmış model cümle(ler), öğrencinin tamamladığı cümle (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
 | Transkript | `speak_answer` kaydında | Azure Speech · `model_transcribe` (MAI-Transcribe-2) | WAV ses; `locales: ["en"]`; `transcribeStyle` varsayılanı `verbatim` | `{ transcript: string, unclear: boolean }` (`unclear` = boş ya da çok kısa transkript) |
 | Konuşma değerlendirme | transkriptten sonra | Claude (OpenRouter) · `model_grade`, `effort_grade` | transkript + etkinlik | `GradeResult` |
 
-Ayrı bir "uzun açıklama" çağrısı yoktur: yerel değerlendirilen etkinliklerin uzun açıklaması üretim anında `item_keys`'e, yapay zekâ ile değerlendirilenlerinki `GradeResult` içinde gelir. "Daha fazla açıkla" maliyetsizdir.
+Ayrı bir "uzun açıklama" çağrısı yoktur: yerel değerlendirilen etkinliklerin uzun açıklaması üretim anında `item_keys`'e, yapay zekâ ile değerlendirilenlerinki (boşluk hakemliğinde "yanlış" çıkan cevaplar dahil) `GradeResult` içinde gelir. "Daha fazla açıkla" maliyetsizdir.
 
 Transkript ve değerlendirme bilerek **iki ayrı adımdır** (ve iki ayrı sağlayıcıdadır): tek adımda bir model, değerlendirmesine uysun diye transkripti düzeltme eğilimi gösterebilir. `verbatim` biçim dolgu seslerini ve kendini düzeltmeleri korur; öğrencinin dilbilgisi hatasını koruyup korumadığı M8'de `eval-verbatim` ile ölçülür. Sadakat %85'in altında kalırsa ya da önizleme hizmeti kesilirse `lib/stt` arkasında talimat verilebilen bir çok kipli modele (ör. bir Gemini Flash modeli, "kelimesi kelimesine yaz, düzeltme" komutuyla) geçilir.
 
@@ -692,6 +706,25 @@ Her çağrıdan sonra `llm_usage`'a bir satır yazılır; `sessions.cost_usd` g�
 
 Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulanır. Hata yanıtı: `{ error: { code, message_tr } }`.
 
+**Hata kodları (`lib/api/errors.ts`, rev. 4):**
+
+| Kod | HTTP | Ne zaman |
+| --- | --- | --- |
+| `unauthenticated` | 401 | oturum çerezi yok |
+| `forbidden` | 403 | rol yetmiyor |
+| `onboarding_incomplete` | 403 | başlangıç adımları bitmemiş |
+| `invite_required` | 403 | davet kodu girilmemiş |
+| `invalid_input` | 400 | gövde ya da parametre Zod'dan geçmedi, JSON bozuk |
+| `invalid_code` | 404 | davet kodu yok |
+| `cohort_full` | 409 | kohort kapasitesi dolu |
+| `consent_version_mismatch` | 409 | onaylanan metin sürümü güncel değil |
+| `not_found` | 404 | kayıt yok ya da başkasına ait |
+| `session_not_ready` | 409 | `start` çağrılan oturum `ready` değil |
+| `session_not_active` | 409 | cevap/ipucu/bitiş çağrılan oturum açık değil |
+| `daily_limit` | 429 | günlük oturum sınırı (Bölüm 5.4) |
+| `ai_unavailable` | 503 | acil durdurma ya da aylık tavan nedeniyle oturum hazırlanamıyor |
+| `server_error` | 500 | beklenmeyen hata (ayrıntı yanıta ve günlüğe içerik olarak yazılmaz) |
+
 ### Kimlik ve başlangıç
 
 | Yöntem | Yol | Rol | Girdi | Çıktı |
@@ -706,15 +739,15 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 
 | Yöntem | Yol | Rol | Girdi | Çıktı |
 | --- | --- | --- | --- | --- |
-| POST | `/api/sessions/next` | öğrenci | — | `{ sessionId, status }` · `ready` ya da `generating` oturum varsa onu döner, yoksa üretir; koruma kontrolleri |
+| POST | `/api/sessions/next` | öğrenci | — | `{ sessionId, status }` · 24 saatten yeni `active` oturum varsa onu (kaldığı yerden devam), yoksa `ready` ya da `generating` oturumu döner; hiçbiri yoksa üretimi `after()` ile başlatır (`maxDuration = 300`); koruma kontrolleri (günlük sınırda `429 daily_limit` + `limit_hit`, acil durdurma ve tavanda `503 ai_unavailable`) |
 | GET | `/api/sessions/:id` | sahibi | — | `{ session, items (anahtarsız), attempts }` |
 | POST | `/api/sessions/:id/start` | sahibi | — | `{ ok }` · bugün başlatılan oturum sayısı `≥ daily_session_limit` ise `429` + `{ error: { code: 'daily_limit' } }` ve `limit_hit` olayı |
-| POST | `/api/items/:id/attempt` | sahibi | `{ response, timeMs, hintUsed }` | `{ attemptId, isCorrect, score, feedbackShortTr, correction }` |
+| POST | `/api/items/:id/attempt` | sahibi | `{ response, timeMs, hintUsed }` | `{ attemptId, isCorrect, score, feedbackShortTr, correction, errorNameTr }` · değerlendirilemeyen cevapta (Bölüm 5.1 refusal/hata, boşluk hakemliğinde geçerli başka cevap) `isCorrect` ve `score` `null`; `errorNameTr` yanlış cevapta ilk anlamlı hatanın `l1_codes.name_tr`'si (`GEN.OTHER` hariç), yoksa `null` · `maxDuration = 60` · aynı etkinliğe ikinci gönderim ilk sonucu döner |
 | POST | `/api/items/:id/speech` | sahibi | `multipart`: `audio` (WAV ≤ 2 MB, ≤ 45 sn), `timeMs`, `tryNo` | `{ attemptId, transcript, isCorrect, score, feedbackShortTr, correction }` |
 | GET | `/api/items/:id/hint` | sahibi | — | `{ hintTr }` |
-| GET | `/api/attempts/:id/explanation` | sahibi | — | `{ explanationLongTr }` · `explain_opened = true` |
+| GET | `/api/attempts/:id/explanation` | sahibi | `?via=auto \| dismiss` (isteğe bağlı) | `{ explanationLongTr }` · varsayılan (tıklama): `explain_opened = true` + `explain_open` olayı; `via=auto` (uzun modda kendiliğinden gösterim): `explain_opened = true`, olay yok; `via=dismiss` ("Kısa yeter"): `explain_opened = false` |
 | GET | `/api/items/:id/audio` | sahibi | — | `{ url }` 1 saatlik imzalı URL · seslendirme kullanılamıyorsa `503` + `{ error: { code: 'tts_unavailable' } }` |
-| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` | `{ summary, diagnosis? }` · sonraki oturum `after()` ile üretilir (`maxDuration = 300`) |
+| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` (boş gövde olabilir) | `{ summary, diagnosis? }` · sonraki oturum `after()` ile üretilir (`maxDuration = 300`) · bitmiş oturumda yeniden çağrı aynı özeti döner ve yalnızca gönderilen puan/notu yazar |
 | POST | `/api/diagnoses/:id/feedback` | sahibi | `{ feedback: 'agree' \| 'disagree' }` | `{ ok }` |
 
 ### İlerleme ve hesap
@@ -778,6 +811,7 @@ Fiyatlar: Claude Haiku 5.5 0,10 $ / 1M girdi token, 0,50 $ / 1M çıktı token (
 | --- | --- | --- | --- | --- |
 | Oturum üretimi (`medium`, 2 paralel çağrı) | 1 | 6.500 tok | 6.500 + 2.000 tok | 0,00490 $ (ölçülen 0,0039 $, komisyon hariç) |
 | Yazma değerlendirme (`low`) | 2 | 2.340 tok | 650 + 300 tok | 0,00142 $ |
+| Boşluk hakemliği (`low`, rev. 4) | ölçülecek (≤ 1 beklenir) | 2.340 tok | 650 + 300 tok | çağrı başı ≈ 0,00071 $; oran ölçülene kadar toplama katılmadı (en kötü 1 çağrıda toplam ≈ 0,0125 $) |
 | Transkript (≈ 40 sn, %20 yeniden kayıt) | 2,4 | 0,67 dk | — | 0,00267 $ |
 | Konuşma değerlendirme (`low`) | 2,4 | 2.340 tok | 650 + 300 tok | 0,00170 $ |
 | Yeniden deneme payı (%10) | — | — | — | 0,00107 $ |

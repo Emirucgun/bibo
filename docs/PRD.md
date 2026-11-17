@@ -256,7 +256,7 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 
 ### F4 Anında geri bildirim
 
-- [ ] Yerel değerlendirilen etkinliklerde sonuç ≤ 1 sn, yapay zekâ ile değerlendirilenlerde ≤ 6 sn içinde görünür (p90).
+- [ ] Yerel değerlendirilen etkinliklerde sonuç ≤ 1 sn, yapay zekâ ile değerlendirilenlerde ≤ 6 sn içinde görünür (p90). Boşluk doldurmada anahtarda olmayan cevap yapay zekâ hakemliğine gider (SPEC 4.6) ve yapay zekâ hedefine sayılır.
 - [ ] Kısa açıklama en fazla 2 cümledir ve Türkçedir.
 - [ ] Hata bir L1 koduyla eşleştiyse açıklama Türkçeyle karşılaştırma içerir.
 - [ ] "Daha fazla açıkla" uzun açıklamayı gösterir ve tıklama kaydedilir.

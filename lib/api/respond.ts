@@ -10,6 +10,17 @@ export async function readJson(request: Request): Promise<unknown> {
   }
 }
 
+/** Gövdesi isteğe bağlı uç noktalar için: boş gövde `{}`, bozuk JSON `invalid_input`. */
+export async function readOptionalJson(request: Request): Promise<unknown> {
+  const text = await request.text();
+  if (text.trim() === "") return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new ApiError("invalid_input");
+  }
+}
+
 /**
  * Route Handler sarmalayıcısı: `ApiError` → `{ error: { code, message_tr } }`,
  * beklenmeyen hata → 500. Günlüğe yalnızca hata adı ve kısa mesaj yazılır; istek gövdesi yazılmaz.

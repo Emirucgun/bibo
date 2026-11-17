@@ -164,8 +164,8 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       if (error) fail("sessions.plan", error);
     },
 
-    async setRating(sessionId, rating, comment) {
-      const { error } = await db.from("sessions").update({ rating, comment }).eq("id", sessionId);
+    async setRating(sessionId, patch) {
+      const { error } = await db.from("sessions").update(patch).eq("id", sessionId);
       if (error) fail("sessions.rating", error);
     },
 

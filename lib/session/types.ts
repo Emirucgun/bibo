@@ -182,7 +182,8 @@ export interface SessionStore {
   /** `generating` satırı açar; öğrencinin zaten `generating`/`ready` oturumu varsa `null`. */
   createGenerating(userId: string): Promise<string | null>;
   setPlan(sessionId: string, plan: unknown, focusTopicId: string | null): Promise<void>;
-  setRating(sessionId: string, rating: number | null, comment: string | null): Promise<void>;
+  /** Yalnızca verilen alanları yazar. */
+  setRating(sessionId: string, patch: { rating?: number; comment?: string | null }): Promise<void>;
 
   // --- items ---
   insertItems(sessionId: string, userId: string, rows: NewItem[]): Promise<void>;

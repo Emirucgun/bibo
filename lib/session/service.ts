@@ -151,7 +151,11 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
       { userId, sessionId, now, prefetch: true },
       { level: learner.level_est, explainMode: learner.explain_mode, varietySeed: sessionId, slots },
     );
-    await store.insertItems(sessionId, userId, splitGeneratedItems(outcome.items, slots));
+    await store.insertItems(
+      sessionId,
+      userId,
+      splitGeneratedItems(outcome.items, slots, createRng(seedFromString(`${sessionId}:options`))),
+    );
     const ok = await store.transition(sessionId, ["generating"], "ready");
     return ok ? "ready" : "failed";
   } catch (err) {
@@ -215,8 +219,15 @@ export async function nextSession(
 
 /** `finish` sonrası ön üretim: eski `ready` oturum `abandoned`, yenisi hazırlanır. */
 export async function prefetchNext(deps: SessionDeps, userId: string): Promise<void> {
-  await deps.store.abandonReady(userId);
-  const sessionId = await deps.store.createGenerating(userId);
+  let sessionId: string | null;
+  try {
+    await deps.store.abandonReady(userId);
+    sessionId = await deps.store.createGenerating(userId);
+  } catch (err) {
+    // `after()` içinde yakalanmamış hata kalmasın; sonraki `POST /api/sessions/next` yeniden dener.
+    console.error("[session/prefetch]", err instanceof Error ? `${err.name}: ${err.message.slice(0, 120)}` : "unknown");
+    return;
+  }
   if (!sessionId) return; // zaten hazırlanıyor
   await prepareSession(deps, userId, sessionId);
 }
@@ -483,7 +494,7 @@ export const GAP_VALID_OTHER_TR = "Bu cümle de doğru. Ama bu etkinlikte aradı
 
 /**
  * Boşluk doldurmada anahtarda ve bilinen yanlışlar listesinde OLMAYAN cevap yapay zekâya sorulur
- * (SPEC 4.6 değişikliği, 16.11.2026: "Ella wants ___ piano" → "to play" yanlış sayılmıştı).
+ * (SPEC 4.6 "Boşluk hakemliği", rev. 4; 16.11.2026: "Ella wants ___ piano" → "to play" yanlış sayılmıştı).
  * - Tamamlanan cümle doğruysa: cevap değerlendirilmemiş sayılır (ustalık ve hata yazılmaz).
  * - Yanlışsa: hata etiketleri modelden gelir (`l1_target` varsayımı yerine).
  * - Model yanıt veremezse yerel sonuç geçerli kalır.
@@ -678,15 +689,21 @@ export async function getHint(deps: SessionDeps, actor: Actor, itemId: string): 
 }
 
 /**
- * GET /api/attempts/:id/explanation → `{ explanationLongTr }` ve `explain_opened = true`.
- * `opened = false` (`?opened=0`): uzun modda kendiliğinden gösterilen açıklamayı öğrenci
- * "Kısa yeter" ile kapattığında; açıklama modu kuralı bunu "açılmadı" sayar.
+ * Açıklamanın nasıl istendiği:
+ * - `click`: öğrenci "Daha fazla açıkla"ya dokundu → `explain_opened = true` ve `explain_open` olayı.
+ * - `auto`: uzun modda yanlış cevapta kendiliğinden gösterildi → `explain_opened = true`, olay yok
+ *   (olay yalnızca tıklamayı sayar, PRD F4).
+ * - `dismiss`: kendiliğinden gösterilen açıklama "Kısa yeter" ile kapatıldı → `explain_opened = false`;
+ *   açıklama modu kuralı bunu "açılmadı" sayar.
  */
+export type ExplanationVia = "click" | "auto" | "dismiss";
+
+/** GET /api/attempts/:id/explanation → `{ explanationLongTr }` ve `explain_opened` (`?via=auto|dismiss`). */
 export async function getExplanation(
   deps: SessionDeps,
   actor: Actor,
   attemptId: string,
-  opened = true,
+  via: ExplanationVia = "click",
 ): Promise<{ explanationLongTr: string }> {
   const { store } = deps;
   const attempt = await store.getAttempt(actor.userId, parseId(attemptId));
@@ -694,9 +711,10 @@ export async function getExplanation(
   const text =
     attempt.explanation_long_tr ?? (await store.getItemKey(attempt.item_id))?.explanation_long_tr ?? null;
   if (!text) throw new ApiError("not_found");
+  const opened = via !== "dismiss";
   const wasOpened = attempt.explain_opened;
   if (wasOpened !== opened) await store.setExplainOpened(attempt.id, opened);
-  if (opened && !wasOpened) {
+  if (via === "click" && !wasOpened) {
     await store.insertEvent(actor.userId, "explain_open", { attempt_id: attempt.id });
   }
   return { explanationLongTr: text };
@@ -823,8 +841,12 @@ export async function finishSession(
 
   const now = deps.now();
   const first = session.status === "active" && (await store.transition(session.id, ["active"], "done", { finished_at: now }));
+  // Yalnızca gönderilen alan yazılır: puanı sonradan göndermek notu silmez. Boş not = not yok.
   if (input.rating !== undefined || input.comment !== undefined) {
-    await store.setRating(session.id, input.rating ?? session.rating, input.comment || null);
+    await store.setRating(session.id, {
+      ...(input.rating !== undefined ? { rating: input.rating } : {}),
+      ...(input.comment !== undefined ? { comment: input.comment || null } : {}),
+    });
   }
 
   const items = await store.listItems(session.id);

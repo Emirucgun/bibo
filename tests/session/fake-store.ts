@@ -96,10 +96,10 @@ export class FakeSessionStore implements SessionStore {
     s.plan = plan;
     s.focus_topic_id = focus;
   }
-  async setRating(id: string, rating: number | null, comment: string | null) {
+  async setRating(id: string, patch: { rating?: number; comment?: string | null }) {
     const s = this.sessions.find((x) => x.id === id)!;
-    s.rating = rating;
-    s.comment = comment;
+    if (patch.rating !== undefined) s.rating = patch.rating;
+    if (patch.comment !== undefined) s.comment = patch.comment;
   }
 
   async insertItems(...[sessionId, userId, rows]: Parameters<SessionStore["insertItems"]>) {
