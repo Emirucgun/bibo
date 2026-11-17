@@ -27,7 +27,7 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [ ] RLS testi geçti; cevap anahtarı istemciye sızmıyor.
 - [ ] iOS Safari ve Android Chrome cihaz kontrol listesi tamam.
 - [ ] Aydınlatma metni yayında; yurt dışı aktarım konusunda hukuki görüş alındı.
-- [ ] Sağlayıcı harcama limitleri tanımlı (Anthropic Console, Azure bütçe uyarısı) ve uygulama içi tavan test edildi.
+- [ ] Sağlayıcı harcama limitleri tanımlı (OpenRouter anahtarında kredi limiti, Speechify planı; doğrudan sağlayıcıya dönülürse Anthropic Console ve Azure bütçe uyarısı) ve uygulama içi tavan test edildi.
 - [ ] Ekip + en az 3 dış kişi 3 gün boyunca uygulamayı kesintisiz kullandı.
 
 ---
@@ -46,18 +46,18 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 ### Öğrenme döngüsü
 
 - [x] **F3** Planlayıcı: tekrar, odak, çapraz tekrar, kapsama, germe; 8–10 etkinlik, 900–1200 sn, dört beceri; seslendirme kapalıyken dinleme slotlarını metne düşürme
-- [ ] **F3** Oturum üretimi: en çok 5 slotluk paralel çağrılar (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim
+- [ ] **F3** Oturum üretimi: en çok 5 slotluk paralel çağrılar (Claude Haiku 5.5, `effort = medium`) + kod kontrolleri + slot düzeyinde yeniden üretim _(17.11.2026: kod tamam; `bibo-prod`'da 7 `generate` çağrısı, hepsi başarılı. İşaret, güncel kodla `eval-generation` yeniden çalıştırmasını bekliyor)_
 - [x] **F3** Oturumun önceden hazırlanması (`after()`, p90 ≤ 60 sn), hazır oturumun ≤ 2 sn açılması _(17.11.2026, M6: önizlemede 2 ölçüm, 57 sn ve 21 sn; p90 asıl ölçümü `simulate` / pilot öncesi)_
-- [ ] **F3** Sekiz etkinlik türünün arayüzü: oku-seç, boşluk doldur, cümle diz, dinle-seç, dikte, çevir, kısa yaz, sesli cevapla
+- [x] **F3** Sekiz etkinlik türünün arayüzü: oku-seç, boşluk doldur, cümle diz, dinle-seç, dikte, çevir, kısa yaz, sesli cevapla _(17.11.2026: sekiz türün hepsi gerçek oturumlarda cevaplandı: `bibo-prod`'da yedi tür, `short_write` `bibo-dev`'de. Ses çalma ve mikrofonun cihaz kontrolü F5/F6 maddelerinde)_
 - [x] **F3** Kaldığı yerden devam (24 saat), kişi başı günlük oturum sınırı _(17.11.2026, M6: önizlemede elle denendi; servis testleri)_
 - [x] **F3** İçeriğin %20'si genel (ilgi alanı etkisini ölçmek için), işaretli _(17.11.2026, M6: planlayıcı `general_content_rate` ve testleri)_
 - [x] **F4** Kısa Türkçe geri bildirim, doğru biçim, L1 karşılaştırması _(17.11.2026, M6: gerçek oturumlarda görüldü; boşluk hakemliği SPEC rev. 4)_
 - [x] **F4** "Daha fazla açıkla" (ek çağrı yok) ve açıklama modu öğrenimi _(17.11.2026, M6: servis testleri; `explain_open` yalnızca tıklamada)_
 - [x] **F4** Türkçe ipucu, ipuçlu cevabın en fazla 0,5 sayılması _(17.11.2026, M6: servis testleri; ipucu kullanımı sunucuda `hint_open` olayından doğrulanır)_
-- [ ] **F5** Bulut TTS (Speechify Simba 3.5), önbellek, imzalı URL, A1 hızı 0,9 (SSML), en çok 3 dinleme
-- [ ] **F5** Seslendirme kotası takibi (%80 uyarısı), servis yanıt vermezse oturumun kırılmaması
-- [ ] **F6** Bas-konuş WAV kaydı (16 kHz mono, ≤ 45 sn), ses saklanmaz
-- [ ] **F6** İki adımlı transkript (Azure MAI-Transcribe-2, `verbatim`) + değerlendirme (Claude), transkriptin gösterilmesi, 1 yeniden kayıt hakkı
+- [ ] **F5** Bulut TTS (Speechify Simba 3.5), önbellek, imzalı URL, A1 hızı 0,9 (SSML), en çok 3 dinleme _(17.11.2026: `bibo-prod`'da 3 başarılı seslendirme (A2, hız 1,0), 2 dinle-seç ve 1 dikte cevabı. Bekleyen: A1 hızının gerçek çağrıda denenmesi, iOS Safari / Android Chrome'da çalma ve 4. dinlemenin engellenmesi; ROADMAP M7)_
+- [x] **F5** Seslendirme kotası takibi (%80 uyarısı), servis yanıt vermezse oturumun kırılmaması _(17.11.2026: `tests/admin/metrics.test.ts` kota uyarısı, `tests/session/service.test.ts` "M7 Bitti testi 4" (sahte 402); ses atanamazsa da oturum kırılmaz, PR #17)_
+- [ ] **F6** Bas-konuş WAV kaydı (16 kHz mono, ≤ 45 sn), ses saklanmaz _(17.11.2026: `bibo-prod`'da 8 başarılı transkript; ses saklanmıyor (ROADMAP M8). Bekleyen: iOS Safari / Android Chrome cihaz kontrolü ve iOS'ta 16 kHz)_
+- [ ] **F6** İki adımlı transkript (MAI-Transcribe-2, OpenRouter üzerinden, `verbatim`) + değerlendirme (Claude), transkriptin gösterilmesi, 1 yeniden kayıt hakkı _(17.11.2026: kod tamam, gerçek oturumlarda çalışıyor. Bekleyen: `eval-verbatim` (20 kayıt) ve aksan kontrolü; ROADMAP M8)_
 - [x] **F7** Hata etiketleme (çeldirici kodu, kural, yapay zekâ), `error_events` _(17.11.2026, M6: Bitti testi maddesi 2: 4 yanlış cevapta 6 hata olayı)_
 - [x] **F7** Kademeli ustalık puanı, aralıklı tekrar, yan kanıt
 - [x] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6
@@ -67,12 +67,12 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 ### Ölçüm, güvenlik ve işletim
 
 - [x] **F11** Öğretmen inceleme kuyruğu (%15 örneklem), karar kaydı, haftalık uyum yüzdesi
-- [ ] **F12** `llm_usage` günlüğü (sağlayıcı, önbellek tokenları, TTS karakteri), aylık bütçe tavanı (seslendirme plan ücreti dahil), acil durdurma, günlük sınır
+- [x] **F12** `llm_usage` günlüğü (sağlayıcı, önbellek tokenları, TTS karakteri), aylık bütçe tavanı (seslendirme plan ücreti dahil), acil durdurma, günlük sınır _(17.11.2026: guard testleri (tavan, acil durdurma), `tests/session/service.test.ts` (acil durdurmada `ai_unavailable`, günlük sınır); `bibo-prod`'da her çağrı türünün `llm_usage` satırı var. Öğrencinin gördüğü mesajın elle kontrolü ROADMAP M10'da)_
 - [x] **F12** Yönetim özeti: kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet, ay içi seslendirme karakteri
 - [x] **F13** Verimi indir (JSON), hesabımı sil (zincirleme silme)
-- [ ] Gizlilik sayfası (aydınlatma metni)
+- [ ] Gizlilik sayfası (aydınlatma metni) _(17.11.2026: `/gizlilik` yayında, sağlayıcı listesi güncel (OpenRouter → Anthropic, OpenRouter → Microsoft, Speechify). Son hâli hukuki görüşü bekliyor)_
 - [x] Günlük cron işi (eski oturumlar, TTS temizliği, maliyet özeti)
-- [ ] Değerlendirme betikleri: `eval-generation`, `eval-tagging`, `eval-verbatim`, `simulate` (gecikme ölçümü dahil)
+- [ ] Değerlendirme betikleri: `eval-generation`, `eval-tagging`, `eval-verbatim`, `simulate` (gecikme ölçümü dahil) _(17.11.2026: dört betik `scripts/`'te var. Eksik: `simulate` gecikme ölçmüyor. `eval-tagging` altın seti, `eval-verbatim` ses kayıtlarını bekliyor)_
 
 ### İçerik (pedagoji)
 
@@ -82,7 +82,7 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [ ] Açıklama stil rehberi (1 sayfa)
 - [ ] 40 cümlelik altın etiket seti
 - [ ] 20 bilerek hatalı okunmuş ses kaydı (transkript testi)
-- [ ] Seslendirme sesi seçildi (Speechify en-US, 2–3 aday arasından)
+- [ ] Seslendirme sesi seçildi (Speechify en-US, 2–3 aday arasından) _(17.11.2026: varsayılan ses `carly` kendiliğinden atandı (dev ve prod, PLAN karar 37). Pedagoji sahibinin adaylar arasından onayı bekliyor)_
 
 ---
 

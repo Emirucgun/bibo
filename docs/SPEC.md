@@ -7,7 +7,7 @@
 | Bağlam | Ürün kararları `PRD.md`'de, kapsam `SCOPE.md`'de, sıra `ROADMAP.md`'de; maliyet ve fiyat hesabı finans tablosunda (Google Sheets: Özet, Model Seçimi (AA), Oturum Maliyeti, Pilot) |
 | Ana kısıt | 50 kişilik pilot, aylık altyapı ≤ 50 €, tek mühendis |
 
-**Mimari karar özeti:** Tek bir Next.js uygulaması (arayüz + API) Vercel'de; veri, kimlik doğrulama ve dosya depolama Supabase'te; dil modeli Claude Haiku 5.5, OpenRouter üzerinden (yalnızca Anthropic altyapısı); konuşma tanıma Azure Speech'te (MAI-Transcribe-2); seslendirme Speechify API'de (Simba 3.5). Teşhis motoru saf TypeScript'tir ve dil modelinden bağımsızdır. Ayrı bir arka uç sunucusu, kuyruk sistemi veya vektör veritabanı yoktur.
+**Mimari karar özeti:** Tek bir Next.js uygulaması (arayüz + API) Vercel'de; veri, kimlik doğrulama ve dosya depolama Supabase'te; dil modeli Claude Haiku 5.5, OpenRouter üzerinden (yalnızca Anthropic altyapısı); konuşma tanıma MAI-Transcribe-2, yine OpenRouter üzerinden; seslendirme Speechify API'de (Simba 3.5). Teşhis motoru saf TypeScript'tir ve dil modelinden bağımsızdır. Ayrı bir arka uç sunucusu, kuyruk sistemi veya vektör veritabanı yoktur.
 
 **Model seçiminin gerekçesi (rev. 2):** Modeller Artificial Analysis karşılaştırmalarıyla "en düşük maliyete en yüksek kalite" ölçüsüyle seçildi. Önceki seçime (Gemini 3.1 Flash-Lite + Chirp 3: HD) göre dört alanda da kalite daha yüksek, oturum başı yapay zekâ maliyeti ≈ %33 daha düşük (0,0176 $ → 0,0118 $). Ayrıntı ve hesap: finans tablosu → Model Seçimi (AA).
 
@@ -36,7 +36,7 @@ Sürümler 10 Kasım 2026 itibarıyla güncel kararlı sürümlerdir. Kurulumda 
 | Şema doğrulama | Zod | 4.x | Dil modeli çıktıları ve API girdileri |
 | Yapay zekâ istemcisi | İnce `fetch` istemcisi (`lib/ai/client.ts`) → OpenRouter chat API | — | Vercel AI SDK'nın Anthropic sağlayıcısı OpenRouter'a bağlanamıyor (SCOPE günlüğü 11.11.2026). Katı yapılandırılmış çıktı (`json_schema`, `strict`), istem önbelleği (`cache_control`) ve `reasoning.effort` doğrudan gönderilir. Doğrudan Anthropic'e dönülürse yalnızca bu dosya değişir |
 | Dil modeli | Claude Haiku 5.5 (`claude-haiku-5-5`) | GA (7 Ekim 2026), emeklilik en erken 7 Ekim 2027 | 0,10 $/1M girdi, 0,50 $/1M çıktı (düşünme dahil), önbellek okuma 0,01 $/1M; düşünme derinliği `effort` ile |
-| Konuşma tanıma | Azure Speech — MAI-Transcribe-2 (Fast Transcription API, `enhancedMode`) | Önizleme (preview), `api-version=2025-10-15`, bölge `northeurope` | En düşük hata oranlarından; 1,67 $/1000 dk; varsayılan çıktı biçimi `verbatim` (öğrenci hatasını düzeltmez) |
+| Konuşma tanıma | MAI-Transcribe-2, OpenRouter `/audio/transcriptions` üzerinden (`microsoft/mai-transcribe-2`); doğrudan bağlantı yedeği Azure Speech Fast Transcription (`enhancedMode`, `api-version=2025-10-15`, `northeurope`) | Önizleme (preview) | En düşük hata oranlarından; 1,67 $/1000 dk; varsayılan çıktı biçimi `verbatim` (öğrenci hatasını düzeltmez) |
 | Seslendirme | Speechify API — Simba 3.5 (`simba-3.5`) | REST v1 (`POST /v1/audio/speech`) | En yüksek kalite grubunun en ucuzu; ücretsiz plan 500.000 karakter/ay, sonra Starter 10 $/ay |
 | Birim test | Vitest | son sürüm | Teşhis motoru testleri |
 | Betik çalıştırıcı | `tsx` (dev bağımlılığı) | son sürüm | `scripts/*.ts` |
@@ -53,7 +53,7 @@ Sürümler 10 Kasım 2026 itibarıyla güncel kararlı sürümlerdir. Kurulumda 
 - Etiketleme kalitesi altın sette %80'in altında kalırsa önce `effort_grade = medium` denenir; yetmezse yalnızca değerlendirme çağrıları bir üst modele taşınır.
 - MAI-Transcribe-2 önizleme aşamasındadır: API sürümü ve fiyatı değişebilir. Transkript `lib/stt` arkasında tek arayüzle çağrılır; gerekirse sağlayıcı değiştirilir (Bölüm 5.1).
 
-**Veri kullanım koşulları:** Anthropic Ticari Koşulları, API'ye gönderilen içeriğin model eğitiminde kullanılmasını yasaklar. Azure Speech veriyi kaynağın bölgesinde (`northeurope`, İrlanda) işler. Speechify'a yalnızca sistemin ürettiği İngilizce alıştırma metni gider; öğrenci verisi ve kimliği gitmez.
+**Veri kullanım koşulları:** Anthropic Ticari Koşulları, API'ye gönderilen içeriğin model eğitiminde kullanılmasını yasaklar. Konuşma sesi OpenRouter üzerinden Microsoft'a gider ve AB dışında işlenebilir; istekte `provider.data_collection = "deny"` gönderilir. Doğrudan Azure'a dönülürse ses kaynağın bölgesinde (`northeurope`, İrlanda) işlenir. Speechify'a yalnızca sistemin ürettiği İngilizce alıştırma metni gider; öğrenci verisi ve kimliği gitmez.
 
 ---
 
@@ -82,7 +82,7 @@ flowchart TB
   end
 
   CLA[Anthropic API<br/>Claude Haiku 5.5]
-  AZ[Azure Speech · northeurope<br/>MAI-Transcribe-2]
+  AZ[OpenRouter → Microsoft<br/>MAI-Transcribe-2]
   SPF[Speechify API<br/>Simba 3.5]
 
   UI --> RH
@@ -105,7 +105,7 @@ flowchart TB
 
 1. `finish` çağrısı bir oturumu kapatır → ustalık ve teşhis güncellenir → `after()` ile bir sonraki oturum planlanır ve üretilir (`status = generating` → `ready`).
 2. Öğrenci "Başla"ya basar → hazır oturum anında açılır (dil modeli çağrısı yok).
-3. Her cevap `POST /api/items/:id/attempt` (veya `/speech`) ile gönderilir → yerel ya da yapay zekâ değerlendirmesi (konuşmada önce Azure transkript, sonra Claude değerlendirme) → `attempts`, `error_events`, `mastery` güncellenir → kısa geri bildirim döner.
+3. Her cevap `POST /api/items/:id/attempt` (veya `/speech`) ile gönderilir → yerel ya da yapay zekâ değerlendirmesi (konuşmada önce MAI-Transcribe-2 transkripti, sonra Claude değerlendirme) → `attempts`, `error_events`, `mastery` güncellenir → kısa geri bildirim döner.
 4. Dinleme etkinliği açıldığında `GET /api/items/:id/audio` önbellekte yoksa Speechify ile ses üretir, `tts/` kovasına koyar, imzalı URL döner.
 
 `after()` ile yapılan iş aynı fonksiyon çağrısının süresine dahildir (Vercel Hobby'de üst sınır 300 sn). `finish` uç noktasında `export const maxDuration = 300` tanımlanır: tipik üretim 20–30 sn sürer, ama kötü durumda (zaman aşımı + yeniden deneme + yeniden üretim turu) 120 sn'yi aşabilir. Fonksiyon yalnızca çalıştığı süre kadar ücretlendirilir.
@@ -140,7 +140,7 @@ kaynak/
 │  ├─ engine/{types,mastery,diagnosis,planner,effectiveness,grade-local,normalize}.ts
 │  ├─ ai/{client,generate-session,grade,schemas,cost,guard}.ts
 │  ├─ ai/prompts/{generate,grade}.ts
-│  ├─ stt/{index,mai}.ts              # transkript arayüzü + Azure MAI-Transcribe-2
+│  ├─ stt/{index,mai}.ts              # transkript arayüzü + MAI-Transcribe-2 (OpenRouter)
 │  ├─ tts/{speechify,cache}.ts
 │  ├─ db/{server,admin}.ts           # kullanıcı istemcisi / servis istemcisi
 │  ├─ audio/wav-recorder.ts
@@ -425,7 +425,7 @@ Benzersiz: `(item_id, try_no)`.
 | `thinking_grade` | `"adaptive"` | gecikme hedefi tutmazsa `"disabled"` |
 | `model_transcribe` | `"MAI-Transcribe-2"` | |
 | `tts_model` | `"simba-3.5"` | |
-| `tts_voice` | pedagoji sahibinin seçtiği en-US ses kimliği | `GET /v1/voices` listesinden; pilot boyunca değişmez |
+| `tts_voice` | pedagoji sahibinin seçtiği en-US ses kimliği | `GET /v1/voices` listesinden; pilot boyunca değişmez. Boşsa oturum üretimi (ve günlük cron, yönetim sayfası) varsayılan sesi kendiliğinden atar; atanamazsa dinleme slotları metne düşer ve panelde uyarı çıkar |
 | `tts_enabled` | `true` | `false` → yeni oturumlarda dinleme slotları metin türlerine düşer |
 | `tts_plan_usd` | `0` | Speechify aylık plan ücreti (Free 0, Starter 10); bütçe hesabına eklenir |
 | `openrouter_fee_rate` | `0.055` | OpenRouter kredi alım komisyonu; dil modeli ve transkript maliyeti `× (1 + oran)` yazılır, böylece aylık tavan gerçek harcamayı izler. Oran OpenRouter kredi ekranından doğrulanır |
@@ -602,7 +602,7 @@ Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk 
 | Oturum üretimi | Oturum bitince (`after()`) ve başlangıç sonunda | Claude (OpenRouter) · `model_generate`, `effort_generate` (medium); en çok 5 slotluk paralel çağrılar (Bölüm 5.2) | planlayıcı slotları, seviye, ilgi alanları, açıklama modu, ilgili L1 kodlarının kısa listesi | `SessionGen` |
 | Serbest cevap değerlendirme | `translate_tr_en`, `short_write` cevabında | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade` | etkinlik, model cevap, öğrenci metni (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
 | Boşluk hakemliği | `gap_fill` cevabı anahtarda ve `wrong_patterns`'ta yokken (Bölüm 4.6) | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade`; `llm_usage.purpose = 'grade'` | boşluklu cümle, tamamlanmış model cümle(ler), öğrencinin tamamladığı cümle (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
-| Transkript | `speak_answer` kaydında | Azure Speech · `model_transcribe` (MAI-Transcribe-2) | WAV ses; `locales: ["en"]`; `transcribeStyle` varsayılanı `verbatim` | `{ transcript: string, unclear: boolean }` (`unclear` = boş ya da çok kısa transkript) |
+| Transkript | `speak_answer` kaydında | OpenRouter · `model_transcribe` (MAI-Transcribe-2) | WAV ses; `language: "en"`; biçim seçeneği gönderilmez (varsayılan `verbatim`) | `{ transcript: string, unclear: boolean }` (`unclear` = boş ya da çok kısa transkript) |
 | Konuşma değerlendirme | transkriptten sonra | Claude (OpenRouter) · `model_grade`, `effort_grade` | transkript + etkinlik | `GradeResult` |
 
 Ayrı bir "uzun açıklama" çağrısı yoktur: yerel değerlendirilen etkinliklerin uzun açıklaması üretim anında `item_keys`'e, yapay zekâ ile değerlendirilenlerinki (boşluk hakemliğinde "yanlış" çıkan cevaplar dahil) `GradeResult` içinde gelir. "Daha fazla açıkla" maliyetsizdir.
@@ -784,7 +784,7 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 - **Davet:** `/davet/[code]` kodu çereze yazar → Google girişi → callback sonrası `POST /api/onboarding/invite`.
 - **Başlangıç kapısı:** `(app)` düzeninde sunucu tarafında `profiles.onboarding_step !== 'done'` ise ilgili adıma yönlendirme.
 - **Roller:** `profiles.role`; Route Handler'larda `requireUser()` ve `requireRole('teacher' | 'admin')` yardımcıları. Rol ataması yalnızca SQL ile.
-- **Sırlar:** Supabase servis anahtarı, Anthropic, Azure Speech ve Speechify anahtarları yalnızca sunucuda; `NEXT_PUBLIC_` önekli tek değerler Supabase URL'si ve yayınlanabilir anahtardır.
+- **Sırlar:** Supabase servis anahtarı, OpenRouter ve Speechify anahtarları yalnızca sunucuda; `NEXT_PUBLIC_` önekli tek değerler Supabase URL'si ve yayınlanabilir anahtardır.
 
 ---
 
@@ -794,8 +794,7 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | --- | --- | --- | --- | --- |
 | Vercel | Barındırma, fonksiyonlar, cron | Hobby | 0 $ | Hobby yalnızca ticari olmayan kullanım içindir: ücretsiz pilot uygun; ücret alınmadan önce Pro (20 $/ay). Cron günde 1 kez. Fonksiyon süresi en çok 300 sn, istek gövdesi en çok 4,5 MB. |
 | Supabase | Postgres, Auth, Storage | Free (2 proje: `dev`, `prod`) | 0 $ | 500 MB veritabanı, 1 GB dosya, 5 GB çıkış trafiği, 50.000 aylık aktif kullanıcı; 7 gün hareketsizlikte durur |
-| Anthropic API | Oturum üretimi, değerlendirme (Claude Haiku 5.5) | Kullandıkça öde (ön ödemeli kredi) | ≈ 7,7 $ | Console'da aylık harcama limiti 40 $ |
-| Azure Speech | Konuşma transkripti (MAI-Transcribe-2) | Kullandıkça öde; Azure for Students aboneliği (öğrenci e-postasıyla 100 $ kredi, kart gerekmez, 12 ay) | ≈ 2,6 $ (krediden düşer) | Kaynak bölgesi `northeurope` (AB'de MAI-Transcribe'ın tek bölgesi); önizleme hizmeti |
+| OpenRouter | Oturum üretimi, değerlendirme (Claude Haiku 5.5) ve konuşma transkripti (MAI-Transcribe-2) | Kullandıkça öde (ön ödemeli kredi) | ≈ 7,7 $ + ≈ 2,6 $ | Anahtarda kredi limiti 40 $. Transkript artık Azure for Students kredisinden düşmez; önizleme hizmeti. Doğrudan bağlantıya dönülürse Anthropic Console (limit 40 $) ve Azure Speech (`northeurope`, 10 $ bütçe uyarısı) |
 | Speechify API | Dinleme seslendirme (Simba 3.5) | Free (500.000 karakter/ay); gerekirse Starter (10 $/ay, 1,9M karakter, aşım 10 $/1M) | 0–10 $ | Free planda kota dolunca istek reddedilir; Gerçekçi senaryo ≈ 607.000 karakter/ay → Starter gerekir |
 | Google Cloud OAuth | Google ile giriş | — | 0 $ | |
 | GitHub | Kod, PR | Free | 0 $ | |
@@ -856,17 +855,25 @@ Pilotun iki aylık toplamı (Gerçekçi) ≈ 36 €. Sabit maliyet pilotta 0 $. 
 
 ## 10. Ses ayrıntıları
 
-**Kayıt (`lib/audio/wav-recorder.ts`):** Web Audio API ile 16 kHz mono PCM → WAV. Gerekçe: tarayıcıların `MediaRecorder` çıktısı farklıdır (Chrome WebM/Opus, Safari MP4/AAC); MAI-Transcribe WAV, MP3 ve FLAC kabul eder ve WAV her tarayıcıda aynı üretilir. iOS Safari `AudioContext`'i çoğu zaman 44,1 veya 48 kHz'de açar ve istenen örnekleme hızını yok sayar; kaydedici 16 kHz'e kendisi örnek azaltır (downsample). Mikrofon ve ses çalma yalnızca bir kullanıcı dokunuşundan sonra başlatılır. 45 sn ≈ 1,4 MB, Vercel fonksiyon gövde sınırının (4,5 MB) altında. Kayıt sunucuda bellekte işlenir ve Azure'a `multipart/form-data` olarak iletilir; diske ya da Storage'a yazılmaz. M8'de MAI-Transcribe-2'nin dosya boyutu ve süre sınırları doğrulanır.
+**Kayıt (`lib/audio/wav-recorder.ts`):** Web Audio API ile 16 kHz mono PCM → WAV. Gerekçe: tarayıcıların `MediaRecorder` çıktısı farklıdır (Chrome WebM/Opus, Safari MP4/AAC); MAI-Transcribe WAV, MP3 ve FLAC kabul eder ve WAV her tarayıcıda aynı üretilir. iOS Safari `AudioContext`'i çoğu zaman 44,1 veya 48 kHz'de açar ve istenen örnekleme hızını yok sayar; kaydedici 16 kHz'e kendisi örnek azaltır (downsample). Mikrofon ve ses çalma yalnızca bir kullanıcı dokunuşundan sonra başlatılır. 45 sn ≈ 1,4 MB, Vercel fonksiyon gövde sınırının (4,5 MB) altında. Kayıt sunucuda bellekte işlenir ve OpenRouter'a base64 olarak iletilir; diske ya da Storage'a yazılmaz. M8'de MAI-Transcribe-2'nin dosya boyutu ve süre sınırları doğrulanır.
 
 **Transkript isteği (`lib/stt/mai.ts`):**
+
+```text
+POST https://openrouter.ai/api/v1/audio/transcriptions
+Authorization: Bearer {OPENROUTER_API_KEY}
+{"model":"microsoft/mai-transcribe-2","input_audio":{"data":"<base64 wav>","format":"wav"},"language":"en","provider":{"data_collection":"deny"}}
+```
+
+`language: "en"` güçlü bir dil ipucudur; aksanlı İngilizcenin yanlışlıkla Türkçe algılanmasını önlemek için kullanılır. Biçim seçeneği gönderilmez (varsayılan `verbatim`; `clean` dolgu seslerini siler ve biçimlendirir, kullanılmaz).
+
+Doğrudan Azure'a dönülürse (yalnızca `lib/stt/mai.ts` değişir):
 
 ```text
 POST {AZURE_SPEECH_ENDPOINT}/speechtotext/transcriptions:transcribe?api-version=2025-10-15
 Ocp-Apim-Subscription-Key: {AZURE_SPEECH_KEY}
 multipart: audio=<wav>, definition={"locales":["en"],"enhancedMode":{"enabled":true,"model":"MAI-Transcribe-2"}}
 ```
-
-`locales: ["en"]` güçlü bir dil ipucudur; aksanlı İngilizcenin yanlışlıkla Türkçe algılanmasını önlemek için kullanılır. `transcribeStyle` gönderilmez (varsayılan `verbatim`; `clean` dolgu seslerini siler ve biçimlendirir, kullanılmaz).
 
 **Seslendirme (`lib/tts/speechify.ts`):** `POST https://api.speechify.ai/v1/audio/speech`, `Authorization: Bearer {SPEECHIFY_API_KEY}`, gövde `{ input, voice_id, model: "simba-3.5", audio_format: "mp3", language: "en-US" }`. Yanıt base64 `audio_data` döner; sunucu çözer ve `tts/` özel kovasına yazar. Hız SSML ile ayarlanır: A1 için `<speak><prosody rate="-10%">…</prosody></speak>`, A2 için düz metin. Metin SSML'e gömülmeden önce XML kaçışı yapılır (`&`, `<`, `>`). Önbellek anahtarı `sha256(model|voice|rate|text)`; istemciye 1 saatlik imzalı URL. Yanıttaki `billable_characters_count` `llm_usage.tts_chars`'a yazılır. Speechify'a öğrenci kimliği gönderilmez. Öğrenci aynı sesi en fazla 3 kez dinler (istemcide sayılır, `events`'e yazılır).
 
@@ -878,7 +885,7 @@ multipart: audio=<wav>, definition={"locales":["en"],"enhancedMode":{"enabled":t
 | --- | --- |
 | Veri asgarisi | Ad, e-posta (Google'dan), seviye beyanı, ilgi alanları, cevaplar ve türetilmiş puanlar. Doğum tarihi yok (yalnızca 18+ beyanı ve zamanı). Ses kaydı saklanmaz. |
 | Aydınlatma ve rıza | `/gizlilik` sayfası; başlangıçta açık rıza; sürüm ve zaman kaydı |
-| Yurt dışı aktarım | Veriler Supabase (AB, Frankfurt), Anthropic (ABD; öğrencinin yazılı cevapları ve konuşma transkriptleri), Microsoft Azure Speech (AB, İrlanda; konuşma sesi, yalnızca transkript için) tarafından işlenir. Speechify'a (ABD) yalnızca sistemin ürettiği İngilizce alıştırma metni gider; kişisel veri gitmez. 2024 değişikliğiyle KVKK m.9, açık rızayı olağan aktarım yolu olmaktan çıkardı; standart sözleşme imzalanması ve 5 iş günü içinde Kurum'a bildirimi öngörülüyor. **Pilot öncesi hukuki görüş alınmalı** (ör. üniversite hukuk kliniği veya kuluçka merkezi). Sağlayıcıların veri saklama koşulları (Anthropic ticari koşulları ve veri işleme eki, Azure Speech veri gizliliği belgesi) aydınlatma metni yazılmadan önce kontrol edilir. |
+| Yurt dışı aktarım | Veriler Supabase (AB, Frankfurt), OpenRouter (ABD; aracı) üzerinden Anthropic (ABD; öğrencinin yazılı cevapları ve konuşma transkriptleri) ve Microsoft (MAI-Transcribe-2; konuşma sesi, yalnızca transkript için, AB dışında işlenebilir) tarafından işlenir. Speechify'a (ABD) yalnızca sistemin ürettiği İngilizce alıştırma metni gider; kişisel veri gitmez. 2024 değişikliğiyle KVKK m.9, açık rızayı olağan aktarım yolu olmaktan çıkardı; standart sözleşme imzalanması ve 5 iş günü içinde Kurum'a bildirimi öngörülüyor. **Pilot öncesi hukuki görüş alınmalı** (ör. üniversite hukuk kliniği veya kuluçka merkezi). Sağlayıcıların veri saklama koşulları (OpenRouter gizlilik ve veri saklama koşulları, Anthropic ticari koşulları ve veri işleme eki, Microsoft MAI-Transcribe veri koşulları) aydınlatma metni yazılmadan önce kontrol edilir. |
 | Saklama süresi | Pilot sonu + 6 ay; sonra anonimleştirme veya silme (aydınlatma metninde yazılır) |
 | İlgili kişi hakları | Verimi indir, hesabımı sil (F13) |
 | Cevap anahtarı | `item_keys` tablosu, istemciye hiç gitmez |
@@ -911,7 +918,7 @@ multipart: audio=<wav>, definition={"locales":["en"],"enhancedMode":{"enabled":t
 - **Göçler:** `supabase/migrations/*.sql` (Supabase CLI). Seed: `supabase/seed.sql` + CSV'ler. Pedagoji sahibi konu ve L1 kodlarını CSV'de düzenler, mühendis seed'i yeniden çalıştırır.
 - **Cron:** `vercel.json` içinde günde bir kez `/api/cron/daily`.
 - **İzleme:** Vercel günlükleri + yönetim paneli (`llm_usage`, `events`). Ayrı hata izleme servisi v1'de yok.
-- **Bütçe:** Anthropic Console aylık harcama limiti 40 $; Azure aboneliğinde bütçe uyarısı (10 $); Speechify Free planda kota dolunca durur, Starter'a geçiş elle yapılır ve `tts_plan_usd` güncellenir; uygulama içi tavan 40 $.
+- **Bütçe:** OpenRouter anahtarında kredi limiti 40 $ (dil modeli ve transkript); doğrudan bağlantıya dönülürse Anthropic Console limiti 40 $ ve Azure bütçe uyarısı (10 $); Speechify Free planda kota dolunca durur, Starter'a geçiş elle yapılır ve `tts_plan_usd` güncellenir; uygulama içi tavan 40 $.
 
 ---
 
