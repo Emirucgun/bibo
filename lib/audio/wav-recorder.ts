@@ -47,6 +47,8 @@ export class WavRecorder {
       window.AudioContext ?? (window as unknown as { webkitAudioContext: AudioContextCtor }).webkitAudioContext;
     // Bağlam getUserMedia'dan önce, dokunuşun içinde açılır (iOS).
     this.context = new Ctor();
+    // iOS: bağlam askıda açılabilir; `resume()` da dokunuşun içinde, ilk `await`'ten önce çağrılır.
+    const resumed = this.context.state === "suspended" ? this.context.resume().catch(() => undefined) : null;
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({
         audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
@@ -58,7 +60,8 @@ export class WavRecorder {
       if (name === "NotFoundError" || name === "OverconstrainedError") throw new RecorderError("no_microphone");
       throw new RecorderError("failed");
     }
-    if (this.context.state === "suspended") await this.context.resume();
+    await resumed;
+    if (this.context.state === "suspended") await this.context.resume().catch(() => undefined);
 
     this.chunks = [];
     this.length = 0;
