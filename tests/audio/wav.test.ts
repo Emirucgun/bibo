@@ -6,6 +6,7 @@ import {
   MAX_RECORDING_SEC,
   parseWav,
   TARGET_SAMPLE_RATE,
+  toTargetWav,
 } from "@/lib/audio/wav";
 import { wavOf } from "../media/fakes";
 
@@ -55,5 +56,30 @@ describe("WAV (SPEC 10)", () => {
     const out = downsample(new Float32Array(4800).fill(0.25), 48_000, 16_000);
     expect(out.every((x) => Math.abs(x - 0.25) < 1e-6)).toBe(true);
     expect(() => downsample(new Float32Array(10), 8_000, 16_000)).toThrow();
+  });
+});
+
+describe("toTargetWav (eval-verbatim kayıtları)", () => {
+  it("48 kHz stereo → 16 kHz mono; süre korunur; zaten uygun olan aynen döner", () => {
+    const frames = 48_000 * 2;
+    const bytes = new Uint8Array(44 + frames * 4);
+    const v = new DataView(bytes.buffer);
+    const ascii = (o: number, s: string) => [...s].forEach((ch, i) => v.setUint8(o + i, ch.charCodeAt(0)));
+    ascii(0, "RIFF"); v.setUint32(4, 36 + frames * 4, true); ascii(8, "WAVE"); ascii(12, "fmt ");
+    v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true); v.setUint32(24, 48_000, true);
+    v.setUint32(28, 48_000 * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true);
+    ascii(36, "data"); v.setUint32(40, frames * 4, true);
+    for (let f = 0; f < frames; f++) {
+      v.setInt16(44 + f * 4, 8192, true);
+      v.setInt16(44 + f * 4 + 2, -8192, true);
+    }
+    const out = toTargetWav(bytes)!;
+    const info = parseWav(out)!;
+    expect(isAcceptedWav(info)).toBe(true);
+    expect(info.durationSec).toBeCloseTo(2, 2);
+    expect(new DataView(out.buffer).getInt16(44 + 100, true)).toBe(0); // kanallar ortalandı
+    const ok = wavOf(2);
+    expect(toTargetWav(ok)).toBe(ok);
+    expect(toTargetWav(new Uint8Array(10))).toBeNull();
   });
 });

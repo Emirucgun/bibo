@@ -1,0 +1,25 @@
+[
+  {
+    "id": "v01",
+    "kind": "error",
+    "file": "v01.wav",
+    "read_text": "She play football every day.",
+    "errors": [{ "expect": "she play football", "not": "she plays football" }]
+  },
+  {
+    "id": "v02",
+    "kind": "error",
+    "file": "v02.wav",
+    "read_text": "My brother is teacher.",
+    "errors": [{ "expect": "is teacher", "not": "is a teacher" }]
+  },
+  {
+    "id": "a01",
+    "kind": "accent",
+    "file": "a01.wav",
+    "level": "A1",
+    "topic_id": "g.present_simple_3sg",
+    "prompt_en": "What does your best friend do on weekends?",
+    "model_answer_en": "My best friend plays football on weekends."
+  }
+]

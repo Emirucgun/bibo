@@ -20,6 +20,11 @@ export function flag(name: string): boolean {
  */
 export function setupDeps(): { store: RecordingStore; llm: ReturnType<typeof createLlmClient>; db: boolean } {
   if (!process.env.OPENROUTER_API_KEY) throw new Error("OPENROUTER_API_KEY tanımlı değil (--env-file)");
+  return { ...setupDepsWithoutLlm(), llm: createLlmClient() };
+}
+
+/** Yalnızca guard ve `llm_usage` deposu (dil modeli anahtarı gerekmez; ör. `tts-voices`). */
+export function setupDepsWithoutLlm(): { store: RecordingStore; db: boolean } {
   let inner: AiStore;
   const noDb = flag("no-db");
   if (noDb) {
@@ -32,7 +37,7 @@ export function setupDeps(): { store: RecordingStore; llm: ReturnType<typeof cre
       createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }),
     );
   }
-  return { store: new RecordingStore(inner), llm: createLlmClient(), db: !noDb };
+  return { store: new RecordingStore(inner), db: !noDb };
 }
 
 export const fmtUsd = (x: number) => `${x.toFixed(5)} $`;

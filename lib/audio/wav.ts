@@ -111,3 +111,32 @@ export function isAcceptedWav(info: WavInfo | null): info is WavInfo {
     info.durationSec <= MAX_RECORDING_SEC + 0.5
   );
 }
+
+/**
+ * Herhangi bir 16 bit PCM WAV'ı (ör. telefonla kaydedilmiş 48 kHz stereo) 16 kHz mono WAV'a çevirir.
+ * Yalnızca betikler (`eval-verbatim`) kullanır; uygulama kaydedicisi zaten 16 kHz mono üretir.
+ */
+export function toTargetWav(bytes: Uint8Array): Uint8Array | null {
+  const info = parseWav(bytes);
+  if (!info || info.format !== 1 || info.bitsPerSample !== 16) return null;
+  const ready: boolean = isAcceptedWav(info); // tür daraltması olmadan (aşağıda `info` kullanılır)
+  if (ready) return bytes;
+  // `data` bölümünün başı: başlıktan sonra, toplam uzunluktan veri boyu çıkarılarak değil, aranarak.
+  let offset = 12;
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  while (offset + 8 <= bytes.length) {
+    const id = String.fromCharCode(...bytes.subarray(offset, offset + 4));
+    const size = view.getUint32(offset + 4, true);
+    if (id === "data") break;
+    offset += 8 + size + (size % 2);
+  }
+  const start = offset + 8;
+  const frames = Math.floor(info.dataBytes / (2 * info.channels));
+  const mono = new Float32Array(frames);
+  for (let f = 0; f < frames; f++) {
+    let sum = 0;
+    for (let c = 0; c < info.channels; c++) sum += view.getInt16(start + (f * info.channels + c) * 2, true) / 0x8000;
+    mono[f] = sum / info.channels;
+  }
+  return encodeWav(downsample(mono, info.sampleRate, TARGET_SAMPLE_RATE), TARGET_SAMPLE_RATE);
+}

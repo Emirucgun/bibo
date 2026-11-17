@@ -49,3 +49,7 @@ supabase/.branches
 
 # eval çıktıları (yerel)
 scripts/out/
+
+# P6 ses kayıtları kişisel veridir (M8 eval-verbatim); yalnızca örnek liste repoda
+scripts/data/verbatim/*
+!scripts/data/verbatim/manifest.example.json
