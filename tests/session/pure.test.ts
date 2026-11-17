@@ -8,7 +8,7 @@ import { sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
 import { feedbackHeading } from "@/lib/session/feedback-heading";
 import { nextExplainMode } from "@/lib/session/explain-mode";
 import { applyTextFallback, LISTENING_FALLBACK, SPEAKING_FALLBACK } from "@/lib/session/fallback";
-import { splitGeneratedItem, splitGeneratedItems } from "@/lib/session/save-items";
+import { CHOICE_TYPES, shuffled, splitGeneratedItem, splitGeneratedItems } from "@/lib/session/save-items";
 import { validItem } from "../ai/fixtures";
 import { plannerInput } from "../engine/fixtures";
 
@@ -64,10 +64,12 @@ describe("applyTextFallback (M6 geçici bayrağı)", () => {
   });
 });
 
+const rng0 = () => createRng(1);
+
 describe("splitGeneratedItem (items / item_keys)", () => {
   it("anahtar alanları payload'a, payload alanları anahtara karışmaz", () => {
     for (const type of ACTIVITY_TYPES) {
-      const row = splitGeneratedItem(validItem(1, type), slot(1, type));
+      const row = splitGeneratedItem(validItem(1, type), slot(1, type), rng0());
       const payload = JSON.stringify(row.payload);
       for (const field of ["correct", "accepted", "distractors", "wrong_patterns", "model_answer_en", "hint_tr", "explanation"]) {
         expect(payload, `${type}.${field}`).not.toContain(field);
@@ -80,7 +82,7 @@ describe("splitGeneratedItem (items / item_keys)", () => {
   it("dinleme türlerinde seslendirilen `text_en` anahtara taşınır (PLAN karar 14)", () => {
     for (const type of ["listen_choose", "dictation"] as const) {
       const item = validItem(2, type);
-      const row = splitGeneratedItem(item, slot(2, type));
+      const row = splitGeneratedItem(item, slot(2, type), rng0());
       expect(row.payload.text_en).toBeUndefined();
       expect(row.key.text_en).toBe(item.payload.text_en);
       expect(JSON.stringify(row.payload)).not.toContain(item.payload.text_en!);
@@ -90,13 +92,43 @@ describe("splitGeneratedItem (items / item_keys)", () => {
   });
 
   it("okuma metni ve boşluklu cümle payload'da kalır", () => {
-    expect(splitGeneratedItem(validItem(1, "mcq_read"), slot(1, "mcq_read")).payload.text_en).toBeTruthy();
-    expect(splitGeneratedItem(validItem(1, "gap_fill"), slot(1, "gap_fill")).payload.text_en).toContain("___");
+    expect(splitGeneratedItem(validItem(1, "mcq_read"), slot(1, "mcq_read"), rng0()).payload.text_en).toBeTruthy();
+    expect(splitGeneratedItem(validItem(1, "gap_fill"), slot(1, "gap_fill"), rng0()).payload.text_en).toContain("___");
+  });
+
+  it("şıklı türlerde şık sırası karışır: doğru şık her konuma düşer, şıklar aynı kalır (M6 anahtar sızıntısı)", () => {
+    for (const type of CHOICE_TYPES) {
+      const item = validItem(1, type);
+      const { correct } = item.key;
+      const original = item.payload.options!;
+      expect(original[0]).toBe(correct); // fikstür, modelin alışkanlığı gibi doğruyu başa yazar
+      const positions = new Set<number>();
+      for (let seed = 1; seed <= 200; seed++) {
+        const row = splitGeneratedItem(item, slot(1, type), createRng(seed));
+        expect([...row.payload.options!].sort()).toEqual([...original].sort());
+        positions.add(row.payload.options!.indexOf(correct!));
+      }
+      expect(positions.size, type).toBe(original.length);
+      expect(item.payload.options).toEqual(original); // kaynak nesne değişmez
+    }
+  });
+
+  it("şıksız türlerde sıra ve kelime parçaları değişmez", () => {
+    const item = validItem(1, "word_order");
+    expect(splitGeneratedItem(item, slot(1, "word_order"), createRng(3)).payload.tokens).toEqual(item.payload.tokens);
+  });
+
+  it("shuffled: aynı tohum aynı sıra, dağılım kabaca düzgün", () => {
+    expect(shuffled([1, 2, 3, 4], createRng(9))).toEqual(shuffled([1, 2, 3, 4], createRng(9)));
+    const first = [0, 0, 0];
+    const rng = createRng(42);
+    for (let i = 0; i < 3000; i++) first[shuffled([0, 1, 2], rng)[0]]++;
+    for (const n of first) expect(n).toBeGreaterThan(850);
   });
 
   it("konum plan slotundan gelir; slotu olmayan etkinlik atılır", () => {
     const items: GeneratedItem[] = [validItem(3, "gap_fill"), validItem(9, "mcq_read")];
-    const rows = splitGeneratedItems(items, [slot(3, "gap_fill")]);
+    const rows = splitGeneratedItems(items, [slot(3, "gap_fill")], rng0());
     expect(rows.map((r) => r.position)).toEqual([3]);
   });
 });

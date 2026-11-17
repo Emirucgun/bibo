@@ -151,7 +151,11 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
       { userId, sessionId, now, prefetch: true },
       { level: learner.level_est, explainMode: learner.explain_mode, varietySeed: sessionId, slots },
     );
-    await store.insertItems(sessionId, userId, splitGeneratedItems(outcome.items, slots));
+    await store.insertItems(
+      sessionId,
+      userId,
+      splitGeneratedItems(outcome.items, slots, createRng(seedFromString(`${sessionId}:options`))),
+    );
     const ok = await store.transition(sessionId, ["generating"], "ready");
     return ok ? "ready" : "failed";
   } catch (err) {
