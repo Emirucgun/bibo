@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
 import { cn } from "cn";
+import { Dictation } from "@/components/activity/Dictation";
 import { GapFill } from "@/components/activity/GapFill";
+import { ListenChoose } from "@/components/activity/ListenChoose";
 import { McqRead } from "@/components/activity/McqRead";
+import { SpeakAnswer } from "@/components/activity/SpeakAnswer";
 import { ShortWrite } from "@/components/activity/ShortWrite";
 import { Translate } from "@/components/activity/Translate";
 import { WordOrder } from "@/components/activity/WordOrder";
@@ -14,17 +17,20 @@ import { callApi } from "@/lib/api/client";
 import type { ActivityType } from "@/lib/content/activity-types";
 import type { ExplainMode } from "@/lib/session/explain-mode";
 import type { AttemptResponse } from "@/lib/session/schemas";
-import type { AttemptResult, FinishResult, SessionView } from "@/lib/session/service";
+import type { AttemptResult, FinishResult, SessionView, SpeechResult } from "@/lib/session/service";
 import type { ItemPublic } from "@/lib/session/types";
 import { FeedbackCard } from "./FeedbackCard";
 import { ProgressBar } from "./ProgressBar";
 import { SessionSummary } from "./SessionSummary";
 
-// M6: beş metin etkinliği. Dinleme (M7) ve konuşma (M8) bileşenleri sonra eklenir.
+// Cevabı `POST /api/items/:id/attempt` ile giden yedi tür. Konuşma (`speak_answer`) kendi uç noktasına
+// ses yükler ve aşağıda ayrı çizilir.
 const ACTIVITY: Partial<Record<ActivityType, ComponentType<ActivityProps>>> = {
   mcq_read: McqRead,
   gap_fill: GapFill,
   word_order: WordOrder,
+  listen_choose: ListenChoose,
+  dictation: Dictation,
   translate_tr_en: Translate,
   short_write: ShortWrite,
 };
@@ -47,6 +53,11 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
   const [error, setError] = useState<string | null>(null);
   const [hint, setHint] = useState<string | null>(null);
   const [hintPending, setHintPending] = useState(false);
+  /** Seslendirme kullanılamıyor: dinleme etkinliği atlanır, ustalık güncellenmez (PRD F5). */
+  const [audioDown, setAudioDown] = useState(false);
+  /** Konuşma: transkript ve deneme numarası (1 yeniden kayıt hakkı, PRD F6). */
+  const [speech, setSpeech] = useState<{ transcript: string; tryNo: number; canRerecord: boolean } | null>(null);
+  const [speechTry, setSpeechTry] = useState(1);
   const hintUsed = useRef(false);
   const shownAt = useRef(0);
 
@@ -136,6 +147,17 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
     setSubmitting(false);
   }
 
+  function onSpeech(res: SpeechResult) {
+    setSpeech({ transcript: res.transcript, tryNo: res.tryNo, canRerecord: res.canRerecord });
+    setResult(res);
+  }
+
+  function rerecord() {
+    setResult(null);
+    setSpeech(null);
+    setSpeechTry(2);
+  }
+
   async function showHint() {
     if (hintPending || hint) return;
     setHintPending(true);
@@ -152,6 +174,9 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
     setResult(null);
     setHint(null);
     setError(null);
+    setAudioDown(false);
+    setSpeech(null);
+    setSpeechTry(1);
     hintUsed.current = false;
     shownAt.current = performance.now();
     setPhase({ name: "run", items, index: index + 1 });
@@ -163,12 +188,46 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
       <ProgressBar current={index} total={items.length} skill={item.skill} activityType={item.activity_type} />
       <p className="text-base font-medium">{item.payload.instruction_tr}</p>
 
-      {Activity ? (
+      {item.activity_type === "speak_answer" ? (
+        result ? null : (
+          // key: yeniden kayıtta bileşen sıfırlanır.
+          <SpeakAnswer
+            key={`${item.id}:${speechTry}`}
+            itemId={item.id}
+            payload={item.payload}
+            tryNo={speechTry}
+            elapsedMs={() => performance.now() - shownAt.current}
+            onResult={onSpeech}
+          />
+        )
+      ) : Activity ? (
         // key: her etkinlikte bileşen durumu sıfırlanır.
-        <Activity key={item.id} payload={item.payload} locked={submitting || result !== null} onSubmit={submit} />
+        <Activity
+          key={item.id}
+          itemId={item.id}
+          payload={item.payload}
+          locked={submitting || result !== null || audioDown}
+          onSubmit={submit}
+          onAudioUnavailable={() => setAudioDown(true)}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">Bu etkinlik türü henüz desteklenmiyor.</p>
       )}
+
+      {audioDown && !result ? (
+        <p role="alert" className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
+          Ses şu an kullanılamıyor. Bu etkinliği atlıyoruz; puanına etkisi yok.
+        </p>
+      ) : null}
+
+      {speech && result ? (
+        <div className="flex flex-col gap-1 rounded-lg border border-border px-4 py-3">
+          <p className="text-sm text-muted-foreground">Duyduğumuz:</p>
+          <p lang="en" className="text-base">
+            {speech.transcript || "…"}
+          </p>
+        </div>
+      ) : null}
 
       {submitting ? (
         <p role="status" className="text-sm text-muted-foreground">
@@ -179,6 +238,12 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>
+      ) : null}
+
+      {result && speech?.canRerecord ? (
+        <Button type="button" variant="outline" onClick={rerecord} className="h-12 w-full text-base">
+          Yeniden kaydet (1 hakkın var)
+        </Button>
       ) : null}
 
       {result ? (
@@ -194,7 +259,7 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
         </Button>
       )}
 
-      {!Activity && !result ? (
+      {(audioDown || (!Activity && item.activity_type !== "speak_answer")) && !result ? (
         <Button type="button" onClick={next} className="h-12 w-full text-base">
           Geç
         </Button>

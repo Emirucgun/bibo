@@ -1,22 +1,134 @@
-# PLAN — M6 (Oturum akışı, metin etkinlikleri) — kapanış
+# PLAN — M7 (Dinleme) + M8 (Konuşma)
 
 | | |
 | --- | --- |
 | Tarih | 17 Kasım 2026 |
-| Kapsam | `ROADMAP.md` M6 · `SPEC.md` Bölüm 3, 4.6, 5.1, 5.2, 6 · `PRD.md` F3, F4, F7, F8 |
-| Durum | Kod ana dalda (PR #13, `cbcb859`); kapanış dalında şık karıştırma (`4f5f831`), bağımsız SPEC incelemesi ve düzeltmeleri, SPEC rev. 4 (boşluk hakemliği, onaylandı 17.11.2026), SCOPE işaretleri, `bibo-prod` M6 göçü. Bitti testinde 4/6 madde işaretli. **Kalan:** elle kontrol 1–3 ve `eval-generation` yeniden çalıştırması (Bölüm 3–4); bunlar giriş, gerçek cihaz ya da ücretli API anahtarı gerektiriyor. |
-| Bağımlılık | M5 (`generateSession`, `gradeFree`, guard), M2 (`requireUser()` / `requireOnboarded()`) |
+| Kapsam | `ROADMAP.md` M7, M8 · `SPEC.md` 2, 3 (`tts_cache`, `llm_usage`, `app_settings`), 4.4 adım 8, 4.6, 5.1, 5.4, 6, 10, 11 · `PRD.md` F5, F6 |
+| Dal | `claude/lucid-gauss-ftnatn` (bulut oturumunun zorunlu dalı; CLAUDE.md'deki `m7-…` adı yerine) |
+| Bağımlılık | M6 (oturum akışı), M5 (guard, `gradeFreeAnswer` zaten `speak_answer`'ı destekliyor), M4 (dikte puanı) |
+| Başlangıç | `npx tsc --noEmit` ✅ · `npm test` ✅ 26 dosya, 774 test (`1a46e84`) |
+| Durum | Kod tamam, 819 test yeşil, göç dev + prod'da. Bitti testinde M7 3/5, M8 1/5 işaretli; kalanlar ses seçimi (P9), ses kayıtları (P6), sağlayıcı anahtarı ve telefon denemesi bekliyor (Bölüm 6) |
 
-M1–M5 ve M2 planları bu dosyanın git geçmişinde (`80efea6`, `b4d6af6`, `5ff06bf`, `8b9c67f`, `0627de2`). M6 uygulama planı ayrı kaydedilmedi; ayrıntı `adfc966..cbcb859` commit mesajlarında.
+İki taş birlikte planlandı: ikisi de M6'nın geçici metin bayrağını (`lib/session/fallback.ts`) kaldırıyor ve aynı uç nokta/bileşen düzenine dokunuyor.
 
----
+## 1. Durum tespiti (17.11.2026)
 
-## 1. Başlangıç durumu (17.11.2026, `cbcb859`)
+- M1–M5 ✅. M6: kod ana dalda; Bitti testinde 2 madde elle kontrol bekliyor (uç nokta süresi, ağ sekmesinde anahtar). Aşağıda Bölüm 7.
+- `bibo-dev`: `tts_voice = null` (P9 ses seçimi yapılmadı), Storage'da kova yok.
+- Bu bulut oturumunda `OPENROUTER_API_KEY` ve `SPEECHIFY_API_KEY` yok: gerçek sağlayıcı çağrısı yapılamaz; doğrulama sahte HTTP ile birim testlerde.
+
+## 2. M7 — Dinleme
+
+| Parça | Dosya |
+| --- | --- |
+| Göç: özel `tts` kovası (yalnızca `audio/mpeg`, 1 MB), `tts_chars_since()` | `supabase/migrations/20261117120000_m7_m8_audio.sql` |
+| Speechify istemcisi: gövde, SSML (A1 `prosody rate="-10%"`), XML kaçışı, base64 çözme, 402/429 | `lib/tts/speechify.ts` |
+| Önbellek ve akış: `sha256(model\|voice\|rate\|text)`, `tts_cache`, kovaya yazma, 1 saatlik imzalı URL, guard + `llm_usage` (`purpose = tts`, `provider = speechify`, `tts_chars`), aylık karakter uyarısı | `lib/tts/cache.ts`, `lib/tts/store.ts` |
+| `GET /api/items/:id/audio` → `{ url }` / `503 tts_unavailable` | `app/api/items/[id]/audio/route.ts`, `service.getItemAudio` |
+| Planlayıcı: geçici bayrak kalkar; dinleme `ttsAvailable()` ile açılır | `service.prepareSession` |
+| `ListenChoose`, `Dictation`, ortak `AudioPlayer` (en çok 3 dinleme, `audio_replay`) | `components/activity/*` |
+| Ses seçimi yardımcısı (P9): aday sesleri listeler, A1/A2 örnek mp3 üretir | `scripts/tts-voices.ts` |
+
+## 3. M8 — Konuşma
+
+| Parça | Dosya |
+| --- | --- |
+| WAV kodlama/okuma ve örnek azaltma (saf, testli) | `lib/audio/wav.ts` |
+| Kaydedici: Web Audio, mono, istemcide 16 kHz'e azaltma, 45 sn sınırı, sessizlikte durmaz | `lib/audio/wav-recorder.ts` |
+| Transkript arayüzü (guard + `llm_usage`, `purpose = transcribe`, `audio_seconds`) + MAI-Transcribe-2 | `lib/stt/index.ts`, `lib/stt/mai.ts` |
+| `POST /api/items/:id/speech` (multipart, ≤ 2 MB, ≤ 45 sn, 16 kHz mono 16 bit WAV doğrulaması) | `app/api/items/[id]/speech/route.ts`, `service.submitSpeech` |
+| `SpeakAnswer` (bas-başlat / bas-bitir, transkript, 1 yeniden kayıt) | `components/activity/SpeakAnswer.tsx` |
+| `eval-verbatim` (20 hatalı okuma + 10 aksanlı doğru cevap; maliyet raporlu) | `scripts/eval-verbatim.ts` |
+| Geçici bayrağın silinmesi | `lib/session/fallback.ts` silinir |
+
+## 4. Alınan kararlar (insiyatifle; SPEC önerisi Bölüm 6)
+
+| # | Konu | Karar | Gerekçe |
+| --- | --- | --- | --- |
+| 24 | Transkript sağlayıcısı | MAI-Transcribe-2 **OpenRouter üzerinden** (`microsoft/mai-transcribe-2`, `/audio/transcriptions`), `language: "en"`, `transcribeStyle` yok | SCOPE günlüğü 11.11.2026 ve SPEC 9 (`OPENROUTER_API_KEY` transkripti de kapsıyor); Azure anahtarı ortamda yok. SPEC 1, 2, 5.1, 10'daki Azure ifadeleri eski |
+| 25 | Seslendirme ne zaman "kullanılamaz" | `tts_enabled = false` **ya da** `tts_voice` boş **ya da** son 24 saatteki son `tts` çağrısı 402/429 | SPEC "402/429 → `tts_enabled = false` gibi davran" diyor ama ne kadar süre demiyor. Ayarı kendiliğinden yazmak yerine `llm_usage`'dan türetilir; 24 saat sonra kendiliğinden yeniden denenir, başarılı çağrı durumu sıfırlar |
+| 26 | `tts_voice` boşken | Dinleme kapalı (metne düşer) | P9 tamamlanana kadar güvenli varsayılan; ses seçilince yalnızca ayar değişir |
+| 27 | Seslendirme maliyeti | `llm_usage.cost_usd = 0`, `tts_chars` dolu | Plan ücreti `tts_plan_usd` ile tavana zaten ekleniyor; Free planda aşım yok (istek reddedilir) |
+| 18 | İki konuşma denemesi | İki deneme de transkript + değerlendirme alır, ikisinin `error_events`'i yazılır; **ustalığa sonuncusu işlenir**: 2. deneme gelirse hemen, gelmezse 1. deneme `finish`'te. Teşhis ve özet her etkinliğin son denemesini sayar | PLAN #18 önerilen varsayılan |
+| 28 | Anlaşılmayan kayıt (`unclear`: < 2 kelime) | Deneme yazılır (`is_correct = null`), "Seni net duyamadık" + yeniden kayıt | Hak tüketir ama ustalığı bozmaz |
+| 29 | Transkript yapılamazsa (guard, zaman aşımı) | `503 transcribe_unavailable`, deneme yazılmaz, hak tüketilmez | Öğrencinin suçu değil |
+| 30 | Ses çalma (iOS) | İmzalı URL etkinlik açılınca alınır; "Dinle" dokunuşu doğrudan `play()` çağırır | iOS Safari `await` sonrasında dokunuş iznini düşürebilir |
+
+## 5. Testler
+
+`tests/tts/*` (gövde, SSML/kaçış, önbellek isabeti tek `tts` satırı, 402 → kullanılamaz ve sonraki plan dinlemesiz, ses yokken kapalı), `tests/audio/wav.test.ts`, `tests/stt/mai.test.ts`, `tests/session/service.test.ts` (ses uç noktası anahtar sızdırmıyor, konuşma akışı, #18), planlayıcı dinleme/konuşma slotları.
+
+## 6. Sonuç (17.11.2026)
+
+**Doğrulama:** `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 30 dosya, 819 test (önce 774) · `npm run build` ✅ (yeni yollar `/api/items/[id]/audio`, `/api/items/[id]/speech`; istemci paketinde sağlayıcı anahtarı, Speechify/transkript adresi ya da `item_keys` yok).
+
+**Kaydedici (Chromium, sahte mikrofon, Playwright):** bağlam 44,1 kHz açıldı → gönderilen WAV 16 kHz, mono, 16 bit, 1,95 sn, sunucu doğrulamasından geçti (`isAcceptedWav = true`). iOS/Android gerçek cihaz denemesi Bölüm 6.3'te.
+
+**Göç `20261117120000_m7_m8_audio`:** `bibo-dev` ve `bibo-prod`'a uygulandı (`schema_migrations` kaydıyla; iki ortamda 7 göç). Kontrol: `tts` kovası özel, 1 MB, yalnızca `audio/mpeg`; Storage'da `tts` politikası 0; `authenticated` `tts_chars_since`'i çağıramıyor; `storage.objects` boş.
+
+### 6.1 Bitti testi
+
+| Taş | Madde | Durum | Kanıt |
+| --- | --- | --- | --- |
+| M7 | Aynı metin ikinci kez → TTS çağrılmıyor, tek `tts` satırı | ✅ | `tests/tts/tts.test.ts` "aynı metin ikinci kez…", `tests/session/service.test.ts` "aynı etkinlik yeniden açılınca…" |
+| M7 | A1 0,9 (`-10%`), A2 1,0; `&` içeren metin hatasız | ◐ | Hız ve kaçış testli; **gerçek Speechify'ın kaçışlı SSML'i okuması elle** (anahtar yok, ses seçilmedi) |
+| M7 | Dikte puanlaması M4 ile tutarlı | ✅ | Servis üzerinden "She play football every day" → 0,80, yanlış (`service.test.ts` "M7 Bitti testi 3") |
+| M7 | Sahte 402 → açık oturum kırılmıyor, sonraki oturum dinlemesiz | ✅ | `service.test.ts` "M7 Bitti testi 4", `tts.test.ts` "402 sonrası…" |
+| M7 | iOS Safari / Android Chrome ses çalıyor; 4. dinleme engelli | ⏳ | Elle (6.3); sayaç kodda (`AudioPlayer`, `MAX_PLAYS = 3`) |
+| M8 | `eval-verbatim` ≥ %85 | ⏳ | Betik hazır; P6 kayıtları ve `OPENROUTER_API_KEY` gerekli. Tahmini maliyet < 0,02 $ |
+| M8 | Aksanlı doğru 10 cevapta ceza yok | ⏳ | Aynı betik (`kind: "accent"`) |
+| M8 | iOS/Android mikrofon, sessizlikte durmama, iOS'ta 16 kHz | ◐ | Chromium'da 44,1 → 16 kHz; sessizlik algılama kodda yok; sunucu 16 kHz dışını reddeder. Gerçek cihaz elle |
+| M8 | Ses Storage'a/diske yazılmıyor | ✅ | Kod: konuşma yolunda (`lib/session`, `lib/stt`, `lib/audio`, `app/api/items`) yazma çağrısı yok; ses yalnızca `Uint8Array`; `tts` kovası `audio/mpeg` dışını kabul etmez; `storage.objects` boş |
+| M8 | Transkript + değerlendirme p90 ≤ 6 sn | ⏳ | `eval-verbatim` aksan kümesi ölçer; uç nokta süresi önizlemede elle |
+
+### 6.2 Çalıştırılacak (anahtarla, mühendisin makinesinde)
+
+```bash
+npx tsx --env-file=.env.local scripts/tts-voices.ts
+```
+
+Listeden 2–3 aday seçilir, örnekler üretilir (`--sample id1,id2,id3`, Free kotadan ≈ 720 karakter, 0 $), pedagoji sahibi seçer, `tts_voice` yazılır (P9). Bundan önce dinleme etkinlikleri planlanmaz.
+
+```bash
+npx tsx --env-file=.env.local scripts/eval-verbatim.ts
+```
+
+P6 kayıtları `scripts/data/verbatim/` altına (repoya girmez), liste `manifest.json` (`manifest.example.json` biçiminde). Tahmini maliyet < 0,02 $.
+
+### 6.3 Elle kontrol (telefon)
+
+1. iOS Safari ve Android Chrome: dinle-seç ve dikte sesi çalıyor; 3 dinlemeden sonra düğme kapanıyor; A1 hesabında yavaş, A2'de normal hız.
+2. Aynı cihazlar: "Kaydı başlat" mikrofon izni ister; 10 sn sessiz kalınca kayıt sürüyor; 45 sn'de kendiliğinden bitiyor; transkript gösteriliyor; "Yeniden kaydet" bir kez çıkıyor.
+3. iOS'ta gönderilen WAV 16 kHz: sunucu başka biçimi `400` ile reddettiği için kaydın kabul edilmesi yeterli kanıt.
+4. `tts_voice` boşken oturumda dinleme etkinliği yok; ses seçildikten sonraki oturumda var.
+5. Mikrofon izni reddedilince Türkçe yönlendirme mesajı.
+
+### 6.4 SPEC önerileri (uygulanmadı; onay bekliyor)
+
+| Bölüm | Öneri |
+| --- | --- |
+| 1, 2, 5.1, 8, 10, 11 | Transkript OpenRouter üzerinden (`microsoft/mai-transcribe-2`, `/audio/transcriptions`, `language: "en"`); `lib/stt/mai.ts` gövdesi buna göre. Azure ifadeleri "doğrudan bağlantıya dönülürse" notuna. KVKK satırı: transkript işleme yeri OpenRouter → Microsoft (SCOPE günlüğündeki açık nokta) |
+| 3 `app_settings` | `tts_voice` boşken dinleme kapalı (karar 26) |
+| 5.4 | 402/429 sonrası 24 saat dinlemesiz; `llm_usage`'dan türetilir, ayar yazılmaz (karar 25). Seslendirme satırlarında `cost_usd = 0` (karar 27) |
+| 6 | `GET …/audio` hata kodu `tts_unavailable` (503) ve yeni `transcribe_unavailable` (503) hata kodları tablosuna; `speech` yanıtına `errorNameTr`, `tryNo`, `canRerecord`; `maxDuration = 60` (audio, speech) |
+| 5.1 / 6 | Karar 18 ve 28 (iki deneme, son değerlendirilmiş deneme ustalığa; anlaşılmayan kayıt) |
+| 2 dizin | `components/activity/AudioPlayer.tsx`, `lib/audio/wav.ts`, `lib/tts/store.ts`, `scripts/tts-voices.ts`, `scripts/lib/verbatim.ts` |
+
+### 6.5 v2 önerileri
+
+- Dinleme hakkının sunucuda sayılması (şu an istemcide; yenilemede sıfırlanır).
+- Sayfa yenilenince konuşma etkinliğinde yeniden kayıt hakkının korunması (şu an 1. denemeden sonra yenilenirse sonraki etkinliğe geçer).
+- Günlük cron'a 21 gün kullanılmayan `tts/` nesnelerinin silinmesi M10'da (SPEC 6, zaten kapsamda).
+
+## 7. M6 kapanışı (önceki plan, açık maddeler değişmedi)
+
+
+### 1. Başlangıç durumu (17.11.2026, `cbcb859`)
 
 - `npx tsc --noEmit` ✅ (temiz klonda önce `npx next typegen`: `RouteContext` / `LayoutProps` global türleri `.next/types`'ta üretilir)
 - `npm test` ✅ 25 dosya, 765 test · `npm run lint` ✅
 
-## 2. Bitti testi: açık maddeler
+### 2. Bitti testi: açık maddeler
 
 ### 2.1 Yerel değerlendirme ≤ 1 sn; yapay zekâ değerlendirmesi p90 ≤ 6 sn
 
@@ -75,20 +187,20 @@ Doğrulama: `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 26 do
 
 **`bibo-prod`:** M6 göçü uygulandı (sürüm `20261116190528`, `schema_migrations` kaydıyla; prod'da oturum yoktu).
 
-## 3. Elle kontrol
+### 3. Elle kontrol
 
 1. **Süre (bilgisayarda, önizleme, DevTools → Ağ):** bir oturumda `POST /api/items/<id>/attempt` isteklerinin "Time" sütunu. Yerel türler (`mcq_read`, `gap_fill`, `word_order`) ≤ 1 sn; serbest türler (`translate_tr_en`, `short_write`) en az 10 istekte p90 ≤ 6 sn.
 2. **Anahtar (aynı oturumda):** `GET /api/sessions/<id>` ve `POST …/start` yanıtlarında `accepted`, `correct`, `distractors`, `model_answer_en`, `hint_tr` yok; `mcq_read` şıklarında doğru cevap her seferinde ilk sırada değil. `attempt` yanıtında yalnızca o etkinliğin sonucu var.
 3. **iOS Safari:** bir oturum baştan sona (M10 cihaz listesinin ön denemesi).
 
-## 4. Kapanış sırası
+### 4. Kapanış sırası
 
 1. Elle kontrol 1–2 ve `eval-generation` → ROADMAP M6'daki iki kutu kanıtıyla işaretlenir.
 2. ~~SPEC'e göre bağımsız diff incelemesi~~ ✅ 17.11.2026 (Bölüm 2.4).
 3. ~~SCOPE işaretleri~~ ✅ 17.11.2026: Bölüm 5'teki "İşaretle" maddeleri; "Oturum üretimi" `eval-generation`'a, "Sekiz etkinlik türü" M7–M8'e bekliyor.
 4. Ana dala PR (bu dal). Elle kontrol 1–2 ve eval sonrası ROADMAP'teki iki kutu işaretlenir; M6 o zaman kapanır.
 
-## 5. SCOPE önerisi (uygulandı 17.11.2026; iki madde bekliyor)
+### 5. SCOPE önerisi (uygulandı 17.11.2026; iki madde bekliyor)
 
 M6 sonunda işaretlenebilecekler (her biri bitti testi kanıtına dayanır):
 
@@ -106,7 +218,7 @@ M6 sonunda işaretlenebilecekler (her biri bitti testi kanıtına dayanır):
 | F7 `activity_stats` toplanması | İşaretle | `applyCredit` + `retest` testi |
 | F8 Özet, teşhis kartı, Doğru/Bence değil, 1–5 puan | İşaretle | Gerçek oturum + servis testleri |
 
-## 6. Önceki taşlardan açık kalanlar
+### 6. Önceki taşlardan açık kalanlar
 
 - ~~**`prod`:** M2 ve M6 göçleri~~ ✅ 17.11.2026: `bibo-prod` göç listesi dev ile aynı (6 göç).
 - **SPEC önerileri (M2):** `lib/auth/*`, `lib/api/*`, `lib/onboarding/*` ve M2 hata kodları rev. 4'te SPEC'e girdi. Kalan: Bölüm 2'ye `(auth)/davet/page.tsx`, Bölüm 3'e `claim_invite`.

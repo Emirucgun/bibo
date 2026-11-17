@@ -17,7 +17,14 @@ import {
   startSession,
   submitAttempt,
   submitDiagnosisFeedback,
+  getItemAudio,
+  submitSpeech,
+  UNCLEAR_TR,
 } from "@/lib/session/service";
+import { wavOf } from "../media/fakes";
+import { validItem } from "../ai/fixtures";
+import { splitGeneratedItem } from "@/lib/session/save-items";
+import { ACTIVITY_TYPE_INFO, type ActivityType } from "@/lib/content/activity-types";
 import type { ItemRow } from "@/lib/session/types";
 import { masteryFrom } from "../engine/fixtures";
 import { L1_CODES as TAXONOMY_CODES } from "@/lib/content/taxonomy";
@@ -54,7 +61,10 @@ const itemsOf = (env: Env, sessionId: string) =>
 function responseFor(item: ItemRow, correct: boolean) {
   switch (item.activity_type) {
     case "mcq_read":
+    case "listen_choose":
       return { choice: correct ? "He plays football." : "He play football." };
+    case "dictation":
+      return { text: correct ? "She plays football every day." : "She play football every day." };
     case "gap_fill":
       return { text: correct ? "plays" : "play" };
     case "word_order":
@@ -64,12 +74,23 @@ function responseFor(item: ItemRow, correct: boolean) {
   }
 }
 
-const answer = (env: Env, item: ItemRow, correct = true, extra: { hintUsed?: boolean } = {}) =>
-  submitAttempt(env.deps, actor, item.id, {
+const answer = async (env: Env, item: ItemRow, correct = true, extra: { hintUsed?: boolean } = {}) => {
+  if (item.activity_type === "speak_answer") {
+    // Konuşma ayrı uç noktadan; değerlendirme sahte modelden (doğru/yanlış yalnızca bu cevap için).
+    const saved = env.llm.grade;
+    env.llm.grade = correct ? GRADE_OK : GRADE_WRONG;
+    try {
+      return await submitSpeech(env.deps, actor, item.id, { audio: wavOf(2), timeMs: 4200, tryNo: 1 });
+    } finally {
+      env.llm.grade = saved;
+    }
+  }
+  return submitAttempt(env.deps, actor, item.id, {
     response: responseFor(item, correct),
     timeMs: 4200,
     hintUsed: extra.hintUsed ?? false,
   });
+};
 
 /** Yapay zekâ ile değerlendirilen ilk etkinlik (çeviri ya da kısa yazma; plan tohuma göre değişir). */
 const firstFree = (env: Env, sessionId: string) => {
@@ -99,14 +120,30 @@ describe("nextSession (POST /api/sessions/next)", () => {
     expect(itemsOf(env, s.id).every((i) => env.store.keys.has(i.id))).toBe(true);
   });
 
-  it("geçici bayrak: oturumda dinleme ve konuşma etkinliği yok", async () => {
+  it("M7–M8: seslendirme açıkken dört beceri de planlanır; dinleme ve konuşma türleri üretilir", async () => {
     const env = setup();
     const res = await nextSession(env.deps, actor);
     await res.background!();
-    const types = new Set(itemsOf(env, res.sessionId).map((i) => i.activity_type));
-    for (const t of ["listen_choose", "dictation", "speak_answer"]) expect(types.has(t as never)).toBe(false);
-    expect(itemsOf(env, res.sessionId).every((i) => i.skill === "reading" || i.skill === "writing")).toBe(true);
+    const items = itemsOf(env, res.sessionId);
+    expect(new Set(items.map((i) => i.skill))).toEqual(new Set(["reading", "listening", "writing", "speaking"]));
+    expect(items.some((i) => i.activity_type === "speak_answer")).toBe(true);
+    expect(items.some((i) => i.activity_type === "listen_choose" || i.activity_type === "dictation")).toBe(true);
   });
+
+  for (const [label, change] of [
+    ["`tts_enabled = false`", (env: Env) => void (env.tts.settings.tts_enabled = false)],
+    ["`tts_voice` seçilmemiş (P9)", (env: Env) => void (env.tts.settings.tts_voice = null)],
+  ] as const) {
+    it(`${label}: dinleme slotları metne düşer, konuşma kalır`, async () => {
+      const env = setup();
+      change(env);
+      const res = await nextSession(env.deps, actor);
+      await res.background!();
+      const items = itemsOf(env, res.sessionId);
+      expect(items.some((i) => i.skill === "listening")).toBe(false);
+      expect(items.some((i) => i.activity_type === "speak_answer")).toBe(true);
+    });
+  }
 
   it("`generating` ya da `ready` oturum varken yenisini üretmez (çift üretim yok)", async () => {
     const env = setup();
@@ -789,5 +826,232 @@ describe("patchProfile ve recordEvent", () => {
     const big = Object.fromEntries(Array.from({ length: 40 }, (_, i) => [`k${i}`, "v".repeat(60)]));
     expect(await post({ name: "app_open", props: big })).toBe("invalid_input");
     expect(env.store.events).toHaveLength(2);
+  });
+});
+
+/**
+ * Plan tohuma göre her türü içermeyebilir: istenen tür yoksa aynı beceriden (yoksa ilk) bir etkinliği
+ * fikstürdeki geçerli etkinlikle değiştirir (kayıt yolu `splitGeneratedItem`, anahtar ayrı).
+ */
+const ensured = new WeakMap<Env, Set<string>>();
+function ensureType(env: Env, sessionId: string, type: ActivityType) {
+  const items = itemsOf(env, sessionId);
+  const found = items.find((i) => i.activity_type === type);
+  if (found) {
+    if (!ensured.has(env)) ensured.set(env, new Set());
+    ensured.get(env)!.add(found.id);
+    return found;
+  }
+  const used = ensured.get(env) ?? new Set<string>();
+  ensured.set(env, used);
+  const free = items.filter((i) => !used.has(i.id) && !env.store.attempts.some((a) => a.item_id === i.id));
+  const target = free.find((i) => i.skill === ACTIVITY_TYPE_INFO[type].skill) ?? free[0];
+  used.add(target.id);
+  const slot = { position: target.position, topic_id: target.topic_id, skill: ACTIVITY_TYPE_INFO[type].skill,
+    activity_type: type, mode: ACTIVITY_TYPE_INFO[type].mode, purpose: target.purpose, l1_target: null,
+    interest: null, reason: "test" } as const;
+  const { key, ...row } = splitGeneratedItem(validItem(target.position, type, target.topic_id), slot, () => 0.5);
+  Object.assign(target, row);
+  env.store.keys.set(target.id, key);
+  return target;
+}
+
+describe("M7 dinleme: GET /api/items/:id/audio ve dikte", () => {
+  it("yanıtta yalnızca imzalı URL var; seslendirilen metin ve anahtar yok", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    for (const type of ["listen_choose", "dictation"]) {
+      const item = ensureType(env, id, type as ActivityType);
+      expect(item.payload.text_en).toBeUndefined(); // metin item_keys'te
+      const res = await getItemAudio(env.deps, actor, item.id);
+      expect(Object.keys(res)).toEqual(["url"]);
+      const json = JSON.stringify(res);
+      const key = env.store.keys.get(item.id)!;
+      expect(json).not.toContain(key.text_en!);
+      expect(json).not.toMatch(/plays|football/i);
+    }
+    // Seslendirilen metin anahtardan; A1 öğrencisinde hız 0,9.
+    expect(env.speech.calls.every((c) => c.rate === 0.9 && c.text.length > 0)).toBe(true);
+  });
+
+  it("aynı etkinlik yeniden açılınca seslendirme tekrar çağrılmaz", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "dictation");
+    await getItemAudio(env.deps, actor, item.id);
+    await getItemAudio(env.deps, actor, item.id);
+    expect(env.speech.calls).toHaveLength(1);
+    expect(env.aiStore.rows.filter((r) => r.purpose === "tts")).toHaveLength(1);
+  });
+
+  it("A2 öğrencisinde hız 1,0", async () => {
+    const env = setup();
+    env.store.learners.get(USER)!.level_est = "A2";
+    const id = await openSession(env);
+    await getItemAudio(env.deps, actor, ensureType(env, id, "dictation").id);
+    expect(env.speech.calls[0].rate).toBe(1);
+  });
+
+  it("dinleme dışı tür, başkasının etkinliği ve kapalı oturum", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    expect(await codeOf(getItemAudio(env.deps, actor, ensureType(env, id, "mcq_read").id))).toBe("not_found");
+    expect(await codeOf(getItemAudio(env.deps, { userId: OTHER }, ensureType(env, id, "dictation").id))).toBe("not_found");
+    await finishSession(env.deps, actor, id, {});
+    expect(await codeOf(getItemAudio(env.deps, actor, ensureType(env, id, "dictation").id))).toBe("session_not_active");
+  });
+
+  it("M7 Bitti testi 4: sahte 402 → açık oturum kırılmaz, sonraki oturum dinlemesiz planlanır", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    env.speech.failStatus = 402;
+    const listening = itemsOf(env, id).filter((i) => i.skill === "listening");
+    expect(listening.length).toBeGreaterThan(0);
+    expect(await codeOf(getItemAudio(env.deps, actor, listening[0].id))).toBe("tts_unavailable");
+    // Açık oturum devam eder: diğer etkinlikler cevaplanır, dinleme atlanır, bitiş çalışır.
+    for (const item of itemsOf(env, id)) if (item.skill !== "listening") await answer(env, item, true);
+    const finished = await finishSession(env.deps, actor, id, {});
+    expect(finished.summary.answered).toBe(itemsOf(env, id).length - listening.length);
+    expect(env.store.attempts.some((a) => listening.some((l) => l.id === a.item_id))).toBe(false);
+    // Sonraki oturum (ön üretim) dinlemesiz; pron konuları da yok.
+    await finished.background!();
+    const next = env.store.sessions.find((s) => s.id !== id && s.status === "ready")!;
+    const nextItems = itemsOf(env, next.id);
+    expect(nextItems.length).toBeGreaterThanOrEqual(8);
+    expect(nextItems.some((i) => i.skill === "listening")).toBe(false);
+  });
+
+  it("M7 Bitti testi 3: dikte puanı M4 kuralıyla aynı (1/5 kelime hata → 0,80, yanlış)", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "dictation");
+    const res = await submitAttempt(env.deps, actor, item.id, {
+      response: { text: "She play football every day" },
+      timeMs: 1,
+      hintUsed: false,
+    });
+    expect(res).toMatchObject({ isCorrect: false, score: 0.8, correction: "She plays football every day." });
+    const ok = await submitAttempt(env.deps, actor, ensureType(env, id, "listen_choose").id, {
+      response: { choice: "He plays football." },
+      timeMs: 1,
+      hintUsed: false,
+    });
+    expect(ok.isCorrect).toBe(true);
+  });
+});
+
+describe("M8 konuşma: POST /api/items/:id/speech", () => {
+  const speak = (env: Env, itemId: string, tryNo: number, audio = wavOf(3)) =>
+    submitSpeech(env.deps, actor, itemId, { audio, timeMs: "5000", tryNo: String(tryNo) });
+
+  it("iki adım: transkript → değerlendirme; transkript yanıtta ve `attempts.response`'ta, ses hiçbir yere yazılmaz", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    env.stt.text = "My friend play football on weekends.";
+    env.llm.grade = GRADE_WRONG;
+    const res = await speak(env, item.id, 1);
+    expect(res).toMatchObject({
+      transcript: "My friend play football on weekends.",
+      isCorrect: false,
+      tryNo: 1,
+      canRerecord: true,
+      correction: GRADE_WRONG.corrected,
+    });
+    expect(env.stt.calls).toHaveLength(1);
+    const attempt = env.store.attempts.find((a) => a.item_id === item.id)!;
+    expect(attempt).toMatchObject({ try_no: 1, graded_by: "llm", response: { transcript: res.transcript }, time_ms: 5000 });
+    expect(env.store.errorEvents.filter((e) => e.activity_type === "speak_answer")).toHaveLength(1);
+    // Sırayla transcribe → grade satırları; ses Storage'a yazılmadı.
+    const purposes = env.aiStore.rows.map((r) => r.purpose).filter((p) => p !== "generate" && p !== "tts");
+    expect(purposes).toEqual(["transcribe", "grade"]);
+    expect(env.tts.objects.size).toBe(0);
+  });
+
+  it("karar 18: 1. deneme ustalığa hemen işlenmez; yeniden kayıt gelirse 2. deneme işlenir", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    const speaking = () => (env.store.mastery.get(USER) ?? []).find((m) => m.topic_id === item.topic_id && m.skill === "speaking");
+    env.llm.grade = GRADE_WRONG;
+    await speak(env, item.id, 1);
+    expect(speaking()).toBeUndefined();
+    env.llm.grade = GRADE_OK;
+    const second = await speak(env, item.id, 2);
+    expect(second).toMatchObject({ isCorrect: true, tryNo: 2, canRerecord: false });
+    expect(speaking()).toMatchObject({ n: 1, correct: 1 });
+    expect(env.store.events.some((e) => e.name === "rerecord")).toBe(true);
+    // Üçüncü deneme yok; 2. deneme tekrar gönderilirse ilk sonuç döner.
+    expect(await codeOf(speak(env, item.id, 3))).toBe("invalid_input");
+    expect((await speak(env, item.id, 2)).attemptId).toBe(second.attemptId);
+    expect(env.stt.calls).toHaveLength(2);
+    // Özet etkinliği bir kez ve son denemesiyle sayar; finish 1. denemeyi yeniden işlemez.
+    const fin = await finishSession(env.deps, actor, id, {});
+    expect(fin.summary.answered).toBe(1);
+    expect(fin.summary.correct).toBe(1);
+    expect(speaking()).toMatchObject({ n: 1, correct: 1 });
+  });
+
+  it("karar 18: yeniden kaydedilmeyen 1. deneme `finish`'te işlenir", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    env.llm.grade = GRADE_OK;
+    await speak(env, item.id, 1);
+    await finishSession(env.deps, actor, id, {});
+    const m = (env.store.mastery.get(USER) ?? []).find((r) => r.topic_id === item.topic_id && r.skill === "speaking");
+    expect(m).toMatchObject({ n: 1, correct: 1 });
+  });
+
+  it("anlaşılmayan kayıt: değerlendirme çağrısı yok, `is_correct = null`, yeniden kayıt hakkı", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    env.stt.text = "Um.";
+    const grades = env.llm.gradeCalls;
+    const res = await speak(env, item.id, 1);
+    expect(res).toMatchObject({ isCorrect: null, score: null, feedbackShortTr: UNCLEAR_TR, canRerecord: true });
+    expect(env.llm.gradeCalls).toBe(grades);
+  });
+
+  it("transkript yapılamazsa 503, deneme yazılmaz, hak tüketilmez", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    env.stt.fail = new AiCallError("http_500", true);
+    expect(await codeOf(speak(env, item.id, 1))).toBe("transcribe_unavailable");
+    expect(env.store.attempts.some((a) => a.item_id === item.id)).toBe(false);
+    env.stt.fail = null;
+    expect((await speak(env, item.id, 1)).tryNo).toBe(1);
+  });
+
+  it("geçersiz ses: WAV değil, 48 kHz, 45 sn'den uzun, 2 MB'tan büyük; 1. deneme olmadan 2. deneme; yanlış tür", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    expect(await codeOf(speak(env, item.id, 1, new Uint8Array(1000)))).toBe("invalid_input");
+    expect(await codeOf(speak(env, item.id, 1, wavOf(3, 48_000)))).toBe("invalid_input");
+    expect(await codeOf(speak(env, item.id, 1, wavOf(46)))).toBe("invalid_input");
+    expect(await codeOf(speak(env, item.id, 1, new Uint8Array(2 * 1024 * 1024 + 1)))).toBe("invalid_input");
+    expect(await codeOf(submitSpeech(env.deps, actor, item.id, { audio: null, timeMs: "1", tryNo: "1" }))).toBe("invalid_input");
+    expect(await codeOf(speak(env, item.id, 2))).toBe("invalid_input");
+    expect(await codeOf(speak(env, ensureType(env, id, "mcq_read").id, 1))).toBe("invalid_input");
+    expect(env.stt.calls).toHaveLength(0);
+    // Konuşma etkinliği metin uç noktasından cevaplanamaz.
+    expect(
+      await codeOf(submitAttempt(env.deps, actor, item.id, { response: { text: "x" }, timeMs: 1, hintUsed: false })),
+    ).toBe("invalid_input");
+  });
+
+  it("teşhis her etkinliğin son denemesini sayar (iki deneme çift kanıt değildir)", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const item = ensureType(env, id, "speak_answer");
+    env.llm.grade = GRADE_WRONG;
+    await speak(env, item.id, 1);
+    env.llm.grade = GRADE_OK;
+    await speak(env, item.id, 2);
+    const rows = (await env.store.listTopicAttempts(USER, [item.topic_id])).filter((a) => a.activity_type === "speak_answer");
+    expect(rows).toEqual([{ topic_id: item.topic_id, skill: "speaking", activity_type: "speak_answer", is_correct: true }]);
   });
 });

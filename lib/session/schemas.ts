@@ -2,7 +2,7 @@
 import { z } from "zod";
 import { INTERESTS, MIN_INTERESTS } from "@/lib/content/interests";
 
-/** `attempts.response`: `{choice}` / `{text}` / `{order}`. */
+/** `attempts.response`: `{choice}` / `{text}` / `{order}`; konuşmada `{transcript}` yalnızca sunucuda yazılır. */
 export const AttemptResponse = z.union([
   z.strictObject({ choice: z.string().min(1).max(200) }),
   z.strictObject({ text: z.string().max(1000) }),
@@ -14,6 +14,12 @@ export const AttemptInput = z.object({
   response: AttemptResponse,
   timeMs: z.number().int().min(0).max(3_600_000),
   hintUsed: z.boolean(),
+});
+
+/** `POST /api/items/:id/speech` multipart alanları (metin olarak gelir). */
+export const SpeechMeta = z.object({
+  timeMs: z.coerce.number().int().min(0).max(3_600_000),
+  tryNo: z.coerce.number().int().min(1).max(2),
 });
 
 export const FinishInput = z.object({

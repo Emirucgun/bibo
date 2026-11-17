@@ -830,6 +830,7 @@ export type Database = {
         }[];
       };
       llm_cost_since: { Args: { since: string }; Returns: number };
+      tts_chars_since: { Args: { since: string }; Returns: number };
     };
     Enums: {
       [_ in never]: never;

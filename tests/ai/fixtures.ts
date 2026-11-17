@@ -15,6 +15,7 @@ export const SETTINGS: AiSettings = {
   effort_generate: "medium",
   effort_grade: "low",
   thinking_grade: "adaptive",
+  model_transcribe: "MAI-Transcribe-2",
   tts_plan_usd: 0,
   openrouter_fee_rate: 0, // komisyonun etkisi guard.test.ts'te ayrıca sınanır
 };

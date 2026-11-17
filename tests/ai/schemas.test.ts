@@ -113,6 +113,7 @@ describe("app_settings", () => {
     { key: "effort_generate", value: "medium" },
     { key: "effort_grade", value: "low" },
     { key: "thinking_grade", value: "adaptive" },
+    { key: "model_transcribe", value: "MAI-Transcribe-2" },
     { key: "tts_plan_usd", value: 0 },
     { key: "openrouter_fee_rate", value: 0.055 },
     { key: "tts_voice", value: null },

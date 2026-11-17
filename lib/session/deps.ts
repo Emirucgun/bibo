@@ -4,6 +4,9 @@ import { createLlmClient } from "@/lib/ai/client";
 import { createSupabaseAiStore } from "@/lib/ai/store";
 import { createAdminClient } from "@/lib/db/admin";
 import { createClient } from "@/lib/db/server";
+import { createMaiTranscriber } from "@/lib/stt/mai";
+import { createSpeechifyClient } from "@/lib/tts/speechify";
+import { createSupabaseTtsStore } from "@/lib/tts/store";
 import type { SessionDeps } from "./service";
 import { createSessionStore } from "./store";
 import type { SessionStore } from "./types";
@@ -16,6 +19,11 @@ export function createSessionDeps(): SessionDeps {
     ai: { store: createSupabaseAiStore(admin), llm: createLlmClient() },
     now: () => new Date(),
     rng: Math.random,
+    media: {
+      tts: createSupabaseTtsStore(admin),
+      speech: createSpeechifyClient(),
+      stt: createMaiTranscriber(),
+    },
   };
 }
 

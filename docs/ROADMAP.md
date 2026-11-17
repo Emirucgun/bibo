@@ -182,10 +182,10 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - Planlayıcıdaki geçici bayrağın dinleme için `tts_enabled` ayarına bağlanması.
 
 **Bitti testi**
-- [ ] Aynı metin ikinci kez istendiğinde TTS çağrılmıyor (`llm_usage`'da tek `tts` satırı).
+- [x] Aynı metin ikinci kez istendiğinde TTS çağrılmıyor (`llm_usage`'da tek `tts` satırı). _(17.11.2026: `tests/tts/tts.test.ts`, `tests/session/service.test.ts`; gerçek Speechify ile ilk dinlemede yeniden bakılacak)_
 - [ ] A1 öğrencisinde hız 0,9 (`prosody -10%`), A2'de 1,0; `&` içeren bir metin hatasız seslendiriliyor.
-- [ ] Dikte puanlaması M4 testleriyle tutarlı.
-- [ ] Speechify yanıtı sahte 402 ile değiştirildiğinde açık oturum kırılmıyor, sonraki oturum dinlemesiz planlanıyor.
+- [x] Dikte puanlaması M4 testleriyle tutarlı. _(17.11.2026: uç nokta üzerinden "She play football every day" → 0,80, yanlış)_
+- [x] Speechify yanıtı sahte 402 ile değiştirildiğinde açık oturum kırılmıyor, sonraki oturum dinlemesiz planlanıyor. _(17.11.2026: `tests/session/service.test.ts` "M7 Bitti testi 4"; 24 saat sonra kendiliğinden yeniden denenir, PLAN karar 25)_
 - [ ] iOS Safari ve Android Chrome'da ses çalıyor; 4. dinleme engelli.
 
 ---
@@ -207,7 +207,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - [ ] `eval-verbatim`: pedagoji sahibinin bilerek hatalı okuduğu 20 kayıtta hataların ≥ %85'i transkriptte korunuyor. Değilse `SPEC.md` 5.1'deki yedek sağlayıcı denenir.
 - [ ] Aksanlı ama dilbilgisi doğru 10 cevapta aksan nedeniyle puan düşülmüyor.
 - [ ] iOS Safari ve Android Chrome'da mikrofon izni ve kayıt çalışıyor; sessizlikte kayıt durmuyor; iOS'ta gönderilen WAV 16 kHz.
-- [ ] Ses dosyası Storage'a veya diske yazılmıyor (kod incelemesi + kova kontrolü).
+- [x] Ses dosyası Storage'a veya diske yazılmıyor (kod incelemesi + kova kontrolü). _(17.11.2026: konuşma yolunda yazma çağrısı yok; `tts` kovası yalnızca `audio/mpeg`; `bibo-dev` `storage.objects` boş)_
 - [ ] Transkript + değerlendirme toplamı p90 ≤ 6 sn.
 
 ---
