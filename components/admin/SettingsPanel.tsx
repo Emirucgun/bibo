@@ -15,10 +15,14 @@ export function SettingsPanel({ initial }: { initial: Record<EditableKey, unknow
   const [suggested, setSuggested] = useState<string | null>(null);
 
   useEffect(() => {
-    void callApi<{ voices: Voice[]; suggested: string | null }>("/api/admin/voices", { method: "GET" }).then((r) => {
+    void callApi<{ voices: Voice[]; suggested: string | null; assigned: string | null }>("/api/admin/voices", { method: "GET" }).then((r) => {
       if (r.ok) {
         setVoices(r.data.voices);
         setSuggested(r.data.suggested);
+        if (r.data.assigned) {
+          setValues((v) => ({ ...v, tts_voice: r.data.assigned }));
+          setMsg(`Seslendirme sesi seçilmemişti; önerilen ses atandı (${r.data.assigned}). Dinleme etkinlikleri açıldı.`);
+        }
       } else setVoices([]);
     });
   }, []);
@@ -55,7 +59,7 @@ export function SettingsPanel({ initial }: { initial: Record<EditableKey, unknow
       <div className="flex flex-col gap-3">
         {EDITABLE_KEYS.filter((k) => k !== "kill_switch").map((k) => (
           <SettingRow
-            key={k}
+            key={`${k}:${String(values[k])}`}
             k={k}
             value={values[k]}
             onSave={save}
