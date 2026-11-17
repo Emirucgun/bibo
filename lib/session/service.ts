@@ -6,6 +6,10 @@ import type { z } from "zod";
 import { generateSession } from "@/lib/ai/generate-session";
 import { gradeFreeAnswer, GRADE_UNAVAILABLE_TR } from "@/lib/ai/grade";
 import { assertGuard, GuardError, istanbulDayStart, type AiDeps } from "@/lib/ai/guard";
+import { isAcceptedWav, MAX_AUDIO_BYTES, parseWav } from "@/lib/audio/wav";
+import { transcribe, type Transcriber } from "@/lib/stt";
+import { getAudioUrl, TtsUnavailableError, ttsAvailable, type TtsStore } from "@/lib/tts/cache";
+import type { SpeechClient } from "@/lib/tts/speechify";
 import { ApiError } from "@/lib/api/errors";
 import { GAP_MARK } from "@/lib/ai/checks";
 import { ACTIVITY_TYPE_INFO, SKILL_LABELS_TR } from "@/lib/content/activity-types";
@@ -28,14 +32,14 @@ import type {
   SkillEvidence,
 } from "@/lib/engine/types";
 import { EXPLAIN_MODE_SESSIONS, nextExplainMode, type ExplainMode } from "./explain-mode";
-import { applyTextFallback, TEXT_ONLY_SESSIONS } from "./fallback";
-import { splitGeneratedItems } from "./save-items";
+import { splitGeneratedItems, SPOKEN_TEXT_TYPES } from "./save-items";
 import {
   AttemptInput,
   DiagnosisFeedbackInput,
   EventInput,
   FinishInput,
   ProfilePatchInput,
+  SpeechMeta,
   Uuid,
   type AttemptResponse,
 } from "./schemas";
@@ -65,6 +69,14 @@ export interface SessionDeps {
   now: () => Date;
   /** [0, 1); inceleme örneklemi için. */
   rng: () => number;
+  /** Seslendirme (M7) ve transkript (M8). Guard ve `llm_usage` `ai.store` üzerinden. */
+  media: MediaDeps;
+}
+
+export interface MediaDeps {
+  tts: TtsStore;
+  speech: SpeechClient;
+  stt: Transcriber;
 }
 
 export interface Actor {
@@ -139,12 +151,13 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
       recent_errors,
       school_topic_id,
       settings: {
-        tts_enabled: TEXT_ONLY_SESSIONS ? false : settings.tts_enabled,
+        // Kapalı, ses seçilmemiş ya da son 24 saatte 402/429: dinleme metne düşer (SPEC 4.4 adım 8, 5.4).
+        tts_enabled: settings.tts_enabled && (await ttsAvailable(deps.media.tts, now)),
         general_content_rate: settings.general_content_rate,
       },
     });
-    const slots = TEXT_ONLY_SESSIONS ? applyTextFallback(plan.slots) : plan.slots;
-    await store.setPlan(sessionId, { ...plan, slots }, plan.focus_topic_id);
+    const slots = plan.slots;
+    await store.setPlan(sessionId, plan, plan.focus_topic_id);
 
     const outcome = await generateSession(
       deps.ai,
@@ -533,7 +546,7 @@ async function adjudicateGap(
 async function updateMastery(
   deps: SessionDeps,
   item: ItemRow,
-  graded: Graded & { is_correct: boolean; score: number },
+  graded: Pick<Graded, "incidental"> & { is_correct: boolean; score: number },
   hintUsed: boolean,
   now: Date,
 ): Promise<void> {
@@ -566,6 +579,40 @@ async function updateMastery(
     else updated.push(next);
   }
   await deps.store.upsertMastery(item.user_id, updated, now);
+}
+
+/**
+ * Değerlendirilmiş cevabın kanıtı: ustalık ve (tekrar etkinliğiyse) etkinlik verimi.
+ * Değerlendirilemeyen cevapta (`is_correct = null`) hiçbir şey yazılmaz.
+ */
+async function applyGradedEvidence(
+  deps: SessionDeps,
+  item: ItemRow,
+  graded: Pick<Graded, "is_correct" | "score" | "incidental">,
+  hintUsed: boolean,
+  now: Date,
+): Promise<void> {
+  if (graded.is_correct === null || graded.score === null) return;
+  const done = { ...graded, is_correct: graded.is_correct, score: graded.score };
+  const writes: Promise<void>[] = [updateMastery(deps, item, done, hintUsed, now)];
+  if (item.purpose === "retest") {
+    writes.push(
+      (async () => {
+        const credit = creditRetest(
+          {
+            topic_id: item.topic_id,
+            activity_type: item.activity_type,
+            purpose: item.purpose,
+            is_correct: done.is_correct,
+            created_at: now,
+          },
+          await deps.store.listFocusCandidates(item.user_id, item.topic_id),
+        );
+        if (credit) await deps.store.applyCredit(item.user_id, credit, now);
+      })(),
+    );
+  }
+  await Promise.all(writes);
 }
 
 /**
@@ -646,27 +693,7 @@ export async function submitAttempt(
       ),
     );
   }
-  if (graded.is_correct !== null && graded.score !== null) {
-    const done = { ...graded, is_correct: graded.is_correct, score: graded.score };
-    writes.push(updateMastery(deps, item, done, hintUsed, now));
-    if (item.purpose === "retest") {
-      writes.push(
-        (async () => {
-          const credit = creditRetest(
-            {
-              topic_id: item.topic_id,
-              activity_type: item.activity_type,
-              purpose: item.purpose,
-              is_correct: done.is_correct,
-              created_at: now,
-            },
-            await store.listFocusCandidates(actor.userId, item.topic_id),
-          );
-          if (credit) await store.applyCredit(actor.userId, credit, now);
-        })(),
-      );
-    }
-  }
+  writes.push(applyGradedEvidence(deps, item, graded, hintUsed, now));
   await Promise.all(writes);
 
   return {
@@ -686,6 +713,200 @@ export async function getHint(deps: SessionDeps, actor: Actor, itemId: string): 
   if (!key?.hint_tr) throw new ApiError("not_found");
   await deps.store.insertEvent(actor.userId, "hint_open", { item_id: item.id });
   return { hintTr: key.hint_tr };
+}
+
+// ---------------------------------------------------------------------------
+// Dinleme (M7) ve konuşma (M8)
+// ---------------------------------------------------------------------------
+
+/**
+ * GET /api/items/:id/audio → `{ url }` (1 saatlik imzalı URL). Seslendirilen metin (`item_keys.text_en`)
+ * yanıta yazılmaz. Seslendirme kullanılamıyorsa `503 tts_unavailable`: istemci etkinliği nazik bir
+ * mesajla atlatır, ustalık güncellenmez (SPEC 5.4).
+ */
+export async function getItemAudio(deps: SessionDeps, actor: Actor, itemId: string): Promise<{ url: string }> {
+  const item = await activeItem(deps.store, actor.userId, itemId);
+  if (!SPOKEN_TEXT_TYPES.includes(item.activity_type)) throw new ApiError("not_found");
+  const [key, learner] = await Promise.all([deps.store.getItemKey(item.id), deps.store.getLearner(actor.userId)]);
+  const text = key?.text_en ?? (item.activity_type === "dictation" ? key?.correct : undefined);
+  if (!text) throw new ApiError("server_error");
+  try {
+    const { url } = await getAudioUrl(
+      { store: deps.media.tts, ai: deps.ai.store, speech: deps.media.speech, clock: deps.ai.clock },
+      { userId: actor.userId, sessionId: item.session_id, now: deps.now() },
+      { text, level: learner.level_est },
+    );
+    return { url };
+  } catch (err) {
+    if (err instanceof TtsUnavailableError) {
+      console.error("[session/audio]", err.reason);
+      throw new ApiError("tts_unavailable");
+    }
+    throw err;
+  }
+}
+
+/** Konuşmada en çok iki deneme: ilk kayıt + bir yeniden kayıt (PRD F6). */
+export const MAX_SPEECH_TRIES = 2;
+/** Anlaşılmayan kayıt (PLAN karar 28): deneme yazılır, ustalık güncellenmez. */
+export const UNCLEAR_TR = "Seni net duyamadık. Telefonu biraz yaklaştırıp yeniden kaydet.";
+
+export interface SpeechResult extends AttemptResult {
+  transcript: string;
+  tryNo: number;
+  canRerecord: boolean;
+}
+
+export interface SpeechInput {
+  /** WAV baytları; yalnızca bellekte, hiçbir yere yazılmaz. */
+  audio: Uint8Array | null;
+  timeMs: unknown;
+  tryNo: unknown;
+}
+
+const transcriptOf = (a: AttemptRow): string =>
+  typeof (a.response as { transcript?: unknown } | null)?.transcript === "string"
+    ? (a.response as { transcript: string }).transcript
+    : "";
+
+const toSpeechResult = (a: AttemptRow): SpeechResult => ({
+  ...toAttemptResult(a),
+  transcript: transcriptOf(a),
+  tryNo: a.try_no,
+  canRerecord: a.try_no < MAX_SPEECH_TRIES,
+});
+
+/** Etkinliğin son değerlendirilmiş denemesi (yoksa son denemesi). */
+export function lastGradedAttempt<T extends Pick<AttemptRow, "item_id" | "try_no" | "is_correct">>(
+  attempts: readonly T[],
+  itemId: string,
+): T | null {
+  const own = attempts.filter((a) => a.item_id === itemId).sort((a, b) => b.try_no - a.try_no);
+  return own.find((a) => a.is_correct !== null) ?? own[0] ?? null;
+}
+
+/**
+ * POST /api/items/:id/speech (multipart: `audio`, `timeMs`, `tryNo`) →
+ * `{ attemptId, transcript, isCorrect, score, feedbackShortTr, correction, errorNameTr, tryNo, canRerecord }`.
+ * İki adım (SPEC 5.1): transkript → değerlendirme. PLAN karar 18: iki deneme de değerlendirilir ve
+ * hataları yazılır; ustalığa son değerlendirilmiş deneme işlenir (2. deneme gelince hemen, gelmezse
+ * 1. deneme `finish`'te).
+ */
+export async function submitSpeech(
+  deps: SessionDeps,
+  actor: Actor,
+  itemId: string,
+  input: SpeechInput,
+): Promise<SpeechResult> {
+  const { store } = deps;
+  const meta = parse(SpeechMeta, { timeMs: input.timeMs, tryNo: input.tryNo });
+  const item = await activeItem(store, actor.userId, itemId);
+  if (item.activity_type !== "speak_answer") throw new ApiError("invalid_input");
+
+  const audio = input.audio;
+  if (!audio || audio.byteLength > MAX_AUDIO_BYTES) throw new ApiError("invalid_input");
+  const wav = parseWav(audio);
+  if (!isAcceptedWav(wav)) throw new ApiError("invalid_input");
+
+  const [attempts, key, hintOpened, settings] = await Promise.all([
+    store.listAttempts([item.id]),
+    store.getItemKey(item.id),
+    store.hintOpened(actor.userId, item.id),
+    store.loadSessionSettings(),
+  ]);
+  const same = attempts.find((a) => a.try_no === meta.tryNo);
+  if (same) return toSpeechResult(same); // çift gönderim
+  const first = attempts.find((a) => a.try_no === 1);
+  if (meta.tryNo === 2 && !first) throw new ApiError("invalid_input");
+  if (!key) throw new ApiError("server_error");
+
+  const now = deps.now();
+  let heard;
+  try {
+    heard = await transcribe(
+      { ai: deps.ai.store, stt: deps.media.stt, clock: deps.ai.clock },
+      { userId: actor.userId, sessionId: item.session_id, now },
+      { wav: audio, durationSec: wav.durationSec },
+    );
+  } catch (err) {
+    // Guard reddi, zaman aşımı ya da sağlayıcı hatası: deneme yazılmaz, hak tüketilmez (PLAN karar 29).
+    console.error("[session/speech]", err instanceof Error ? `${err.name}: ${err.message.slice(0, 80)}` : "unknown");
+    throw new ApiError("transcribe_unavailable");
+  }
+  if (meta.tryNo === 2) await store.insertEvent(actor.userId, "rerecord", { item_id: item.id });
+
+  const graded: Graded = heard.unclear
+    ? { ...UNGRADED, feedback_short_tr: UNCLEAR_TR }
+    : await gradeWithLlm(deps, item, key, heard.transcript, settings.review_sample_rate);
+
+  const attemptId = await store.insertAttempt({
+    item_id: item.id,
+    user_id: actor.userId,
+    try_no: meta.tryNo,
+    response: { transcript: heard.transcript },
+    is_correct: graded.is_correct,
+    score: graded.score,
+    time_ms: meta.timeMs,
+    hint_used: hintOpened,
+    graded_by: "llm",
+    feedback_short_tr: graded.feedback_short_tr,
+    explanation_long_tr: graded.explanation_long_tr,
+    correction: graded.correction,
+  });
+  if (!attemptId) {
+    const again = (await store.listAttempts([item.id])).find((a) => a.try_no === meta.tryNo);
+    if (!again) throw new ApiError("server_error");
+    return toSpeechResult(again);
+  }
+
+  const writes: Promise<void>[] = [];
+  if (graded.errors.length > 0) {
+    writes.push(
+      store.insertErrorEvents(
+        graded.errors.map((e) => ({
+          ...e,
+          attempt_id: attemptId,
+          user_id: actor.userId,
+          skill: item.skill,
+          activity_type: item.activity_type,
+          mode: item.mode,
+        })),
+      ),
+    );
+  }
+  if (meta.tryNo === MAX_SPEECH_TRIES) {
+    // Son deneme: değerlendirildiyse o, değilse (anlaşılmadı / değerlendirilemedi) 1. deneme işlenir.
+    if (graded.is_correct !== null) writes.push(applyGradedEvidence(deps, item, graded, hintOpened, now));
+    else if (first && first.is_correct !== null) {
+      writes.push(applyGradedEvidence(deps, item, { ...first, incidental: [] }, first.hint_used, now));
+    }
+  }
+  await Promise.all(writes);
+
+  return {
+    attemptId,
+    isCorrect: graded.is_correct,
+    score: graded.score,
+    feedbackShortTr: graded.feedback_short_tr,
+    correction: graded.correction,
+    errorNameTr: graded.is_correct === false ? errorName(graded.errors) : null,
+    transcript: heard.transcript,
+    tryNo: meta.tryNo,
+    canRerecord: meta.tryNo < MAX_SPEECH_TRIES,
+  };
+}
+
+/**
+ * `finish`: yeniden kaydedilmemiş konuşma etkinliklerinde 1. denemenin kanıtı (PLAN karar 18).
+ * Yan kanıt (`evidence`) saklanmadığı için yalnızca hedef konuya işlenir.
+ */
+async function applyPendingSpeech(deps: SessionDeps, items: ItemRow[], attempts: AttemptRow[], now: Date): Promise<void> {
+  for (const item of items) {
+    if (item.activity_type !== "speak_answer") continue;
+    const own = attempts.filter((a) => a.item_id === item.id);
+    if (own.length !== 1 || own[0].try_no !== 1 || own[0].is_correct === null) continue;
+    await applyGradedEvidence(deps, item, { ...own[0], incidental: [] }, own[0].hint_used, now);
+  }
 }
 
 /**
@@ -858,6 +1079,7 @@ export async function finishSession(
   const finishedAt = first ? now : (session.finished_at ?? now);
   let diagnosis: DiagnosisRow | null = null;
   if (first) {
+    await applyPendingSpeech(deps, items, attempts, now);
     const shownId = await runDiagnosis(deps, actor.userId, touched, now);
     if (shownId) diagnosis = await store.getDiagnosis(actor.userId, shownId);
     await updateExplainMode(deps, actor.userId, now);
@@ -865,9 +1087,11 @@ export async function finishSession(
     diagnosis = await store.getDiagnosisShownAt(actor.userId, finishedAt);
   }
 
+  // Konuşmada iki deneme olabilir: özet her etkinliğin son değerlendirilmiş denemesini sayar.
+  const finalAttempts = items.flatMap((i) => lastGradedAttempt(attempts, i.id) ?? []);
   const summary: SessionSummary = {
-    correct: attempts.filter((a) => a.is_correct === true).length,
-    answered: attempts.length,
+    correct: finalAttempts.filter((a) => a.is_correct === true).length,
+    answered: finalAttempts.length,
     total: items.length,
     durationSec: session.started_at ? Math.max(0, Math.round((finishedAt.getTime() - session.started_at.getTime()) / 1000)) : 0,
     topics: [...new Set(items.map((i) => i.topic_id))].map((t) => ({ id: t, titleTr: topics.get(t)?.title_tr ?? t })),

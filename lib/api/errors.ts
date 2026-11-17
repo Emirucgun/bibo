@@ -30,6 +30,14 @@ export const API_ERRORS = {
     status: 503,
     message_tr: "Şu an yeni oturum hazırlayamıyoruz. Biraz sonra yeniden dene.",
   },
+  tts_unavailable: {
+    status: 503,
+    message_tr: "Ses şu an kullanılamıyor. Bu etkinliği geçebilirsin.",
+  },
+  transcribe_unavailable: {
+    status: 503,
+    message_tr: "Sesini şu an yazıya dökemedik. Biraz sonra yeniden kaydet.",
+  },
   server_error: { status: 500, message_tr: "Bir şeyler ters gitti. Biraz sonra yeniden dene." },
 } as const;
 

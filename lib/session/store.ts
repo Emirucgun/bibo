@@ -366,12 +366,17 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       if (topicIds.length === 0) return [];
       const { data, error } = await db
         .from("attempts")
-        .select("is_correct, items!inner(topic_id, skill, activity_type)")
+        .select("item_id, try_no, is_correct, items!inner(topic_id, skill, activity_type)")
         .eq("user_id", userId)
         .not("is_correct", "is", null)
         .in("items.topic_id", topicIds);
       if (error) fail("attempts.topic", error);
-      return (data ?? []).flatMap((r) => {
+      // Konuşmada iki deneme olabilir: etkinlik başına son değerlendirilmiş deneme (PLAN karar 18).
+      const last = new Map<string, number>();
+      for (const r of data ?? []) {
+        last.set(r.item_id as string, Math.max(last.get(r.item_id as string) ?? 0, Number(r.try_no)));
+      }
+      return (data ?? []).filter((r) => Number(r.try_no) === last.get(r.item_id as string)).flatMap((r) => {
         const item = (Array.isArray(r.items) ? r.items[0] : r.items) as Row | undefined;
         if (!item || !isActivityType(String(item.activity_type))) return [];
         return [

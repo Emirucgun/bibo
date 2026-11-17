@@ -16,6 +16,7 @@ import type {
   SessionStore,
 } from "@/lib/session/types";
 import { answerAll, FakeStore, ok, USAGE } from "../ai/fixtures";
+import { FakeSpeech, FakeTranscriber, FakeTtsStore } from "../media/fakes";
 import { L1_CODES, TOPICS } from "../engine/fixtures";
 
 export const USER = "00000000-0000-4000-8000-00000000000a";
@@ -178,8 +179,10 @@ export class FakeSessionStore implements SessionStore {
       .map((d) => ({ id: d.id, topic_id: d.topic_id, kind: d.kind, weak_skill: d.weak_skill, weak_activity: d.weak_activity, status: "active" }));
   }
   async listTopicAttempts(userId: string, topicIds: string[]) {
-    return this.attempts
-      .filter((a) => a.user_id === userId && a.is_correct !== null)
+    const graded = this.attempts.filter((a) => a.user_id === userId && a.is_correct !== null);
+    const last = (itemId: string) => Math.max(...graded.filter((g) => g.item_id === itemId).map((g) => g.try_no));
+    return graded
+      .filter((a) => a.try_no === last(a.item_id))
       .flatMap((a) => {
         const item = this.items.find((i) => i.id === a.item_id)!;
         return topicIds.includes(item.topic_id)
@@ -303,6 +306,9 @@ export function setup() {
   const store = new FakeSessionStore();
   const aiStore = new FakeStore();
   const llm = new ScriptedLlm();
+  const tts = new FakeTtsStore();
+  const speech = new FakeSpeech();
+  const stt = new FakeTranscriber();
   // Günlük sınır gerçek oturum satırlarından sayılır.
   const countStarted = async (userId: string, since: Date) =>
     store.sessions.filter((s) => s.user_id === userId && s.kind === "daily" && s.started_at && s.started_at >= since).length;
@@ -312,9 +318,11 @@ export function setup() {
     ai: { store: aiStore, llm, clock: () => 0 },
     now: () => new Date(store.clock.now),
     rng: () => 0.99,
+    media: { tts, speech, stt },
   };
+  tts.link(aiStore, () => new Date(store.clock.now));
   const advance = (ms: number) => {
     store.clock.now = new Date(store.clock.now.getTime() + ms);
   };
-  return { store, aiStore, llm, deps, advance };
+  return { store, aiStore, llm, deps, advance, tts, speech, stt };
 }

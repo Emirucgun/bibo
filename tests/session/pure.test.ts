@@ -1,16 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { GeneratedItem } from "@/lib/ai/schemas";
 import { ACTIVITY_TYPE_INFO, ACTIVITY_TYPES } from "@/lib/content/activity-types";
-import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
 import type { PlanSlot } from "@/lib/engine/types";
 import { sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
 import { feedbackHeading } from "@/lib/session/feedback-heading";
 import { nextExplainMode } from "@/lib/session/explain-mode";
-import { applyTextFallback, LISTENING_FALLBACK, SPEAKING_FALLBACK } from "@/lib/session/fallback";
 import { CHOICE_TYPES, shuffled, splitGeneratedItem, splitGeneratedItems } from "@/lib/session/save-items";
 import { validItem } from "../ai/fixtures";
-import { plannerInput } from "../engine/fixtures";
 
 const slot = (position: number, activity_type: PlanSlot["activity_type"]): PlanSlot => ({
   position,
@@ -22,46 +19,6 @@ const slot = (position: number, activity_type: PlanSlot["activity_type"]): PlanS
   l1_target: "L1.3SG_S",
   interest: "football",
   reason: "odak",
-});
-
-describe("applyTextFallback (M6 geçici bayrağı)", () => {
-  it("dinleme ve konuşma türleri aynı moddaki metin türüne düşer", () => {
-    expect(LISTENING_FALLBACK).toEqual({ listen_choose: "mcq_read", dictation: "gap_fill" });
-    expect(SPEAKING_FALLBACK).toEqual(["short_write", "translate_tr_en"]);
-    for (const [from, to] of Object.entries(LISTENING_FALLBACK)) {
-      expect(ACTIVITY_TYPE_INFO[to].mode).toBe(ACTIVITY_TYPE_INFO[from as "listen_choose"].mode);
-    }
-    for (const to of SPEAKING_FALLBACK) expect(ACTIVITY_TYPE_INFO[to].mode).toBe(ACTIVITY_TYPE_INFO.speak_answer.mode);
-  });
-
-  it("konuşma slotları sırayla kısa yazma ve çeviriye düşer", () => {
-    const out = applyTextFallback([1, 2, 3, 4, 5].map((p) => slot(p, p === 3 ? "gap_fill" : "speak_answer")));
-    expect(out.map((s) => s.activity_type)).toEqual(["short_write", "translate_tr_en", "gap_fill", "short_write", "translate_tr_en"]);
-  });
-
-  it("beceri ve mod yeni türden gelir; diğer alanlar ve metin türleri değişmez", () => {
-    const out = applyTextFallback(ACTIVITY_TYPES.map((t, i) => slot(i + 1, t)));
-    expect(out.map((s) => s.activity_type)).toEqual([
-      "mcq_read", "gap_fill", "word_order", "mcq_read", "gap_fill", "translate_tr_en", "short_write", "short_write",
-    ]);
-    for (const s of out) {
-      expect(s.skill).toBe(ACTIVITY_TYPE_INFO[s.activity_type].skill);
-      expect(["reading", "writing"]).toContain(s.skill);
-      expect(s).toMatchObject({ topic_id: "g.present_simple_3sg", purpose: "focus", l1_target: "L1.3SG_S" });
-    }
-    expect(out[7].reason).toContain("speak_answer → short_write");
-    expect(out[2]).toEqual(slot(3, "word_order"));
-  });
-
-  it("gerçek planlarda düşürmeden sonra dinleme/konuşma kalmaz, sayı 8–10", () => {
-    for (let seed = 1; seed <= 20; seed++) {
-      const plan = planSession(plannerInput({ rng: createRng(seed), settings: { tts_enabled: false, general_content_rate: 0.2 } }));
-      const slots = applyTextFallback(plan.slots);
-      expect(slots.length).toBeGreaterThanOrEqual(8);
-      expect(slots.length).toBeLessThanOrEqual(10);
-      expect(slots.some((s) => s.skill === "listening" || s.skill === "speaking")).toBe(false);
-    }
-  });
 });
 
 const rng0 = () => createRng(1);

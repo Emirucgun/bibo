@@ -17,7 +17,9 @@ import {
   startSession,
   submitAttempt,
   submitDiagnosisFeedback,
+  submitSpeech,
 } from "@/lib/session/service";
+import { wavOf } from "../media/fakes";
 import type { ItemRow } from "@/lib/session/types";
 import { masteryFrom } from "../engine/fixtures";
 import { L1_CODES as TAXONOMY_CODES } from "@/lib/content/taxonomy";
@@ -54,7 +56,10 @@ const itemsOf = (env: Env, sessionId: string) =>
 function responseFor(item: ItemRow, correct: boolean) {
   switch (item.activity_type) {
     case "mcq_read":
+    case "listen_choose":
       return { choice: correct ? "He plays football." : "He play football." };
+    case "dictation":
+      return { text: correct ? "She plays football every day." : "She play football every day." };
     case "gap_fill":
       return { text: correct ? "plays" : "play" };
     case "word_order":
@@ -64,12 +69,23 @@ function responseFor(item: ItemRow, correct: boolean) {
   }
 }
 
-const answer = (env: Env, item: ItemRow, correct = true, extra: { hintUsed?: boolean } = {}) =>
-  submitAttempt(env.deps, actor, item.id, {
+const answer = async (env: Env, item: ItemRow, correct = true, extra: { hintUsed?: boolean } = {}) => {
+  if (item.activity_type === "speak_answer") {
+    // Konuşma ayrı uç noktadan; değerlendirme sahte modelden (doğru/yanlış yalnızca bu cevap için).
+    const saved = env.llm.grade;
+    env.llm.grade = correct ? GRADE_OK : GRADE_WRONG;
+    try {
+      return await submitSpeech(env.deps, actor, item.id, { audio: wavOf(2), timeMs: 4200, tryNo: 1 });
+    } finally {
+      env.llm.grade = saved;
+    }
+  }
+  return submitAttempt(env.deps, actor, item.id, {
     response: responseFor(item, correct),
     timeMs: 4200,
     hintUsed: extra.hintUsed ?? false,
   });
+};
 
 /** Yapay zekâ ile değerlendirilen ilk etkinlik (çeviri ya da kısa yazma; plan tohuma göre değişir). */
 const firstFree = (env: Env, sessionId: string) => {
@@ -99,14 +115,30 @@ describe("nextSession (POST /api/sessions/next)", () => {
     expect(itemsOf(env, s.id).every((i) => env.store.keys.has(i.id))).toBe(true);
   });
 
-  it("geçici bayrak: oturumda dinleme ve konuşma etkinliği yok", async () => {
+  it("M7–M8: seslendirme açıkken dört beceri de planlanır; dinleme ve konuşma türleri üretilir", async () => {
     const env = setup();
     const res = await nextSession(env.deps, actor);
     await res.background!();
-    const types = new Set(itemsOf(env, res.sessionId).map((i) => i.activity_type));
-    for (const t of ["listen_choose", "dictation", "speak_answer"]) expect(types.has(t as never)).toBe(false);
-    expect(itemsOf(env, res.sessionId).every((i) => i.skill === "reading" || i.skill === "writing")).toBe(true);
+    const items = itemsOf(env, res.sessionId);
+    expect(new Set(items.map((i) => i.skill))).toEqual(new Set(["reading", "listening", "writing", "speaking"]));
+    expect(items.some((i) => i.activity_type === "speak_answer")).toBe(true);
+    expect(items.some((i) => i.activity_type === "listen_choose" || i.activity_type === "dictation")).toBe(true);
   });
+
+  for (const [label, change] of [
+    ["`tts_enabled = false`", (env: Env) => void (env.tts.settings.tts_enabled = false)],
+    ["`tts_voice` seçilmemiş (P9)", (env: Env) => void (env.tts.settings.tts_voice = null)],
+  ] as const) {
+    it(`${label}: dinleme slotları metne düşer, konuşma kalır`, async () => {
+      const env = setup();
+      change(env);
+      const res = await nextSession(env.deps, actor);
+      await res.background!();
+      const items = itemsOf(env, res.sessionId);
+      expect(items.some((i) => i.skill === "listening")).toBe(false);
+      expect(items.some((i) => i.activity_type === "speak_answer")).toBe(true);
+    });
+  }
 
   it("`generating` ya da `ready` oturum varken yenisini üretmez (çift üretim yok)", async () => {
     const env = setup();
