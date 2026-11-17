@@ -19,6 +19,7 @@ import type { ExplainMode } from "@/lib/session/explain-mode";
 import type { AttemptResponse } from "@/lib/session/schemas";
 import type { AttemptResult, FinishResult, SessionView, SpeechResult } from "@/lib/session/service";
 import type { ItemPublic } from "@/lib/session/types";
+import { PlacementSummary } from "@/components/onboarding/PlacementSummary";
 import { FeedbackCard } from "./FeedbackCard";
 import { ProgressBar } from "./ProgressBar";
 import { SessionSummary } from "./SessionSummary";
@@ -123,7 +124,14 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
       </div>
     );
   }
-  if (phase.name === "summary") return <SessionSummary sessionId={sessionId} result={phase.result} />;
+  if (phase.name === "summary") {
+    const { result } = phase;
+    return result.placement ? (
+      <PlacementSummary result={{ ...result, placement: result.placement }} />
+    ) : (
+      <SessionSummary sessionId={sessionId} result={result} />
+    );
+  }
 
   const { items, index } = phase;
   const item = items[index];

@@ -1,5 +1,5 @@
 import { withApi } from "@/lib/api/respond";
-import { requireOnboarded } from "@/lib/auth/require";
+import { requireLearner } from "@/lib/auth/require";
 import { createSessionDeps } from "@/lib/session/deps";
 import { getItemAudio } from "@/lib/session/service";
 
@@ -10,7 +10,7 @@ export const maxDuration = 60;
 // Seslendirilen metin yanıta yazılmaz (cevap anahtarı, SPEC Bölüm 3).
 export async function GET(_request: Request, { params }: RouteContext<"/api/items/[id]/audio">) {
   return withApi("items/audio", async () => {
-    const { userId } = await requireOnboarded();
+    const { userId } = await requireLearner();
     const { id } = await params;
     return Response.json(await getItemAudio(createSessionDeps(), { userId }, id), {
       headers: { "cache-control": "no-store" },

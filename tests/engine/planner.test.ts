@@ -89,6 +89,13 @@ describe("planSession — adımlar", () => {
     expect(schoolRisk2.focus_topic_id).toBe("g.wh_questions");
   });
 
+  it("okul konusu odak değilse çapraz tekrar olarak planda (PRD F10)", () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const plan = planSession(plannerInput({ school_topic_id: "g.plurals", rng: createRng(seed) }));
+      expect(plan.slots.some((s) => s.topic_id === "g.plurals")).toBe(true);
+    }
+  });
+
   it("skill_gap aktifse odakta 2 etkinlik zayıf beceriden", () => {
     const t = "g.be_present";
     const plan = planSession(plannerInput({

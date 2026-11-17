@@ -30,3 +30,15 @@ export async function requireOnboarded(): Promise<AuthedUser> {
   if (user.profile.onboardingStep !== "done") throw new ApiError("onboarding_incomplete");
   return user;
 }
+
+/**
+ * Oturum ve etkinlik uç noktaları: başlangıcı bitmiş ya da yerleştirme adımındaki kullanıcı
+ * (yerleştirme testi aynı oturum akışını kullanır, PLAN karar 31). Günlük oturum üretimi
+ * (`POST /api/sessions/next`) yine `requireOnboarded()` ister.
+ */
+export async function requireLearner(): Promise<AuthedUser> {
+  const user = await requireUser();
+  const step = user.profile.onboardingStep;
+  if (step !== "done" && step !== "placement") throw new ApiError("onboarding_incomplete");
+  return user;
+}
