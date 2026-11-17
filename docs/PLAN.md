@@ -7,6 +7,7 @@
 | Dal | `claude/lucid-gauss-ftnatn` (bulut oturumunun zorunlu dalı; CLAUDE.md'deki `m7-…` adı yerine) |
 | Bağımlılık | M6 (oturum akışı), M5 (guard, `gradeFreeAnswer` zaten `speak_answer`'ı destekliyor), M4 (dikte puanı) |
 | Başlangıç | `npx tsc --noEmit` ✅ · `npm test` ✅ 26 dosya, 774 test (`1a46e84`) |
+| Durum | Kod tamam, 819 test yeşil, göç dev + prod'da. Bitti testinde M7 3/5, M8 1/5 işaretli; kalanlar ses seçimi (P9), ses kayıtları (P6), sağlayıcı anahtarı ve telefon denemesi bekliyor (Bölüm 6) |
 
 İki taş birlikte planlandı: ikisi de M6'nın geçici metin bayrağını (`lib/session/fallback.ts`) kaldırıyor ve aynı uç nokta/bileşen düzenine dokunuyor.
 
@@ -56,6 +57,68 @@
 ## 5. Testler
 
 `tests/tts/*` (gövde, SSML/kaçış, önbellek isabeti tek `tts` satırı, 402 → kullanılamaz ve sonraki plan dinlemesiz, ses yokken kapalı), `tests/audio/wav.test.ts`, `tests/stt/mai.test.ts`, `tests/session/service.test.ts` (ses uç noktası anahtar sızdırmıyor, konuşma akışı, #18), planlayıcı dinleme/konuşma slotları.
+
+## 6. Sonuç (17.11.2026)
+
+**Doğrulama:** `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 30 dosya, 819 test (önce 774) · `npm run build` ✅ (yeni yollar `/api/items/[id]/audio`, `/api/items/[id]/speech`; istemci paketinde sağlayıcı anahtarı, Speechify/transkript adresi ya da `item_keys` yok).
+
+**Kaydedici (Chromium, sahte mikrofon, Playwright):** bağlam 44,1 kHz açıldı → gönderilen WAV 16 kHz, mono, 16 bit, 1,95 sn, sunucu doğrulamasından geçti (`isAcceptedWav = true`). iOS/Android gerçek cihaz denemesi Bölüm 6.3'te.
+
+**Göç `20261117120000_m7_m8_audio`:** `bibo-dev` ve `bibo-prod`'a uygulandı (`schema_migrations` kaydıyla; iki ortamda 7 göç). Kontrol: `tts` kovası özel, 1 MB, yalnızca `audio/mpeg`; Storage'da `tts` politikası 0; `authenticated` `tts_chars_since`'i çağıramıyor; `storage.objects` boş.
+
+### 6.1 Bitti testi
+
+| Taş | Madde | Durum | Kanıt |
+| --- | --- | --- | --- |
+| M7 | Aynı metin ikinci kez → TTS çağrılmıyor, tek `tts` satırı | ✅ | `tests/tts/tts.test.ts` "aynı metin ikinci kez…", `tests/session/service.test.ts` "aynı etkinlik yeniden açılınca…" |
+| M7 | A1 0,9 (`-10%`), A2 1,0; `&` içeren metin hatasız | ◐ | Hız ve kaçış testli; **gerçek Speechify'ın kaçışlı SSML'i okuması elle** (anahtar yok, ses seçilmedi) |
+| M7 | Dikte puanlaması M4 ile tutarlı | ✅ | Servis üzerinden "She play football every day" → 0,80, yanlış (`service.test.ts` "M7 Bitti testi 3") |
+| M7 | Sahte 402 → açık oturum kırılmıyor, sonraki oturum dinlemesiz | ✅ | `service.test.ts` "M7 Bitti testi 4", `tts.test.ts` "402 sonrası…" |
+| M7 | iOS Safari / Android Chrome ses çalıyor; 4. dinleme engelli | ⏳ | Elle (6.3); sayaç kodda (`AudioPlayer`, `MAX_PLAYS = 3`) |
+| M8 | `eval-verbatim` ≥ %85 | ⏳ | Betik hazır; P6 kayıtları ve `OPENROUTER_API_KEY` gerekli. Tahmini maliyet < 0,02 $ |
+| M8 | Aksanlı doğru 10 cevapta ceza yok | ⏳ | Aynı betik (`kind: "accent"`) |
+| M8 | iOS/Android mikrofon, sessizlikte durmama, iOS'ta 16 kHz | ◐ | Chromium'da 44,1 → 16 kHz; sessizlik algılama kodda yok; sunucu 16 kHz dışını reddeder. Gerçek cihaz elle |
+| M8 | Ses Storage'a/diske yazılmıyor | ✅ | Kod: konuşma yolunda (`lib/session`, `lib/stt`, `lib/audio`, `app/api/items`) yazma çağrısı yok; ses yalnızca `Uint8Array`; `tts` kovası `audio/mpeg` dışını kabul etmez; `storage.objects` boş |
+| M8 | Transkript + değerlendirme p90 ≤ 6 sn | ⏳ | `eval-verbatim` aksan kümesi ölçer; uç nokta süresi önizlemede elle |
+
+### 6.2 Çalıştırılacak (anahtarla, mühendisin makinesinde)
+
+```bash
+npx tsx --env-file=.env.local scripts/tts-voices.ts
+```
+
+Listeden 2–3 aday seçilir, örnekler üretilir (`--sample id1,id2,id3`, Free kotadan ≈ 720 karakter, 0 $), pedagoji sahibi seçer, `tts_voice` yazılır (P9). Bundan önce dinleme etkinlikleri planlanmaz.
+
+```bash
+npx tsx --env-file=.env.local scripts/eval-verbatim.ts
+```
+
+P6 kayıtları `scripts/data/verbatim/` altına (repoya girmez), liste `manifest.json` (`manifest.example.json` biçiminde). Tahmini maliyet < 0,02 $.
+
+### 6.3 Elle kontrol (telefon)
+
+1. iOS Safari ve Android Chrome: dinle-seç ve dikte sesi çalıyor; 3 dinlemeden sonra düğme kapanıyor; A1 hesabında yavaş, A2'de normal hız.
+2. Aynı cihazlar: "Kaydı başlat" mikrofon izni ister; 10 sn sessiz kalınca kayıt sürüyor; 45 sn'de kendiliğinden bitiyor; transkript gösteriliyor; "Yeniden kaydet" bir kez çıkıyor.
+3. iOS'ta gönderilen WAV 16 kHz: sunucu başka biçimi `400` ile reddettiği için kaydın kabul edilmesi yeterli kanıt.
+4. `tts_voice` boşken oturumda dinleme etkinliği yok; ses seçildikten sonraki oturumda var.
+5. Mikrofon izni reddedilince Türkçe yönlendirme mesajı.
+
+### 6.4 SPEC önerileri (uygulanmadı; onay bekliyor)
+
+| Bölüm | Öneri |
+| --- | --- |
+| 1, 2, 5.1, 8, 10, 11 | Transkript OpenRouter üzerinden (`microsoft/mai-transcribe-2`, `/audio/transcriptions`, `language: "en"`); `lib/stt/mai.ts` gövdesi buna göre. Azure ifadeleri "doğrudan bağlantıya dönülürse" notuna. KVKK satırı: transkript işleme yeri OpenRouter → Microsoft (SCOPE günlüğündeki açık nokta) |
+| 3 `app_settings` | `tts_voice` boşken dinleme kapalı (karar 26) |
+| 5.4 | 402/429 sonrası 24 saat dinlemesiz; `llm_usage`'dan türetilir, ayar yazılmaz (karar 25). Seslendirme satırlarında `cost_usd = 0` (karar 27) |
+| 6 | `GET …/audio` hata kodu `tts_unavailable` (503) ve yeni `transcribe_unavailable` (503) hata kodları tablosuna; `speech` yanıtına `errorNameTr`, `tryNo`, `canRerecord`; `maxDuration = 60` (audio, speech) |
+| 5.1 / 6 | Karar 18 ve 28 (iki deneme, son değerlendirilmiş deneme ustalığa; anlaşılmayan kayıt) |
+| 2 dizin | `components/activity/AudioPlayer.tsx`, `lib/audio/wav.ts`, `lib/tts/store.ts`, `scripts/tts-voices.ts`, `scripts/lib/verbatim.ts` |
+
+### 6.5 v2 önerileri
+
+- Dinleme hakkının sunucuda sayılması (şu an istemcide; yenilemede sıfırlanır).
+- Sayfa yenilenince konuşma etkinliğinde yeniden kayıt hakkının korunması (şu an 1. denemeden sonra yenilenirse sonraki etkinliğe geçer).
+- Günlük cron'a 21 gün kullanılmayan `tts/` nesnelerinin silinmesi M10'da (SPEC 6, zaten kapsamda).
 
 ## 7. M6 kapanışı (önceki plan, açık maddeler değişmedi)
 
