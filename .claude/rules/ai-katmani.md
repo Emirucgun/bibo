@@ -27,11 +27,11 @@ paths:
 - Katı şema dizi uzunluğunu zorlayamaz; sayının önemli olduğu yerde slot anahtarlı nesne kullan (`SessionGen`). 6+ slotlu `SessionGen` "Schema is too complex for compilation" verir: bir çağrıda en çok 5 slot (`MAX_SLOTS_PER_CALL`), parçalar paralel.
 - `llm_usage.error`'a Zod sorunlarını yalnızca yol/kod/sınır olarak yaz (`formatIssues`); model metni asla.
 
-## Transkript — Azure MAI-Transcribe-2 (`lib/stt`)
+## Transkript — MAI-Transcribe-2, OpenRouter üzerinden (`lib/stt`)
 
-- `POST {AZURE_SPEECH_ENDPOINT}/speechtotext/transcriptions:transcribe?api-version=2025-10-15`, başlık `Ocp-Apim-Subscription-Key`.
-- `multipart/form-data`: `audio` (WAV) + `definition` = `{"locales":["en"],"enhancedMode":{"enabled":true,"model":"MAI-Transcribe-2"}}`. JSON'da sondaki virgüle dikkat.
-- `transcribeStyle` gönderme (varsayılan `verbatim`, öğrenci hatasını korur; `clean` kullanma).
+- `POST https://openrouter.ai/api/v1/audio/transcriptions`, `Authorization: Bearer {OPENROUTER_API_KEY}`, JSON gövde: `{ model: "microsoft/mai-transcribe-2", input_audio: { data: <base64 wav>, format: "wav" }, language: "en", provider: { data_collection: "deny" } }`.
+- Biçim seçeneği (`transcribeStyle` vb.) gönderme: varsayılan `verbatim` öğrenci hatasını korur; `clean` kullanma.
+- Doğrudan Azure'a dönülürse (yalnızca `lib/stt/mai.ts` değişir): `POST {AZURE_SPEECH_ENDPOINT}/speechtotext/transcriptions:transcribe?api-version=2025-10-15`, başlık `Ocp-Apim-Subscription-Key`, `multipart/form-data` ile `audio` + `definition` = `{"locales":["en"],"enhancedMode":{"enabled":true,"model":"MAI-Transcribe-2"}}`.
 - Ses diske/Storage'a yazılmaz; bellekte işlenip iletilir.
 - Önizleme hizmeti: tüm çağrılar `lib/stt/index.ts` arayüzünden geçer ki sağlayıcı değişebilsin.
 
@@ -42,4 +42,5 @@ paths:
 - A1 hızı: `<speak><prosody rate="-10%">…</prosody></speak>`. Metni SSML'e koymadan önce XML kaçışı yap (`&`, `<`, `>`). Yanlış yazılmış `rate` değeri hata vermez, sessizce yok sayılır.
 - Önbellek anahtarı `sha256(model|voice|rate|text)`; aynı metin için ikinci kez çağırma.
 - 402/429 → `tts_unavailable`; oturum kırılmaz, dinleme slotları metne düşer (SPEC 5.4).
+- `tts_voice` boşsa oturum üretimi varsayılan sesi atar (`ensureTtsVoice`, karar 37); ses listesi karakter harcamaz. Atanamazsa dinleme metne düşer, oturum kırılmaz.
 - Speechify'a öğrenci kimliği ya da kişisel veri gönderme.

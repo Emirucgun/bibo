@@ -183,7 +183,7 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 **Bitti testi**
 - [x] Aynı metin ikinci kez istendiğinde TTS çağrılmıyor (`llm_usage`'da tek `tts` satırı). _(17.11.2026: `tests/tts/tts.test.ts`, `tests/session/service.test.ts`; gerçek Speechify ile ilk dinlemede yeniden bakılacak)_
-- [ ] A1 öğrencisinde hız 0,9 (`prosody -10%`), A2'de 1,0; `&` içeren bir metin hatasız seslendiriliyor.
+- [ ] A1 öğrencisinde hız 0,9 (`prosody -10%`), A2'de 1,0; `&` içeren bir metin hatasız seslendiriliyor. _(17.11.2026: A2 hızı 1,0 `bibo-prod`'da 3 gerçek seslendirmede doğrulandı. A1 ve `&` yalnızca testte (`tests/tts/tts.test.ts`); gerçek çağrı bekliyor)_
 - [x] Dikte puanlaması M4 testleriyle tutarlı. _(17.11.2026: uç nokta üzerinden "She play football every day" → 0,80, yanlış)_
 - [x] Speechify yanıtı sahte 402 ile değiştirildiğinde açık oturum kırılmıyor, sonraki oturum dinlemesiz planlanıyor. _(17.11.2026: `tests/session/service.test.ts` "M7 Bitti testi 4"; 24 saat sonra kendiliğinden yeniden denenir, PLAN karar 25)_
 - [ ] iOS Safari ve Android Chrome'da ses çalıyor; 4. dinleme engelli.
@@ -197,9 +197,9 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 **Kapsam**
 - `lib/audio/wav-recorder.ts` (Web Audio API, 16 kHz mono, istemcide örnek azaltma, 45 sn sınırı).
 - `SpeakAnswer` bileşeni (bas-başlat / bas-bitir, transkripti göster, 1 yeniden kayıt).
-- `lib/stt/mai.ts`: Azure Fast Transcription, `enhancedMode` + `MAI-Transcribe-2`, `locales: ["en"]`, `verbatim` (varsayılan).
-- `POST /api/items/:id/speech` (multipart, ≤ 2 MB), iki adım: transkript (Azure) → değerlendirme (Claude).
-- MAI-Transcribe-2'nin dosya boyutu/süre sınırlarının ve `northeurope` bölge desteğinin doğrulanması.
+- `lib/stt/mai.ts`: MAI-Transcribe-2, OpenRouter `/audio/transcriptions` üzerinden (`microsoft/mai-transcribe-2`, `language: "en"`, `verbatim` varsayılan). Doğrudan Azure Fast Transcription'a dönülürse yalnızca bu dosya değişir (SCOPE günlüğü 11.11.2026).
+- `POST /api/items/:id/speech` (multipart, ≤ 2 MB), iki adım: transkript (MAI-Transcribe-2) → değerlendirme (Claude).
+- MAI-Transcribe-2'nin dosya boyutu/süre sınırlarının doğrulanması. (OpenRouter üzerinden işleme AB dışında; `northeurope` yalnızca doğrudan Azure'a dönülürse geçerli.)
 - `scripts/eval-verbatim.ts`.
 - Planlayıcıdaki geçici bayrağın konuşma için kaldırılması.
 
@@ -250,11 +250,11 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 - `/yonetim/inceleme`: kuyruk, karar kaydı, haftalık uyum.
 - Ayarlar: acil durdurma, aylık tavan, günlük sınır, model kimlikleri ve `effort` seviyeleri, `tts_enabled`, `tts_plan_usd`.
 - `GET /api/cron/daily` + `vercel.json`; `GET /api/account/export`.
-- Son gizlilik metni (işleyen sağlayıcılar adıyla); sağlayıcı harcama limitlerinin son kontrolü (Anthropic Console 40 $, Azure bütçe uyarısı, Speechify planı); pilot kohortu ve davet kodu.
+- Son gizlilik metni (işleyen sağlayıcılar adıyla); sağlayıcı harcama limitlerinin son kontrolü (OpenRouter anahtar kredi limiti 40 $, Speechify planı; doğrudan sağlayıcıya dönülürse Anthropic Console ve Azure bütçe uyarısı); pilot kohortu ve davet kodu.
 - Cihaz kontrol listesi; isteğe bağlı tek Playwright duman testi.
 
 **Bitti testi**
-- [ ] Acil durdurma açıkken yeni oturum üretilemiyor; öğrenci nazik mesaj görüyor.
+- [ ] Acil durdurma açıkken yeni oturum üretilemiyor; öğrenci nazik mesaj görüyor. _(17.11.2026: sunucu tarafı testli (`tests/session/service.test.ts`: `ai_unavailable`, oturum satırı açılmıyor). Öğrenci mesajı elle kontrol bekliyor)_
 - [x] Tavan test için 0,01 $'a düşürüldüğünde üretim duruyor ve panelde uyarı çıkıyor. _(17.11.2026: guard testleri + `tests/admin/metrics.test.ts`)_
 - [x] `tts_monthly_char_alert` test için 1'e düşürüldüğünde panelde seslendirme kotası uyarısı çıkıyor. _(17.11.2026: `tests/admin/metrics.test.ts`)_
 - [ ] Kuyruk, yapay zekâ etiketli hataların yaklaşık %15'ini içeriyor; sabit veriyle uyum yüzdesi doğru hesaplanıyor.
