@@ -131,7 +131,13 @@ export function alerts(a: AlertInput): Alert[] {
     });
   }
   if (!a.ttsEnabled) out.push({ level: "info", text: "Seslendirme kapalı: dinleme etkinlikleri metin türlerine düşüyor." });
-  else if (!a.ttsVoice) out.push({ level: "info", text: "Seslendirme sesi seçilmemiş: dinleme etkinlikleri kapalı. Aşağıdan bir ses seç." });
+  else if (!a.ttsVoice) {
+    // Oturum üretimi varsayılan sesi kendisi atar; hâlâ boşsa ses listesi alınamıyor (anahtar ya da Speechify).
+    out.push({
+      level: "warning",
+      text: "Seslendirme sesi atanamadı: dinleme etkinlikleri üretilmiyor. Speechify anahtarını kontrol et ya da aşağıdan bir ses seç.",
+    });
+  }
   return out;
 }
 

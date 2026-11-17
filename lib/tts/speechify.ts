@@ -2,6 +2,7 @@
 // Bu dosya tek bir HTTP isteği yapar; guard, önbellek ve `llm_usage` `cache.ts`'te.
 // Speechify'a yalnızca sistemin ürettiği İngilizce alıştırma metni gider; öğrenci kimliği gitmez.
 import { AiCallError } from "@/lib/ai/client";
+import { listVoices, type Voice } from "./voices";
 
 export const SPEECHIFY_URL = "https://api.speechify.ai/v1/audio/speech";
 /** Zaman aşımı: dinleme etkinliği açılırken beklenir; kısa cümle için yeterli. */
@@ -54,6 +55,8 @@ export function buildSpeechBody(req: SpeechRequest): Record<string, unknown> {
 
 export interface SpeechClient {
   synthesize(req: SpeechRequest): Promise<SpeechResult>;
+  /** Ses listesi (karakter harcamaz). Anahtar yoksa boş liste. */
+  listVoices(): Promise<Voice[]>;
 }
 
 /**
@@ -88,6 +91,11 @@ export function createSpeechifyClient(opts: { apiKey?: string; fetch?: typeof fe
       const audio = Uint8Array.from(Buffer.from(data.audio_data, "base64"));
       if (audio.length === 0) throw new AiCallError("no_audio", false);
       return { audio, billableChars: Math.max(0, Math.round(data.billable_characters_count ?? 0)) };
+    },
+
+    async listVoices() {
+      const apiKey = opts.apiKey ?? process.env.SPEECHIFY_API_KEY;
+      return apiKey ? listVoices(apiKey, doFetch) : [];
     },
   };
 }

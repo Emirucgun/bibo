@@ -77,9 +77,10 @@ describe("alerts (M10 Bitti testi 1–3)", () => {
   it("seslendirme eşiği 1'e düşürülünce kota uyarısı", () => {
     expect(alerts({ ...base, ttsCharAlert: 1 }).some((x) => x.text.includes("Seslendirme kotası"))).toBe(true);
   });
-  it("%80 uyarısı ve ses seçilmemiş bilgisi", () => {
+  it("%80 uyarısı ve ses atanamadı uyarısı", () => {
     const a = alerts({ ...base, monthCostUsd: 33, ttsVoice: null });
-    expect(a.map((x) => x.level)).toEqual(["warning", "info"]);
+    expect(a.map((x) => x.level)).toEqual(["warning", "warning"]);
+    expect(a[1].text).toContain("dinleme etkinlikleri üretilmiyor");
   });
 });
 

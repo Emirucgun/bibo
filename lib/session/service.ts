@@ -8,7 +8,7 @@ import { gradeFreeAnswer, GRADE_UNAVAILABLE_TR } from "@/lib/ai/grade";
 import { assertGuard, GuardError, istanbulDayStart, type AiDeps } from "@/lib/ai/guard";
 import { isAcceptedWav, MAX_AUDIO_BYTES, parseWav } from "@/lib/audio/wav";
 import { transcribe, type Transcriber } from "@/lib/stt";
-import { getAudioUrl, TtsUnavailableError, ttsAvailable, type TtsStore } from "@/lib/tts/cache";
+import { ensureTtsVoice, getAudioUrl, TtsUnavailableError, ttsAvailable, type TtsStore } from "@/lib/tts/cache";
 import type { SpeechClient } from "@/lib/tts/speechify";
 import { ApiError } from "@/lib/api/errors";
 import { GAP_MARK } from "@/lib/ai/checks";
@@ -84,6 +84,17 @@ export interface Actor {
   userId: string;
 }
 
+/**
+ * Yeni oturumda dinleme planlanabilir mi? Ses boşsa önce varsayılan ses atanır (karar 37);
+ * ses listesi alınamazsa dinleme eskisi gibi metne düşer, oturum kırılmaz.
+ */
+async function listeningAvailable(media: MediaDeps, now: Date): Promise<boolean> {
+  await ensureTtsVoice({ store: media.tts, speech: media.speech }, now).catch((err: unknown) => {
+    console.error("[session/tts_voice]", err instanceof Error ? err.message.slice(0, 60) : "unknown");
+  });
+  return ttsAvailable(media.tts, now);
+}
+
 /** Yanıt döndükten sonra `after()` ile çalıştırılacak iş. */
 export type Background = () => Promise<void>;
 
@@ -153,7 +164,7 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
       school_topic_id,
       settings: {
         // Kapalı, ses seçilmemiş ya da son 24 saatte 402/429: dinleme metne düşer (SPEC 4.4 adım 8, 5.4).
-        tts_enabled: settings.tts_enabled && (await ttsAvailable(deps.media.tts, now)),
+        tts_enabled: settings.tts_enabled && (await listeningAvailable(deps.media, now)),
         general_content_rate: settings.general_content_rate,
       },
     });
@@ -264,7 +275,7 @@ export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{
     if (!again) throw new ApiError("server_error");
     return { sessionId: again.id };
   }
-  const tts = await ttsAvailable(deps.media.tts, deps.now()).catch(() => false);
+  const tts = await listeningAvailable(deps.media, deps.now()).catch(() => false);
   const items = buildPlacementItems({ ttsAvailable: tts, rng: createRng(seedFromString(`${sessionId}:options`)) });
   try {
     await store.insertItems(sessionId, actor.userId, items);

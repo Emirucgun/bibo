@@ -94,5 +94,13 @@ export function createSupabaseTtsStore(db: SupabaseClient): TtsStore {
       if (error) fail("tts_chars_since", error);
       return Number(data ?? 0);
     },
+
+    async assignVoice(voiceId, now) {
+      const { error } = await db
+        .from("app_settings")
+        .update({ value: voiceId, updated_at: now.toISOString() })
+        .eq("key", "tts_voice");
+      if (error) fail("app_settings.tts_voice", error);
+    },
   };
 }
