@@ -5,6 +5,7 @@ import { encodeWav, TARGET_SAMPLE_RATE } from "@/lib/audio/wav";
 import type { Transcriber } from "@/lib/stt";
 import type { TtsCacheRow, TtsSettings, TtsStore } from "@/lib/tts/cache";
 import type { SpeechClient, SpeechRequest } from "@/lib/tts/speechify";
+import type { Voice } from "@/lib/tts/voices";
 
 export class FakeTtsStore implements TtsStore {
   settings: TtsSettings = {
@@ -53,6 +54,9 @@ export class FakeTtsStore implements TtsStore {
   async charsSince() {
     return this.usage.filter((u) => u.row.purpose === "tts").reduce((a, u) => a + (u.row.tts_chars ?? 0), 0);
   }
+  async assignVoice(voiceId: string) {
+    this.settings = { ...this.settings, tts_voice: voiceId };
+  }
 }
 
 export class FakeSpeech implements SpeechClient {
@@ -63,6 +67,15 @@ export class FakeSpeech implements SpeechClient {
     this.calls.push(req);
     if (this.failStatus) throw new AiCallError(`http_${this.failStatus}`, this.failStatus >= 500);
     return { audio: new Uint8Array([0xff, 0xfb, 0x90, 0x00]), billableChars: req.text.length };
+  }
+  /** Varsayılan: anahtarsız gibi boş liste. */
+  voices: Voice[] = [];
+  voicesError: Error | null = null;
+  voiceListCalls = 0;
+  async listVoices() {
+    this.voiceListCalls++;
+    if (this.voicesError) throw this.voicesError;
+    return this.voices;
   }
 }
 

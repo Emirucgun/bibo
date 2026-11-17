@@ -7,6 +7,7 @@ import { GuardError, utcMonthStart, withAiCall, type CallContext } from "@/lib/a
 import type { AiStore } from "@/lib/ai/store";
 import type { Level } from "@/lib/engine/types";
 import type { SpeechClient } from "./speechify";
+import { pickDefaultVoice } from "./voices";
 
 /** `app_settings`'in seslendirme kısmı. `tts_voice` P9'da seçilene kadar `null`. */
 export interface TtsSettings {
@@ -43,6 +44,8 @@ export interface TtsStore {
   /** `since`'ten bu yana son `purpose = tts` satırı. */
   lastTtsCall(since: Date): Promise<TtsLastCall | null>;
   charsSince(since: Date): Promise<number>;
+  /** `tts_voice`'u yazar (yalnızca boşken çağrılır; PLAN karar 37). */
+  assignVoice(voiceId: string, now: Date): Promise<void>;
 }
 
 export interface TtsDeps {
@@ -91,6 +94,23 @@ export async function ttsAvailable(store: TtsStore, now: Date): Promise<boolean>
   if (!s.tts_enabled || !s.tts_voice) return false;
   const last = await store.lastTtsCall(new Date(now.getTime() - TTS_BLOCK_MS));
   return !(last && !last.ok && last.error && BLOCKING_ERRORS.has(last.error));
+}
+
+/**
+ * Seslendirme açık ama `tts_voice` boşsa varsayılan sesi atar (PLAN karar 37; cron ve yönetim
+ * sayfasıyla aynı seçim). Böylece ilk oturumlar ses atanmayı beklerken dinlemesiz kalmaz.
+ * Ses listesi karakter harcamaz ve içerik göndermez. Dönen değer: geçerli ses ya da `null`.
+ */
+export async function ensureTtsVoice(
+  deps: { store: TtsStore; speech: SpeechClient },
+  now: Date,
+): Promise<string | null> {
+  const s = await deps.store.loadTtsSettings();
+  if (!s.tts_enabled || s.tts_voice) return s.tts_voice;
+  const voice = pickDefaultVoice(await deps.speech.listVoices(), s.tts_model);
+  if (!voice) return null;
+  await deps.store.assignVoice(voice.id, now);
+  return voice.id;
 }
 
 /** Uyarı eşiği bu çağrıyla geçildi mi (önceki < eşik ≤ sonraki). */

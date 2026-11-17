@@ -22,6 +22,7 @@ import {
   UNCLEAR_TR,
 } from "@/lib/session/service";
 import { wavOf } from "../media/fakes";
+import { ensureTtsVoice } from "@/lib/tts/cache";
 import { validItem } from "../ai/fixtures";
 import { splitGeneratedItem } from "@/lib/session/save-items";
 import { ACTIVITY_TYPE_INFO, type ActivityType } from "@/lib/content/activity-types";
@@ -144,6 +145,44 @@ describe("nextSession (POST /api/sessions/next)", () => {
       expect(items.some((i) => i.activity_type === "speak_answer")).toBe(true);
     });
   }
+
+  it("`tts_voice` boşken varsayılan ses atanır ve aynı oturumda dinleme planlanır (karar 37)", async () => {
+    const env = setup();
+    env.tts.settings.tts_voice = null;
+    env.speech.voices = [
+      { id: "m1", gender: "male", models: [{ name: "simba-3.5", languages: [{ locale: "en-US" }] }] },
+      { id: "f1", gender: "female", tags: ["narration"], models: [{ name: "simba-3.5", languages: [{ locale: "en-US" }] }] },
+    ];
+    const res = await nextSession(env.deps, actor);
+    await res.background!();
+    expect(env.tts.settings.tts_voice).toBe("f1");
+    expect(itemsOf(env, res.sessionId).some((i) => i.skill === "listening")).toBe(true);
+    // Ses atandıktan sonra liste bir daha istenmez.
+    const calls = env.speech.voiceListCalls;
+    expect(await ensureTtsVoice({ store: env.tts, speech: env.speech }, new Date())).toBe("f1");
+    expect(env.speech.voiceListCalls).toBe(calls);
+  });
+
+  it("ses listesi alınamazsa oturum kırılmaz, dinleme metne düşer", async () => {
+    const env = setup();
+    env.tts.settings.tts_voice = null;
+    env.speech.voicesError = new Error("speechify voices HTTP 401");
+    const res = await nextSession(env.deps, actor);
+    await res.background!();
+    const items = itemsOf(env, res.sessionId);
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.some((i) => i.skill === "listening")).toBe(false);
+    expect(env.tts.settings.tts_voice).toBeNull();
+  });
+
+  it("`tts_enabled = false` iken ses listesi istenmez", async () => {
+    const env = setup();
+    env.tts.settings.tts_enabled = false;
+    env.tts.settings.tts_voice = null;
+    const res = await nextSession(env.deps, actor);
+    await res.background!();
+    expect(env.speech.voiceListCalls).toBe(0);
+  });
 
   it("`generating` ya da `ready` oturum varken yenisini üretmez (çift üretim yok)", async () => {
     const env = setup();
