@@ -822,6 +822,27 @@ export type Database = {
         Args: { p_session_id: string; p_usd: number };
         Returns: undefined;
       };
+      admin_usage_since: {
+        Args: { since: string }
+        Returns: {
+          cache_read_tokens: number
+          calls: number
+          cost_usd: number
+          input_tokens: number
+          ok_calls: number
+          provider: string
+          purpose: string
+          tts_chars: number
+        }[]
+      }
+      admin_weekly_sessions: {
+        Args: { since: string }
+        Returns: {
+          sessions: number
+          user_id: string
+          week_start: string
+        }[]
+      }
       claim_invite: {
         Args: { p_code: string; p_user_id: string };
         Returns: {

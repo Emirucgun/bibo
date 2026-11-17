@@ -39,9 +39,9 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [x] **F1** Google ile giriş (Supabase Auth)
 - [x] **F1** Davet kodu, kohort kapasitesi (60), davetsiz erişimin engellenmesi
 - [x] **F1** 18+ beyanı, KVKK aydınlatma ve açık rıza (sürüm + zaman kaydı) _(16.11.2026: aydınlatma metni taslak; son hâli M10'da, "Gizlilik sayfası" maddesi o zaman işaretlenir)_
-- [ ] **F2** Seviye beyanı (A1 / A2 / emin değilim), en az 2 ilgi alanı (12 seçenek)
-- [ ] **F2** 14 soruluk sabit yerleştirme testi ve ustalık tohumlama
-- [ ] **F2** "Tahmini zayıf noktalar" kartı (3 konu, "tahmin" etiketli)
+- [x] **F2** Seviye beyanı (A1 / A2 / emin değilim), en az 2 ilgi alanı (12 seçenek)
+- [x] **F2** 14 soruluk sabit yerleştirme testi ve ustalık tohumlama
+- [x] **F2** "Tahmini zayıf noktalar" kartı (3 konu, "tahmin" etiketli)
 
 ### Öğrenme döngüsü
 
@@ -66,12 +66,12 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 
 ### Ölçüm, güvenlik ve işletim
 
-- [ ] **F11** Öğretmen inceleme kuyruğu (%15 örneklem), karar kaydı, haftalık uyum yüzdesi
+- [x] **F11** Öğretmen inceleme kuyruğu (%15 örneklem), karar kaydı, haftalık uyum yüzdesi
 - [ ] **F12** `llm_usage` günlüğü (sağlayıcı, önbellek tokenları, TTS karakteri), aylık bütçe tavanı (seslendirme plan ücreti dahil), acil durdurma, günlük sınır
-- [ ] **F12** Yönetim özeti: kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet, ay içi seslendirme karakteri
-- [ ] **F13** Verimi indir (JSON), hesabımı sil (zincirleme silme)
+- [x] **F12** Yönetim özeti: kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet, ay içi seslendirme karakteri
+- [x] **F13** Verimi indir (JSON), hesabımı sil (zincirleme silme)
 - [ ] Gizlilik sayfası (aydınlatma metni)
-- [ ] Günlük cron işi (eski oturumlar, TTS temizliği, maliyet özeti)
+- [x] Günlük cron işi (eski oturumlar, TTS temizliği, maliyet özeti)
 - [ ] Değerlendirme betikleri: `eval-generation`, `eval-tagging`, `eval-verbatim`, `simulate` (gecikme ölçümü dahil)
 
 ### İçerik (pedagoji)
@@ -194,5 +194,6 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 11.11.2026 | Sağlayıcı erişimi: Claude Haiku 5.5 (`anthropic/claude-haiku-5.5`, yalnızca Anthropic altyapısı) ve MAI-Transcribe-2 (`microsoft/mai-transcribe-2`) OpenRouter üzerinden; Speechify Simba 3.5 doğrudan (OpenRouter'da yok). Hata ya da ölçüt kaybı olursa ilgili model kendi sağlayıcısına döner | Tek anahtar, tek fatura, kolay model değişimi; iki modelin fiyatı doğrudan sağlayıcıyla aynı. Açık: transkript AB içinde işlenmiyor (KVKK metni), `verbatim` davranışı M8'de ölçülecek, OpenRouter kredi komisyonu | Mühendis (pedagoji sahibinin itiraz hakkı saklı) |
 | 11.11.2026 | Supabase `prod` projesi Stockholm'de (`eu-north-1`); `dev` Frankfurt'ta kalıyor | Proje bu bölgede açılmıştı; yeniden açmamaya karar verildi. Bedeli: Vercel `fra1` ile her sorguda ≈ 20–30 ms ek gecikme. Her iki bölge de AB; aydınlatma metninde Supabase için "AB (Stockholm)" yazılmalı | Mühendis |
 | 11.11.2026 | `topics.csv` (32), `l1_codes.csv` (24), `placement.json` (14) geçici olarak onaylandı | M4'e geçmek için yeterli seviyede. Pilot öncesi yeniden kontrol edilecek; değişiklik olursa `scripts/build-seed.ts` + seed yeniden yüklenir | Pedagoji sahibi |
+| 17.11.2026 | M9–M10 insiyatifle tamamlandı (PLAN karar 22, 31–39): açık deneme için `auto_join_invite_code`, okul konusu çapraz tekrarda garanti, varsayılan seslendirme sesi kuralı | Kullanıcı MVP'nin canlıya alınmasını ve pedagoji kararlarının da verilmesini istedi; davet modeli sonra konuşulacak | Mühendis (kullanıcı yetkisiyle) |
 | 17.11.2026 | SPEC rev. 4: boşluk doldurmada anahtarda ve bilinen yanlışlarda olmayan cevap yapay zekâya sorulur ("boşluk hakemliği"); geçerli başka cevap değerlendirilmemiş sayılır. M6 uç nokta ayrıntıları (`next` açık oturumu döner, `attempt` yanıtında `errorNameTr`, açıklamada `?via=auto\|dismiss`) ve hata kodları SPEC'e yazıldı | 16.11.2026 denemesinde doğru cevap ("Ella wants to play piano") yanlış sayıldı; üretim komutundaki tek cevap kuralı tek başına yetmeyebilir. Ek maliyet çağrı başı ≈ 0,0007 $, oran pilotta izlenir | Ekip |
 | 11.11.2026 | M6 öncesi SPEC rev. 3 kararları: oturum üretimi en çok 5 slotluk paralel çağrılarla ve slot anahtarlı şemayla; aylık tavan OpenRouter komisyonunu kapsar (`openrouter_fee_rate`); dinleme metni `item_keys`'te; günlük sınır `start`'ta, ön üretim serbest; `finish` `maxDuration = 300`; `sessions.status`'a `generating`; `PATCH /api/profile` ve `POST /api/events`; açıklama modu "kısa"ya da geri döner | eval-generation'da tek çağrı %100 şema hedefini tutturamadı, 6+ slotlu şema sağlayıcıda derlenmiyor; diğerleri M5 sırasında açık kalan PLAN #14–#23 | Ekip |

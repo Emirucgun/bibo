@@ -4,6 +4,7 @@ import {
   deleteAccount,
   submitConsent,
   submitInvite,
+  submitProfile,
   type ClaimResult,
   type OnboardingStore,
 } from "@/lib/onboarding/service";
@@ -20,6 +21,7 @@ function fakeStore(options: { code?: string; capacity?: number } = {}) {
   const steps = new Map<string, OnboardingStep>();
   const consents = new Map<string, { version: string; at: string }>();
   const deleted: string[] = [];
+  const profiles = new Map<string, { level_self: string; level_est: string; interests: string[] }>();
   const calls = { claim: 0, consent: 0 };
 
   const store: OnboardingStore = {
@@ -39,11 +41,17 @@ function fakeStore(options: { code?: string; capacity?: number } = {}) {
       steps.set(userId, "profile");
       return true;
     },
+    async saveProfile(userId, profile) {
+      if (steps.get(userId) !== "profile") return false;
+      profiles.set(userId, profile);
+      steps.set(userId, "placement");
+      return true;
+    },
     async deleteUser(userId) {
       deleted.push(userId);
     },
   };
-  return { store, members, steps, consents, deleted, calls };
+  return { store, members, steps, consents, deleted, calls, profiles };
 }
 
 async function codeOf(promise: Promise<unknown>): Promise<ApiErrorCode | "resolved"> {
@@ -228,4 +236,47 @@ describe("deleteAccount (DELETE /api/account)", () => {
       expect(deleted).toEqual([]);
     },
   );
+});
+
+describe("submitProfile (POST /api/onboarding/profile, PRD F2)", () => {
+  it("en az 2 ilgi alanı olmadan devam edilemez → 400", async () => {
+    const { store, steps } = fakeStore();
+    steps.set("a", "profile");
+    const err = await submitProfile(store, { userId: "a", onboardingStep: "profile" }, { levelSelf: "A1", interests: ["music"] }, NOW).catch(
+      (e: unknown) => e,
+    );
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).code).toBe("invalid_input");
+    expect(steps.get("a")).toBe("profile");
+  });
+
+  it("bilinmeyen ilgi alanı ya da seviye → 400", async () => {
+    const { store } = fakeStore();
+    for (const body of [
+      { levelSelf: "A1", interests: ["music", "chess"] },
+      { levelSelf: "B1", interests: ["music", "food"] },
+    ]) {
+      const err = await submitProfile(store, { userId: "a", onboardingStep: "profile" }, body, NOW).catch((e: unknown) => e);
+      expect((err as ApiError).code).toBe("invalid_input");
+    }
+  });
+
+  it("kaydeder, A2 beyanı başlangıç tahmini A2, adım yerleştirmeye geçer", async () => {
+    const { store, steps, profiles } = fakeStore();
+    steps.set("a", "profile");
+    steps.set("b", "profile");
+    await submitProfile(store, { userId: "a", onboardingStep: "profile" }, { levelSelf: "A2", interests: ["music", "food", "music"] }, NOW);
+    await submitProfile(store, { userId: "b", onboardingStep: "profile" }, { levelSelf: "unsure", interests: ["music", "food"] }, NOW);
+    expect(profiles.get("a")).toEqual({ level_self: "A2", level_est: "A2", interests: ["music", "food"] });
+    expect(profiles.get("b")?.level_est).toBe("A1");
+    expect(steps.get("a")).toBe("placement");
+  });
+
+  it("onamı vermemiş kullanıcı profil kaydedemez", async () => {
+    const { store } = fakeStore();
+    const err = await submitProfile(store, { userId: "a", onboardingStep: "consent" }, { levelSelf: "A1", interests: ["music", "food"] }, NOW).catch(
+      (e: unknown) => e,
+    );
+    expect((err as ApiError).code).toBe("onboarding_incomplete");
+  });
 });

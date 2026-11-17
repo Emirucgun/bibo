@@ -1,4 +1,90 @@
-# PLAN — M7 (Dinleme) + M8 (Konuşma)
+# PLAN — M9 (Başlangıç ve ilerleme) + M10 (Yönetim ve pilot hazırlığı)
+
+| | |
+| --- | --- |
+| Tarih | 17 Kasım 2026 |
+| Kapsam | `ROADMAP.md` M9, M10 · `SPEC.md` 3, 4.1, 4.4, 6 (Kimlik ve başlangıç, İlerleme ve hesap, Yönetim, cron), 11, 13 · `PRD.md` F2, F9–F14 |
+| Dal | `claude/inspiring-ptolemy-ok1f97` |
+| Yetki | Kullanıcı: "eksik her şeyi insiyatifle tamamla, pedagoji kararlarını sen ver, hiçbir şey sorma, canlıya al" (17.11.2026). Kararlar aşağıda; SPEC önerileri Bölüm 5'te, uygulanmadı |
+| Durum | Kod tamam; `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 33 dosya, 851 test (önce 823) · `npm run build` ✅. Göç `20261117190000` dev + prod |
+
+## 1. Yapılanlar
+
+| Parça | Dosya |
+| --- | --- |
+| Profil adımı: seviye beyanı + ≥ 2 ilgi alanı, `POST /api/onboarding/profile` | `components/onboarding/ProfileForm.tsx`, `lib/onboarding/service.ts` `submitProfile` |
+| Yerleştirme: sabit 14 soru `placement` oturumu, `POST /api/placement`, seviye tahmini, "tahmini zayıf noktalar" kartı, ilk günlük oturumun ön üretimi | `lib/session/placement.ts`, `service.ts` `startPlacement` / `finishSession`, `components/onboarding/Placement*.tsx` |
+| İlerleme: ızgara (4 seviye, renk + simge), haftalık oturum, en sık 3 hata, aktif teşhisler; `GET /api/progress` | `lib/progress/*`, `app/(app)/ilerleme`, `components/progress/ProgressGrid.tsx` |
+| Haftalık okul konusu: ana sayfa kartı, `POST /api/school-topic`, planlayıcıda garanti | `components/home/SchoolTopicCard.tsx`, `lib/engine/planner.ts` |
+| Ayarlar: ad, ilgi alanları, açıklama modu, verimi indir, hesabımı sil | `app/(app)/ayarlar`, `components/settings/SettingsForm.tsx`, `GET /api/account/export` |
+| PWA: manifest, ikonlar, tema rengi; üst gezinme | `app/manifest.ts`, `public/icon-*.png`, `app/apple-icon.png`, `components/home/AppHeader.tsx` |
+| Yönetim özeti: kayıtlı/aktif, ≥ 4 oturum oranı, W4, ay içi maliyet (amaç ve sağlayıcıya göre), oturum başı, TTS karakteri, istem önbelleği, uyarılar, kohortlar | `lib/admin/*`, `app/(yonetim)/yonetim`, `/api/admin/overview` |
+| Ayarlar paneli (admin): acil durdurma, tavan, sınır, modeller, effort, TTS, ses seçici, açık deneme kodu | `components/admin/SettingsPanel.tsx`, `/api/admin/settings`, `/api/admin/voices` |
+| Öğretmen kuyruğu: karar (Doğru / Düzelt / Hata değil), haftalık ve koda göre uyum, örneklem oranı | `app/(yonetim)/yonetim/inceleme`, `/api/admin/review-queue`, `/reviews`, `/review-stats` |
+| Günlük cron: 72 sa `ready` → `abandoned`, 24 sa `active` → `abandoned`, takılı üretim → `failed`, 21 gün TTS temizliği, varsayılan ses, 24 sa maliyet | `lib/cron/*`, `app/api/cron/daily`, `vercel.json` (03:17 UTC) |
+| Gizlilik metni: yer tutucular dolduruldu ("Pilot sürümü") | `app/gizlilik/page.tsx` |
+
+## 2. Kararlar (insiyatifle)
+
+| # | Konu | Karar | Gerekçe |
+| --- | --- | --- | --- |
+| 22 | Yerleştirme tohumlaması, 3 zayıf konu | Cevaplar normal kanıt gibi ustalığa işlenir; kart sorulan konulardan en düşük ustalıklı 3'ü, eşitlikte L1 riski yüksek olanı gösterir | PLAN önerilen varsayılan |
+| 31 | Yerleştirmenin akışı | Yerleştirme ayrı ekran değil, `kind = placement` oturumu: aynı uç noktalar (`requireLearner()`: `placement` ya da `done` adımı). `next` yine `done` ister | Kod tekrarı yok; kaldığı yerden devam bedava |
+| 32 | Ses yokken yerleştirme | Seslendirme kullanılamıyorsa iki dinleme sorusu çıkarılır (12 soru) | Öğrenci 7 dakikalık ilk testte "ses yok" mesajı görmesin |
+| 33 | Yerleştirmede yapay zekâ | Boşluk hakemliği kapalı; konuşma değerlendirmesi `llm_usage.purpose = placement` | PRD F2 "dil modeli çağrısı yapmaz (konuşma hariç)" |
+| 34 | Açık deneme | `app_settings.auto_join_invite_code` doluysa davet adımındaki kullanıcı o kohorta kendiliğinden katılır (kapasite `claim_invite`'ta). Prod: `PILOT-ACIK-2026`, 60 kişi. Boşaltılınca kod formu geri gelir | Kullanıcı, Google Console'daki test e-postalarının kodsuz denemesini istedi; davet kodu konusu sonra konuşulacak |
+| 35 | Okul konusu planda | Odak ya da tekrar değilse ilk çapraz tekrar slotuna girer (o hafta her oturumda). Konu seçilince başlamamış `ready` oturum bırakılır, yeniden planlanır | PRD F10 "en az 2 oturumda" yalnızca +0,20 öncelikle garanti değildi |
+| 36 | Yönetim okumaları | `requireRole()` sonrası servis istemcisi | Öğretmen `llm_usage`'ı RLS ile okuyamaz, SPEC özeti iki role de açıyor |
+| 37 | Seslendirme sesi (P9, pedagoji) | `tts_voice` boşsa Simba en-US seslerinden "narration/conversational" etiketli kadın ses, yoksa ilk kadın, yoksa ilk ses; admin paneli açıldığında ya da cron'da atanır, panelden değiştirilir | A1–A2 dinleyicisi için sakin, net anlatım; dinleme etkinlikleri ancak ses seçilince açılıyordu |
+| 38 | En sık 3 hata | Son 28 gün, `GEN.OTHER` hariç | Eski hatalar ilerlemeyi gizlemesin |
+| 39 | Tema | Birincil renk koyu camgöbeği (`#00676e`, beyaz metinle kontrast ≈ 6:1); ızgara seviyeleri simgeli (· ✕ ◐ ✓) | M9 tasarım geçişi; gri tonlamada da ayırt edilir |
+
+## 3. Bitti testi kanıtı
+
+| Taş | Madde | Durum | Kanıt |
+| --- | --- | --- | --- |
+| M9 | 3 kişi davet linkinden ilk etkinliğe < 10 dk | ⏳ | Elle (Bölüm 4) |
+| M9 | Yerleştirmede yapay zekâ yalnızca konuşmada | ✅ | `tests/session/placement.test.ts` "uçtan uca": 14 cevapta 1 değerlendirme çağrısı, `purpose = placement`, üretim 0 |
+| M9 | Izgara dört seviyeyi doğru gösteriyor | ✅ | `tests/progress/progress.test.ts` `masteryLevel`, `buildProgress` |
+| M9 | WCAG AA, Lighthouse ≥ 90 | ⏳ | Elle |
+| M9 | Izgara gri tonlamada ayırt ediliyor | ✅ (kod) | Her seviyenin ayrı simgesi var |
+| M9 | Her ekranda yükleniyor/boş/hata | ◐ | İlerleme, ana sayfa, oturum, yönetim; pedagoji onayı: ekip adına verildi (karar yetkisi) |
+| M9 | Okul konusu sonraki 2 oturumda | ✅ | `tests/engine/planner.test.ts` "okul konusu odak değilse çapraz tekrar" (20 tohum) |
+| M9 | PWA iki platformda, 360 px'te yatay kaydırma yok | ⏳ | Manifest + ikon hazır; elle |
+| M10 | Acil durdurma → üretim yok, nazik mesaj | ✅ | Guard testleri (M5) + panel düğmesi; `tests/admin/metrics.test.ts` uyarı |
+| M10 | Tavan 0,01 $ → üretim durur, panelde uyarı | ✅ | Guard testleri (M5) + `alerts` testi |
+| M10 | TTS eşiği 1 → panelde kota uyarısı | ✅ | `alerts` testi |
+| M10 | Kuyruk ≈ %15, uyum doğru | ✅ | Örneklem `review_sample_rate` (M6 testleri); uyum `reviewAgreement` testi; panel gerçek örneklem oranını gösterir |
+| M10 | Cron gizli anahtarsız 401 | ✅ | `cronAuthorized` testi; canlıda da denendi (Bölüm 4) |
+| M10 | Dışa aktarım tüm tablolar | ✅ (kod) | `lib/account/export.ts` 11 tablo (`item_keys` hariç: öğrenci verisi değil) |
+
+## 4. Elle kontrol (telefon)
+
+1. Google Console'a eklenmiş bir hesapla https://bibo-beta.vercel.app → Google ile giriş → davet sorulmadan onam → profil → yerleştirme (son soruda mikrofon) → zayıf noktalar kartı → "İlk oturumuma geç" → oturum hazırlanıyor → Başla. Süre < 10 dk.
+2. Admin hesabıyla `/yonetim`: uyarılar, maliyet tablosu; ses seçilmemişse sayfa açılınca önerilen ses atanır (mesaj çıkar). Sonraki oturumlarda dinleme etkinlikleri.
+3. `/ilerleme`, `/ayarlar` → "Verimi indir" JSON iner; okul konusu kartı seçilince ana sayfa yeniden hazırlanır.
+4. iOS Safari ve Android Chrome: "Ana ekrana ekle"; 360 px genişlikte yatay kaydırma yok.
+5. Önceki taşlardan açık kalanlar: M6 uç nokta süreleri ve ağ sekmesi; M7 ses çalma; M8 mikrofon.
+
+## 5. SPEC önerileri (uygulanmadı)
+
+| Bölüm | Öneri |
+| --- | --- |
+| 3 `app_settings` | `auto_join_invite_code` (karar 34) |
+| 4.4 adım 3 | Okul konusu çapraz tekrar kuyruğunun başına (karar 35) |
+| 6 | `POST /api/placement` oturum akışını kullanır; `finish` yanıtına `placement: { levelEst, weakPoints }`; `GET /api/admin/voices`; `requireLearner()` |
+| 7 | Yönetim okumaları servis istemcisiyle (karar 36) |
+| 2 dizin | `lib/admin/*`, `lib/progress/*`, `lib/cron/*`, `lib/account/export.ts`, `lib/session/placement.ts`, `lib/tts/voices.ts` |
+
+## 6. Açık konular (pilot kapısı)
+
+- Davet kodu modeli (kullanıcıyla konuşulacak): açık deneme bitince `auto_join_invite_code` boşaltılır.
+- Hukuki görüş, `eval-generation` yeniden çalıştırması, `eval-verbatim` (P6 kayıtları), Speechify plan kararı, başarı eşikleri.
+- Google OAuth uygulaması "Testing" modundaysa yalnızca Console'a eklenen test kullanıcıları girebilir; herkese açmak için "In production"a alınmalı (yalnızca `openid email profile`, doğrulama gerekmez).
+
+---
+
+# (önceki) PLAN — M7 (Dinleme) + M8 (Konuşma)
 
 | | |
 | --- | --- |

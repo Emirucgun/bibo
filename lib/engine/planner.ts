@@ -190,6 +190,9 @@ export function planSession(input: PlannerInput): Plan {
   const pushUnique = (t: EngineTopic | undefined) => {
     if (t && t.kind === "grammar" && t.id !== focus?.id && t.id !== review?.id && !crossQueue.includes(t)) crossQueue.push(t);
   };
+  // Haftanın okul konusu odak ya da tekrar değilse ilk çapraz tekrar olur (PRD F10: o hafta her
+  // oturumda, dolayısıyla en az 2 oturumda yer alır; PLAN karar 35).
+  if (input.school_topic_id) pushUnique(topicById.get(input.school_topic_id));
   for (const e of recentErrors) pushUnique(topicById.get(e.topic_id));
   uncertain.forEach(pushUnique);
   byPriority.forEach(pushUnique);

@@ -92,6 +92,24 @@ export class FakeSessionStore implements SessionStore {
     });
     return id;
   }
+  async findPlacement(userId: string) {
+    const rows = this.sessions.filter(
+      (s) => s.user_id === userId && s.kind === "placement" && !["abandoned", "failed"].includes(s.status),
+    );
+    return rows[rows.length - 1] ?? null;
+  }
+  async createPlacement(userId: string) {
+    const id = await this.createGenerating(userId);
+    if (id) this.sessions.find((s) => s.id === id)!.kind = "placement";
+    return id;
+  }
+  onboarding = new Map<string, string>();
+  async completePlacement(userId: string, levelEst: "A1" | "A2") {
+    if ((this.onboarding.get(userId) ?? "placement") !== "placement") return false;
+    this.onboarding.set(userId, "done");
+    this.learners.set(userId, { ...this.learners.get(userId)!, level_est: levelEst });
+    return true;
+  }
   async setPlan(id: string, plan: unknown, focus: string | null) {
     const s = this.sessions.find((x) => x.id === id)!;
     s.plan = plan;

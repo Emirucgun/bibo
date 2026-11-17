@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/auth/SignOutButton";
 import { InviteForm } from "@/components/onboarding/InviteForm";
 import { INVITE_COOKIE, isValidInviteCode } from "@/lib/auth/paths";
 import { getViewer } from "@/lib/auth/viewer";
+import { tryAutoJoin } from "@/lib/onboarding/auto-join";
 import { stepPath } from "@/lib/onboarding/steps";
 
 // /davet ve /davet/[code] ortak içeriği. Girişsiz: Google düğmesi. Giriş yapmış ve
@@ -28,6 +29,8 @@ export async function InviteScreen({ code }: { code: string | null }) {
 
   if (!viewer.profile) return <AccountProblem />;
   if (viewer.profile.onboardingStep !== "invite") redirect(stepPath(viewer.profile.onboardingStep));
+  // Açık deneme açıksa kod sorulmaz (PLAN karar 34).
+  if (!code && (await tryAutoJoin(viewer.userId))) redirect(stepPath("consent"));
 
   const fromCookie = (await cookies()).get(INVITE_COOKIE)?.value;
   const defaultCode = code ?? (isValidInviteCode(fromCookie) ? fromCookie : "");

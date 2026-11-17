@@ -148,6 +148,8 @@ export interface DiagnosisRow {
 /** `profiles`'ın oturum akışında kullanılan kısmı. */
 export interface Learner {
   level_est: Level;
+  /** Seviye beyanı (`A1`, `A2`, `unsure`); yerleştirme sonrası tahminde kullanılır. */
+  level_self?: string | null;
   interests: Interest[];
   explain_mode: ExplainMode;
 }
@@ -182,6 +184,12 @@ export interface SessionStore {
   /** `generating` satırı açar; öğrencinin zaten `generating`/`ready` oturumu varsa `null`. */
   createGenerating(userId: string): Promise<string | null>;
   setPlan(sessionId: string, plan: unknown, focusTopicId: string | null): Promise<void>;
+  /** Öğrencinin en son yerleştirme oturumu (`abandoned` / `failed` hariç). */
+  findPlacement(userId: string): Promise<SessionRow | null>;
+  /** `kind = placement`, `generating` satırı açar; bekleyen oturum varsa `null`. */
+  createPlacement(userId: string): Promise<string | null>;
+  /** Yalnızca `onboarding_step = 'placement'` iken: `level_est` yazılır, adım `done` olur. */
+  completePlacement(userId: string, levelEst: Level, now: Date): Promise<boolean>;
   /** Yalnızca verilen alanları yazar. */
   setRating(sessionId: string, patch: { rating?: number; comment?: string | null }): Promise<void>;
 

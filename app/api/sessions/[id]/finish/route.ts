@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { readOptionalJson, withApi } from "@/lib/api/respond";
-import { requireOnboarded } from "@/lib/auth/require";
+import { requireLearner } from "@/lib/auth/require";
 import { createSessionDeps } from "@/lib/session/deps";
 import { finishSession } from "@/lib/session/service";
 
@@ -10,7 +10,7 @@ export const maxDuration = 300;
 // POST /api/sessions/:id/finish · { rating?, comment? } → { summary, diagnosis? }
 export async function POST(request: Request, { params }: RouteContext<"/api/sessions/[id]/finish">) {
   return withApi("sessions/finish", async () => {
-    const { userId } = await requireOnboarded();
+    const { userId } = await requireLearner();
     const { id } = await params;
     // Gövde isteğe bağlı: boş gövde `{}`, bozuk JSON 400.
     const body = await readOptionalJson(request);

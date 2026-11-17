@@ -4,10 +4,9 @@ import { APP_NAME } from "@/lib/content/app";
 
 export const metadata: Metadata = { title: `Gizlilik · ${APP_NAME}` };
 
-// KVKK aydınlatma metni TASLAĞI (ROADMAP P8, M2). Son metin hukuki görüşten sonra M10'da yazılır;
-// metin değişince CONSENT_VERSION da değişir. İçerik SPEC Bölüm 11 ve SCOPE günlüğüne dayanır.
-const UPDATED = "15 Kasım 2026";
-const TODO = "[pilot öncesi eklenecek]";
+// KVKK aydınlatma metni, pilot sürümü (ROADMAP P8, M10). Hukuki görüş alındıktan sonra güncellenebilir;
+// metin esastan değişince CONSENT_VERSION da değişir. İçerik SPEC Bölüm 11 ve SCOPE günlüğüne dayanır.
+const UPDATED = "17 Kasım 2026";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -22,8 +21,8 @@ export default function PrivacyPage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-10">
       <header className="flex flex-col gap-2">
-        <p className="w-fit rounded-md bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive">
-          TASLAK · hukuki görüş bekleniyor
+        <p className="w-fit rounded-md bg-muted px-2 py-1 text-xs font-semibold">
+          Pilot sürümü · hukuki görüş sonrası güncellenebilir
         </p>
         <h1 className="text-2xl font-semibold">Gizlilik ve aydınlatma metni</h1>
         <p className="text-sm text-muted-foreground">
@@ -40,8 +39,11 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Veri sorumlusu">
-        <p>Veri sorumlusu: {TODO}</p>
-        <p>İletişim: {TODO}</p>
+        <p>Veri sorumlusu: {APP_NAME} pilot ekibi (ücretsiz, ticari olmayan pilot çalışma).</p>
+        <p>
+          İletişim: verini indirmek ve hesabını silmek için uygulamadaki Ayarlar sayfası her zaman açıktır. Diğer
+          talepler için davetinin geldiği pilot iletişim kanalından (WhatsApp grubu) ekibe yazabilirsin.
+        </p>
       </Section>
 
       <Section title="Hangi verileri topluyoruz?">
@@ -76,7 +78,7 @@ export default function PrivacyPage() {
           dışındadır; bu nedenle verilerin yurt dışına aktarılır.
         </p>
         <ul className="flex list-disc flex-col gap-1.5 pl-5">
-          <li>Supabase (AB): veritabanı ve giriş. Tüm kayıtların burada tutulur.</li>
+          <li>Supabase (AB, İsveç – Stockholm): veritabanı ve giriş. Tüm kayıtların burada tutulur.</li>
           <li>Vercel (AB, Frankfurt): uygulamanın barındırılması.</li>
           <li>Google: Google hesabınla giriş.</li>
           <li>
@@ -85,7 +87,7 @@ export default function PrivacyPage() {
           </li>
           <li>
             OpenRouter üzerinden Microsoft (konuşma tanıma): ses kaydın, yalnızca yazıya dökmek için.
-            İşlemenin yapıldığı bölge: {TODO}
+            Ses kaydı işlendikten sonra saklanmaz; işleme ABD ya da AB&apos;deki sunucularda yapılabilir.
           </li>
           <li>
             Speechify (ABD): yalnızca sistemin ürettiği İngilizce alıştırma metni, seslendirme için.
@@ -107,7 +109,7 @@ export default function PrivacyPage() {
       <Section title="Hakların">
         <ul className="flex list-disc flex-col gap-1.5 pl-5">
           <li>Hesabını ve tüm verilerini istediğin zaman silebilirsin; bu işlem geri alınamaz.</li>
-          <li>Verilerinin bir kopyasını isteyebilirsin.</li>
+          <li>Verilerinin bir kopyasını Ayarlar → &quot;Verimi indir&quot; ile istediğin an indirebilirsin.</li>
           <li>Rızanı istediğin zaman geri alabilirsin; bu durumda hesabın silinir.</li>
           <li>
             KVKK m.11 kapsamındaki diğer hakların (bilgi alma, düzeltme, itiraz) için yukarıdaki

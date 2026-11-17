@@ -1,5 +1,5 @@
 import { withApi } from "@/lib/api/respond";
-import { requireOnboarded } from "@/lib/auth/require";
+import { requireLearner } from "@/lib/auth/require";
 import { createSessionDeps } from "@/lib/session/deps";
 import { getExplanation, type ExplanationVia } from "@/lib/session/service";
 
@@ -10,7 +10,7 @@ const toVia = (v: string | null): ExplanationVia => (v === "auto" || v === "dism
 
 export async function GET(request: Request, { params }: RouteContext<"/api/attempts/[id]/explanation">) {
   return withApi("attempts/explanation", async () => {
-    const { userId } = await requireOnboarded();
+    const { userId } = await requireLearner();
     const { id } = await params;
     const via = toVia(new URL(request.url).searchParams.get("via"));
     return Response.json(await getExplanation(createSessionDeps(), { userId }, id, via));

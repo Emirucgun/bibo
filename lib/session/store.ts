@@ -159,6 +159,41 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       return data.id as string;
     },
 
+    async findPlacement(userId) {
+      const { data, error } = await db
+        .from("sessions")
+        .select(SESSION_COLS)
+        .eq("user_id", userId)
+        .eq("kind", "placement")
+        .in("status", ["generating", "ready", "active", "done"])
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) fail("sessions.placement", error);
+      return data && data[0] ? toSession(data[0]) : null;
+    },
+
+    async createPlacement(userId) {
+      const { data, error } = await db
+        .from("sessions")
+        .insert({ user_id: userId, kind: "placement", status: "generating" })
+        .select("id")
+        .single();
+      if (error?.code === UNIQUE_VIOLATION) return null;
+      if (error || !data) fail("sessions.insert", error);
+      return data.id as string;
+    },
+
+    async completePlacement(userId, levelEst, now) {
+      const { data, error } = await db
+        .from("profiles")
+        .update({ level_est: levelEst, onboarding_step: "done", updated_at: now.toISOString() })
+        .eq("id", userId)
+        .eq("onboarding_step", "placement")
+        .select("id");
+      if (error) fail("profiles.placement", error);
+      return (data?.length ?? 0) > 0;
+    },
+
     async setPlan(sessionId, plan, focusTopicId) {
       const { error } = await db.from("sessions").update({ plan, focus_topic_id: focusTopicId }).eq("id", sessionId);
       if (error) fail("sessions.plan", error);
@@ -442,12 +477,13 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
     async getLearner(userId) {
       const { data, error } = await db
         .from("profiles")
-        .select("level_est, interests, explain_mode")
+        .select("level_est, level_self, interests, explain_mode")
         .eq("id", userId)
         .maybeSingle();
       if (error || !data) fail("profiles", error);
       return {
         level_est: data.level_est === "A2" ? "A2" : "A1",
+        level_self: (data.level_self as string | null) ?? null,
         interests: ((data.interests as string[] | null) ?? []).filter(isInterest),
         explain_mode: data.explain_mode === "long" ? "long" : "short",
       };

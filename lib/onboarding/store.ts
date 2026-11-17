@@ -46,6 +46,17 @@ export function createOnboardingStore(admin: SupabaseClient): OnboardingStore {
       return (data?.length ?? 0) > 0;
     },
 
+    async saveProfile(userId, profile, now) {
+      const { data, error } = await admin
+        .from("profiles")
+        .update({ ...profile, onboarding_step: "placement", updated_at: now.toISOString() })
+        .eq("id", userId)
+        .eq("onboarding_step", "profile")
+        .select("id");
+      if (error) throw new Error(`profile: ${error.code}`);
+      return (data?.length ?? 0) > 0;
+    },
+
     async deleteUser(userId) {
       const { error } = await admin.auth.admin.deleteUser(userId);
       if (error) throw new Error(`deleteUser: ${error.code ?? error.status ?? "unknown"}`);

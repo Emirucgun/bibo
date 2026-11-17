@@ -7,6 +7,7 @@ import {
   AccountDeleteInput,
   ConsentInput,
   InviteInput,
+  ProfileInput,
 } from "@/lib/onboarding/schemas";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 
@@ -22,6 +23,12 @@ export interface OnboardingStore {
   claimInvite(userId: string, code: string): Promise<ClaimResult>;
   /** Yalnızca `onboarding_step = 'consent'` iken yazar; yazdıysa `true`. */
   recordConsent(userId: string, consentVersion: string, now: Date): Promise<boolean>;
+  /** Yalnızca `onboarding_step = 'profile'` iken yazar ve adımı `placement` yapar; yazdıysa `true`. */
+  saveProfile(
+    userId: string,
+    profile: { level_self: string; level_est: "A1" | "A2"; interests: string[] },
+    now: Date,
+  ): Promise<boolean>;
   /** `auth.admin.deleteUser`: `on delete cascade` ile tüm öğrenci verisi gider. */
   deleteUser(userId: string): Promise<void>;
 }
@@ -77,6 +84,33 @@ export async function submitConsent(
 
   // `false` dönerse adım bu arada değişmiştir (ör. çift tıklama): rıza zaten kayıtlı.
   await store.recordConsent(actor.userId, consentVersion, options.now);
+  return { ok: true };
+}
+
+/**
+ * POST /api/onboarding/profile → `{ ok }` (PRD F2). En az 2 ilgi alanı. Başlangıç tahmini seviye
+ * beyandan (A2 → A2, diğerleri A1); yerleştirme sonunda yeniden hesaplanır.
+ */
+export async function submitProfile(
+  store: OnboardingStore,
+  actor: Actor,
+  body: unknown,
+  now: Date,
+): Promise<{ ok: true }> {
+  const input = parse(ProfileInput, body);
+  if (actor.onboardingStep === "invite") throw new ApiError("invite_required");
+  if (actor.onboardingStep === "consent") throw new ApiError("onboarding_incomplete");
+  // Profil zaten kayıtlı (ör. çift dokunuş): ilk kayıt korunur.
+  if (actor.onboardingStep !== "profile") return { ok: true };
+  await store.saveProfile(
+    actor.userId,
+    {
+      level_self: input.levelSelf,
+      level_est: input.levelSelf === "A2" ? "A2" : "A1",
+      interests: [...new Set(input.interests)],
+    },
+    now,
+  );
   return { ok: true };
 }
 

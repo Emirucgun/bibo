@@ -32,6 +32,7 @@ import type {
   SkillEvidence,
 } from "@/lib/engine/types";
 import { EXPLAIN_MODE_SESSIONS, nextExplainMode, type ExplainMode } from "./explain-mode";
+import { buildPlacementItems, estimateLevel, weakPoints, type WeakPoint } from "./placement";
 import { splitGeneratedItems, SPOKEN_TEXT_TYPES } from "./save-items";
 import {
   AttemptInput,
@@ -243,6 +244,36 @@ export async function prefetchNext(deps: SessionDeps, userId: string): Promise<v
   }
   if (!sessionId) return; // zaten hazırlanıyor
   await prepareSession(deps, userId, sessionId);
+}
+
+/**
+ * POST /api/placement → `{ sessionId }`. Sabit bankadan (dil modeli yok) yerleştirme oturumu açar;
+ * öğrencinin açık ya da bitmiş yerleştirme oturumu varsa onu döner (çift dokunuş, sayfa yenileme).
+ */
+export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{ sessionId: string }> {
+  const { store } = deps;
+  const existing = await store.findPlacement(actor.userId);
+  if (existing && existing.status !== "generating") return { sessionId: existing.id };
+  if (existing) {
+    // Yarıda kalmış kayıt (yazma sırasında hata): kapatılır, yenisi açılır.
+    await store.transition(existing.id, ["generating"], "failed");
+  }
+  const sessionId = await store.createPlacement(actor.userId);
+  if (!sessionId) {
+    const again = await store.findPlacement(actor.userId);
+    if (!again) throw new ApiError("server_error");
+    return { sessionId: again.id };
+  }
+  const tts = await ttsAvailable(deps.media.tts, deps.now()).catch(() => false);
+  const items = buildPlacementItems({ ttsAvailable: tts, rng: createRng(seedFromString(`${sessionId}:options`)) });
+  try {
+    await store.insertItems(sessionId, actor.userId, items);
+  } catch (err) {
+    await store.transition(sessionId, ["generating"], "failed").catch(() => false);
+    throw err;
+  }
+  await store.transition(sessionId, ["generating"], "ready");
+  return { sessionId };
 }
 
 // ---------------------------------------------------------------------------
@@ -460,7 +491,13 @@ async function gradeWithLlm(
   try {
     outcome = await gradeFreeAnswer(
       deps.ai,
-      { userId: item.user_id, sessionId: item.session_id, now: deps.now() },
+      {
+        userId: item.user_id,
+        sessionId: item.session_id,
+        now: deps.now(),
+        // Yerleştirmedeki tek yapay zekâ çağrısı konuşma sorusu (SPEC 3 `llm_usage.purpose`).
+        purpose: item.purpose === "placement" ? "placement" : "grade",
+      },
       {
         activity_type: override?.activity_type ?? (item.activity_type as "translate_tr_en" | "short_write"),
         topic_id: item.topic_id,
@@ -648,7 +685,8 @@ export async function submitAttempt(
   let graded = isLocal
     ? gradeLocally(item, key, input.response)
     : await gradeWithLlm(deps, item, key, (input.response as { text: string }).text, settings!.review_sample_rate);
-  if (item.activity_type === "gap_fill" && graded.is_correct === false) {
+  // Yerleştirmede boşluk hakemliği yok: test dil modeli çağırmaz (PRD F2, konuşma hariç).
+  if (item.activity_type === "gap_fill" && graded.is_correct === false && item.purpose !== "placement") {
     const text = (input.response as { text: string }).text;
     const known = key.wrong_patterns?.some((p) => answersMatch(p.answer, text)) ?? false;
     if (!known) graded = await adjudicateGap(deps, item, key, text, graded, settings!.review_sample_rate);
@@ -963,9 +1001,16 @@ export interface DiagnosisCard {
   userFeedback: "agree" | "disagree" | null;
 }
 
+export interface PlacementResult {
+  levelEst: "A1" | "A2";
+  /** "Tahmini zayıf noktalar": 3 konu, arayüzde "tahmin" etiketiyle (PRD F2). */
+  weakPoints: WeakPoint[];
+}
+
 export interface FinishResult {
   summary: SessionSummary;
   diagnosis?: DiagnosisCard;
+  placement?: PlacementResult;
 }
 
 function evidenceRows(evidence: unknown): DiagnosisCard["evidence"] {
@@ -1077,16 +1122,6 @@ export async function finishSession(
   const touched = [...new Set(items.filter((i) => graded.has(i.id)).map((i) => i.topic_id))];
 
   const finishedAt = first ? now : (session.finished_at ?? now);
-  let diagnosis: DiagnosisRow | null = null;
-  if (first) {
-    await applyPendingSpeech(deps, items, attempts, now);
-    const shownId = await runDiagnosis(deps, actor.userId, touched, now);
-    if (shownId) diagnosis = await store.getDiagnosis(actor.userId, shownId);
-    await updateExplainMode(deps, actor.userId, now);
-  } else {
-    diagnosis = await store.getDiagnosisShownAt(actor.userId, finishedAt);
-  }
-
   // Konuşmada iki deneme olabilir: özet her etkinliğin son değerlendirilmiş denemesini sayar.
   const finalAttempts = items.flatMap((i) => lastGradedAttempt(attempts, i.id) ?? []);
   const summary: SessionSummary = {
@@ -1096,6 +1131,34 @@ export async function finishSession(
     durationSec: session.started_at ? Math.max(0, Math.round((finishedAt.getTime() - session.started_at.getTime()) / 1000)) : 0,
     topics: [...new Set(items.map((i) => i.topic_id))].map((t) => ({ id: t, titleTr: topics.get(t)?.title_tr ?? t })),
   };
+
+  if (session.kind === "placement") {
+    // Yerleştirme (PRD F2, PLAN karar 22): ustalık her cevapta normal kanıt gibi işlendi; burada
+    // seviye tahmini, başlangıç adımının kapanması ve ilk günlük oturumun hazırlanması.
+    if (first) await applyPendingSpeech(deps, items, attempts, now);
+    const learner = await store.getLearner(actor.userId);
+    const scored = finalAttempts.filter((a) => a.is_correct !== null);
+    const levelEst = first
+      ? estimateLevel(learner.level_self ?? null, scored.filter((a) => a.is_correct).length, scored.length)
+      : learner.level_est;
+    const completed = first ? await store.completePlacement(actor.userId, levelEst, now) : false;
+    const mastery = await store.listMastery(actor.userId, [...new Set(items.map((i) => i.topic_id))]);
+    return {
+      summary,
+      placement: { levelEst, weakPoints: weakPoints(items.map((i) => i.topic_id), mastery, [...topics.values()]) },
+      ...(completed ? { background: () => prefetchNext(deps, actor.userId) } : {}),
+    };
+  }
+
+  let diagnosis: DiagnosisRow | null = null;
+  if (first) {
+    await applyPendingSpeech(deps, items, attempts, now);
+    const shownId = await runDiagnosis(deps, actor.userId, touched, now);
+    if (shownId) diagnosis = await store.getDiagnosis(actor.userId, shownId);
+    await updateExplainMode(deps, actor.userId, now);
+  } else {
+    diagnosis = await store.getDiagnosisShownAt(actor.userId, finishedAt);
+  }
 
   return {
     summary,

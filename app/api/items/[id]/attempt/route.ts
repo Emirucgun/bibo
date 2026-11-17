@@ -1,5 +1,5 @@
 import { readJson, withApi } from "@/lib/api/respond";
-import { requireOnboarded } from "@/lib/auth/require";
+import { requireLearner } from "@/lib/auth/require";
 import { createSessionDeps } from "@/lib/session/deps";
 import { submitAttempt } from "@/lib/session/service";
 
@@ -10,7 +10,7 @@ export const maxDuration = 60;
 // → { attemptId, isCorrect, score, feedbackShortTr, correction }
 export async function POST(request: Request, { params }: RouteContext<"/api/items/[id]/attempt">) {
   return withApi("items/attempt", async () => {
-    const { userId } = await requireOnboarded();
+    const { userId } = await requireLearner();
     const { id } = await params;
     const body = await readJson(request);
     return Response.json(await submitAttempt(createSessionDeps(), { userId }, id, body));

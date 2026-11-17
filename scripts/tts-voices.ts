@@ -15,41 +15,14 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { withAiCall } from "@/lib/ai/guard";
 import { TTS_PROVIDER } from "@/lib/tts/cache";
 import { createSpeechifyClient } from "@/lib/tts/speechify";
+import { listVoices, supportsModelEnUs, type Voice } from "@/lib/tts/voices";
 import { arg, setupDepsWithoutLlm } from "./lib/eval-env";
 
 /** Bir A1 dinleme etkinliğine benzeyen metin: -s eki, can/can't, th, sayı. */
 const SAMPLE =
   "Hi, I'm Ella. My brother plays football every Thursday. I can't swim, but I can ride a bike. We have three cats.";
 
-type Voice = {
-  id: string;
-  display_name?: string;
-  gender?: string;
-  tags?: string[];
-  models?: { name?: string; languages?: { locale?: string }[] }[];
-};
-
-const isSimbaEnUs = (v: Voice) =>
-  (v.models ?? []).some(
-    (m) => m.name === "simba-3.5" && (m.languages ?? []).some((l) => l.locale?.toLowerCase() === "en-us"),
-  );
-
-async function listVoices(key: string): Promise<Voice[]> {
-  const out: Voice[] = [];
-  let cursor: string | undefined;
-  for (let page = 0; page < 20; page++) {
-    const url = new URL("https://api.speechify.ai/v1/voices");
-    if (cursor) url.searchParams.set("cursor", cursor);
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${key}` } });
-    if (!res.ok) throw new Error(`speechify voices HTTP ${res.status}`);
-    const body = (await res.json()) as { voices?: Voice[]; next_cursor?: string; has_more?: boolean } | Voice[];
-    if (Array.isArray(body)) return body;
-    out.push(...(body.voices ?? []));
-    if (!body.has_more || !body.next_cursor) break;
-    cursor = body.next_cursor;
-  }
-  return out;
-}
+const isSimbaEnUs = (v: Voice) => supportsModelEnUs(v, "simba-3.5");
 
 async function main() {
   const key = process.env.SPEECHIFY_API_KEY;
