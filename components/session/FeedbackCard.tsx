@@ -30,9 +30,9 @@ export function FeedbackCard({
   const [explanation, setExplanation] = useState<Explanation>(autoOpen ? { state: "loading" } : { state: "closed" });
   const gradable = result.isCorrect !== null;
 
-  async function load(opened: boolean) {
+  async function load(via: "click" | "auto" | "dismiss") {
     const res = await callApi<{ explanationLongTr: string }>(
-      `/api/attempts/${result.attemptId}/explanation${opened ? "" : "?opened=0"}`,
+      `/api/attempts/${result.attemptId}/explanation${via === "click" ? "" : `?via=${via}`}`,
       { method: "GET" },
     );
     return res.ok ? res.data.explanationLongTr : null;
@@ -42,7 +42,7 @@ export function FeedbackCard({
     if (!autoOpen) return;
     let cancelled = false;
     void (async () => {
-      const text = await load(true);
+      const text = await load("auto");
       if (!cancelled) setExplanation(text ? { state: "open", text } : { state: "error" });
     })();
     return () => {
@@ -54,13 +54,13 @@ export function FeedbackCard({
 
   async function open() {
     setExplanation({ state: "loading" });
-    const text = await load(true);
+    const text = await load("click");
     setExplanation(text ? { state: "open", text } : { state: "error" });
   }
 
   function dismiss() {
     setExplanation({ state: "closed" });
-    void load(false);
+    void load("dismiss");
   }
 
   return (

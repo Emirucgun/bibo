@@ -397,7 +397,7 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     expect(env.store.errorEvents.map((e) => e.l1_code)).toEqual(["L1.3SG_S"]);
   });
 
-  describe("boşluk doldurmada anahtarda olmayan cevap (SPEC 4.6 değişikliği)", () => {
+  describe("boşluk doldurmada anahtarda olmayan cevap (SPEC 4.6 boşluk hakemliği, rev. 4)", () => {
     const gapAnswer = (env: Env, item: ItemRow, text: string) =>
       submitAttempt(env.deps, actor, item.id, { response: { text }, timeMs: 1000, hintUsed: false });
 
@@ -588,13 +588,28 @@ describe("ipucu ve açıklama", () => {
     expect(await codeOf(getExplanation(env.deps, { userId: OTHER }, local.attemptId))).toBe("not_found");
   });
 
-  it("`opened = false` (Kısa yeter) işareti geri alır", async () => {
+  it("`dismiss` (Kısa yeter) işareti geri alır", async () => {
     const env = setup();
     const id = await openSession(env);
     const res = await answer(env, firstOfType(env, id, "gap_fill"), false);
     await getExplanation(env.deps, actor, res.attemptId);
-    await getExplanation(env.deps, actor, res.attemptId, false);
+    await getExplanation(env.deps, actor, res.attemptId, "dismiss");
     expect(env.store.attempts[0].explain_opened).toBe(false);
+  });
+
+  it("uzun modda kendiliğinden gösterim (`auto`) işaretler ama `explain_open` olayı yazmaz; sonraki tıklama yazar", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    const res = await answer(env, firstOfType(env, id, "gap_fill"), false);
+    const opens = () => env.store.events.filter((e) => e.name === "explain_open");
+    await getExplanation(env.deps, actor, res.attemptId, "auto");
+    expect(env.store.attempts[0].explain_opened).toBe(true);
+    expect(opens()).toHaveLength(0);
+    // "Kısa yeter" → kapandı; ardından "Daha fazla açıkla" gerçek bir tıklamadır.
+    await getExplanation(env.deps, actor, res.attemptId, "dismiss");
+    await getExplanation(env.deps, actor, res.attemptId, "click");
+    expect(env.store.attempts[0].explain_opened).toBe(true);
+    expect(opens()).toHaveLength(1);
   });
 });
 
@@ -639,6 +654,25 @@ describe("finishSession (POST /api/sessions/:id/finish)", () => {
     expect(again.background).toBeUndefined();
     expect(again.summary).toEqual(first.summary);
     expect(env.store.sessions[0].rating).toBe(5);
+  });
+
+  it("puan ve not ayrı gönderilirse biri ötekini silmez", async () => {
+    const env = setup();
+    const id = await openSession(env);
+    await finishSession(env.deps, actor, id, { comment: "güzeldi" });
+    await finishSession(env.deps, actor, id, { rating: 3 });
+    expect(env.store.sessions[0]).toMatchObject({ rating: 3, comment: "güzeldi" });
+    await finishSession(env.deps, actor, id, { comment: "  " });
+    expect(env.store.sessions[0]).toMatchObject({ rating: 3, comment: null });
+  });
+
+  it("ön üretimin ilk adımı hata verirse `after()` işi fırlatmaz", async () => {
+    const env = setup();
+    env.store.abandonReady = async () => {
+      throw new Error("sessions.abandon: 08006");
+    };
+    await expect(prefetchNext(env.deps, USER)).resolves.toBeUndefined();
+    expect(env.store.sessions).toHaveLength(0);
   });
 
   it("hazır bekleyen eski oturum ön üretimde `abandoned` olur", async () => {
