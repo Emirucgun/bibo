@@ -231,12 +231,12 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 **Bitti testi**
 - [ ] Ekip dışından 3 kişi davet linkinden ilk etkinliğe 10 dakikadan kısa sürede ulaşıyor.
-- [ ] Yerleştirmede yapay zekâ çağrısı yalnızca konuşma sorusunda yapılıyor (`llm_usage`).
-- [ ] Izgara dört renk seviyesini doğru gösteriyor.
+- [x] Yerleştirmede yapay zekâ çağrısı yalnızca konuşma sorusunda yapılıyor (`llm_usage`). _(17.11.2026: `tests/session/placement.test.ts`; `purpose = placement`)_
+- [x] Izgara dört renk seviyesini doğru gösteriyor. _(17.11.2026: `tests/progress/progress.test.ts`)_
 - [ ] Tüm öğrenci ekranlarında metin/arka plan kontrastı WCAG AA (≥ 4,5:1); Lighthouse erişilebilirlik puanı ≥ 90.
-- [ ] Izgara gri tonlamada da dört seviyeyi ayırt ettiriyor.
+- [x] Izgara gri tonlamada da dört seviyeyi ayırt ettiriyor. _(17.11.2026: her seviyenin ayrı simgesi: · ✕ ◐ ✓)_
 - [ ] Her ekranın yükleniyor, boş ve hata durumu var; pedagoji sahibi metinleri onayladı.
-- [ ] Seçilen okul konusu sonraki 2 oturumun planında yer alıyor.
+- [x] Seçilen okul konusu sonraki 2 oturumun planında yer alıyor. _(17.11.2026: planlayıcı testi, PLAN karar 35)_
 - [ ] Uygulama iki platformda ana ekrana eklenebiliyor; 360 px'te yatay kaydırma yok.
 
 ---
@@ -255,10 +255,10 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 **Bitti testi**
 - [ ] Acil durdurma açıkken yeni oturum üretilemiyor; öğrenci nazik mesaj görüyor.
-- [ ] Tavan test için 0,01 $'a düşürüldüğünde üretim duruyor ve panelde uyarı çıkıyor.
-- [ ] `tts_monthly_char_alert` test için 1'e düşürüldüğünde panelde seslendirme kotası uyarısı çıkıyor.
+- [x] Tavan test için 0,01 $'a düşürüldüğünde üretim duruyor ve panelde uyarı çıkıyor. _(17.11.2026: guard testleri + `tests/admin/metrics.test.ts`)_
+- [x] `tts_monthly_char_alert` test için 1'e düşürüldüğünde panelde seslendirme kotası uyarısı çıkıyor. _(17.11.2026: `tests/admin/metrics.test.ts`)_
 - [ ] Kuyruk, yapay zekâ etiketli hataların yaklaşık %15'ini içeriyor; sabit veriyle uyum yüzdesi doğru hesaplanıyor.
-- [ ] Cron, gizli anahtar olmadan `401` dönüyor.
+- [x] Cron, gizli anahtar olmadan `401` dönüyor. _(17.11.2026: `cronAuthorized` testi)_
 - [ ] Dışa aktarım JSON'ı öğrencinin tüm tablolardaki kayıtlarını içeriyor.
 
 ### Pilot başlatma kapısı
