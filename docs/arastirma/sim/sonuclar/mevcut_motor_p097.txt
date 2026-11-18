@@ -1,0 +1,33 @@
+Yerleştirme: 14/14 doğru → level_est=A2
+Kusursuz öğrenciye gösterilen 'Tahmini zayıf noktaların':
+  - am / is / are
+  - Özne zamirleri (he / she / it)
+  - do / does ile soru ve olumsuz
+Yerleştirmeden sonra ölçülen hücreler:
+  g.be_present|reading: 0.32 → weak
+  g.subject_pronouns|reading: 0.32 → weak
+  g.do_does_q_neg|reading: 0.32 → weak
+  g.wh_questions|reading: 0.32 → weak
+  g.present_simple|reading: 0.448 → weak
+  g.present_perfect|reading: 0.32 → weak
+  g.present_simple_3sg|writing: 0.4 → weak
+  g.articles_a_an|writing: 0.4 → weak
+  g.plurals|writing: 0.513 → developing
+  g.prep_time|writing: 0.4 → weak
+  p.th|listening: 0.32 → weak
+  p.w_v|listening: 0.32 → weak
+  g.word_order_svo|writing: 0.4 → weak
+  g.present_simple|speaking: 0.513 → developing
+Izgara: { unknown: 108, weak: 12, developing: 2, solid: 0 }
+Oturum 1: odak=g.be_present ızgara { unknown: 101, weak: 18, developing: 3, solid: 0 }
+Oturum 2: odak=g.be_present ızgara { unknown: 96, weak: 20, developing: 6, solid: 0 }
+Oturum 3: odak=g.subject_pronouns ızgara { unknown: 91, weak: 21, developing: 10, solid: 0 }
+Oturum 10: odak=g.prep_time ızgara { unknown: 71, weak: 18, developing: 33, solid: 0 }
+Oturum 20: odak=g.present_perfect ızgara { unknown: 45, weak: 11, developing: 62, solid: 4 }
+  !! oturum 25: YANLIŞ teşhis skill_gap → g.prep_place (güven 0.66)
+Oturum 30: odak=g.have_has ızgara { unknown: 24, weak: 2, developing: 74, solid: 22 }
+Oturum 40: odak=g.past_q_neg ızgara { unknown: 8, weak: 0, developing: 68, solid: 46 }
+Odak konuları: g.be_present, g.be_present, g.subject_pronouns, g.possessives, g.possessives, g.articles_the, g.present_continuous, g.articles_the, g.do_does_q_neg, g.prep_time, g.prep_place, g.prep_place …
+
+20 tohum, p=0.97, 40 oturum: en az bir yanlış teşhis alan 10/20, toplam 17 yanlış teşhis
+Son ızgaralar (sağlam/gelişiyor/zayıf/bilinmiyor): 44/76/0/2 45/70/2/5 41/81/0/0 44/78/0/0 40/78/1/3 44/72/2/4 46/68/0/8 38/84/0/0 42/75/1/4 45/77/0/0 46/75/0/1 41/79/0/2 43/79/0/0 40/80/0/2 43/77/1/1 45/77/0/0 41/79/0/2 44/77/1/0 45/71/0/6 40/82/0/0

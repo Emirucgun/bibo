@@ -1,0 +1,36 @@
+
+## calibrated / pilot population, n=1500
+config                       acc  meanN A2->gate gateSens
+STAIR block=4              0.721    7.1    0.088    0.677
+STAIR block=6              0.700    8.9    0.150    0.782
+STAIR block=8              0.741   11.7    0.131    0.777
+STAIR block=10             0.767   14.5    0.121    0.808
+STAIR block=14             0.800   18.9    0.107    0.869
+SPRT3 d=0.6 a=0.1          0.893    7.8    0.088    0.939
+SPRT3 d=0.5 a=0.05         0.905   12.6    0.066    0.921
+SPRT3 d=0.4 a=0.05         0.906   15.4    0.053    0.891
+SPRT3 d=0.3 a=0.05         0.910   19.5    0.051    0.900
+SPRT3 d=0.3 a=0.025        0.915   21.9    0.066    0.934
+BCCT stop=0.8              0.893    9.2    0.039    0.873
+BCCT stop=0.85             0.915   11.4    0.037    0.865
+BCCT stop=0.9              0.901   13.5    0.027    0.830
+BCCT stop=0.95             0.913   17.1    0.018    0.799
+BCCT stop=0.98             0.919   20.0    0.010    0.830
+
+## uncalibrated / pilot population, n=1500
+config                       acc  meanN A2->gate gateSens
+STAIR block=4              0.701    6.9    0.125    0.624
+STAIR block=6              0.739    8.8    0.158    0.773
+STAIR block=8              0.753   11.5    0.150    0.747
+STAIR block=10             0.781   14.5    0.137    0.817
+STAIR block=14             0.796   18.6    0.135    0.856
+SPRT3 d=0.6 a=0.1          0.895   13.7    0.031    0.817
+SPRT3 d=0.5 a=0.05         0.892   20.3    0.047    0.799
+SPRT3 d=0.4 a=0.05         0.901   23.1    0.023    0.817
+SPRT3 d=0.3 a=0.05         0.901   25.7    0.029    0.865
+SPRT3 d=0.3 a=0.025        0.907   27.0    0.029    0.830
+BCCT stop=0.8              0.879   12.6    0.021    0.734
+BCCT stop=0.85             0.885   15.2    0.020    0.716
+BCCT stop=0.9              0.887   19.0    0.014    0.681
+BCCT stop=0.95             0.892   22.1    0.004    0.681
+BCCT stop=0.98             0.891   23.7    0.006    0.672
