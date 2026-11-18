@@ -26,15 +26,16 @@ describe("parseCsv", () => {
 });
 
 describe("topics.csv (SPEC Ek A)", () => {
-  it("32 konu, benzersiz kimlik ve sıra", () => {
-    expect(topics).toHaveLength(32);
-    expect(topicIds.size).toBe(32);
-    expect(new Set(topics.map((t) => t.sort)).size).toBe(32);
+  it("34 konu (30 dilbilgisi, 2 sesletim, 2 ölçme), benzersiz kimlik ve sıra", () => {
+    expect(topics).toHaveLength(34);
+    expect(topicIds.size).toBe(34);
+    expect(new Set(topics.map((t) => t.sort)).size).toBe(34);
+    expect(topics.filter((t) => t.kind === "measure").map((t) => t.id)).toEqual(["m.b1", "m.b2"]);
   });
 
   it("kimlikler g.* (grammar) ya da p.* (pron)", () => {
     for (const t of topics) {
-      expect(t.id).toMatch(t.kind === "grammar" ? /^g\.[a-z0-9_]+$/ : /^p\.[a-z0-9_]+$/);
+      expect(t.id).toMatch(t.kind === "grammar" ? /^g\.[a-z0-9_]+$/ : t.kind === "pron" ? /^p\.[a-z0-9_]+$/ : /^m\.[a-z0-9_]+$/);
     }
     expect(topics.filter((t) => t.kind === "pron").map((t) => t.id)).toEqual(["p.th", "p.w_v"]);
   });

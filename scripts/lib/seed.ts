@@ -147,27 +147,29 @@ export function loadL1Codes(text = readSeedFile("l1_codes.csv")): L1CodeRow[] {
   }));
 }
 
-export function loadPlacement(text = readSeedFile("placement.json")) {
+export function loadPlacementBank(text = readSeedFile("placement_bank.json")) {
   return JSON.parse(text) as {
     version: string;
     status: string;
-    items: PlacementItem[];
+    items: PlacementBankSeedItem[];
+    speaking: PlacementSpeakingSeed;
   };
 }
 
-export interface PlacementItem {
-  position: number;
+/** `placement_bank.json` maddesi (docs/SPEC.md 4.7, Ek C). */
+export interface PlacementBankSeedItem {
+  id: string;
+  cefr: "preA1" | "A1" | "A2" | "B1" | "B2";
   activity_type: string;
   topic_id: string;
   l1_target: string | null;
+  irt: { a: number; b: number; c: number; d: number };
   payload: {
     instruction_tr: string;
     text_en?: string;
     question_en?: string;
     options?: string[];
     tokens?: string[];
-    source_tr?: string;
-    prompt_en?: string;
   };
   key: {
     correct?: string;
@@ -175,11 +177,17 @@ export interface PlacementItem {
     distractors?: { option: string; code: string; feedback_tr: string }[];
     wrong_patterns?: { answer: string; code: string }[];
     target_words?: string[];
-    model_answer_en?: string;
-    explanation_short_tr: string;
-    explanation_long_tr: string;
-    hint_tr: string;
+    text_en?: string;
   };
+}
+
+export interface PlacementSpeakingSeed {
+  id: string;
+  topic_id: string;
+  activity_type: "speak_answer";
+  l1_target: string | null;
+  payload: { instruction_tr: string; prompt_en: string };
+  key: { model_answer_en: string };
 }
 
 // --- SQL ---

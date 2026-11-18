@@ -70,7 +70,7 @@ export const DEFAULT_PLACEMENT_CONFIG: PlacementConfig = {
   extension_items: 5,
   warmup: 2,
   warmup_b: -1,
-  max_choice_share: 0.4,
+  max_choice_share: 0.6,
   top_k: 3,
 };
 
@@ -185,14 +185,14 @@ export function nextPlacementStep(args: {
     if (CHOICE_TYPES.includes(a.activity_type)) choiceCount++;
   }
 
+  const isMeasure = (topicId: string) => topicId.startsWith("m.");
   let pool = args.bank.filter((b) => !askedIds.has(b.id) && (args.listening || b.skill !== "listening"));
   // Yumuşak kısıtlar: alternatif kalırsa uygulanır.
   const soft = (pred: (b: PlacementBankItem) => boolean) => {
     const kept = pool.filter(pred);
     if (kept.length > 0) pool = kept;
   };
-  const isMeasure = (topicId: string) => topicId.startsWith("m.");
-  soft((b) => !last || b.topic_id !== last.topic_id);
+  soft((b) => !last || isMeasure(b.topic_id) || b.topic_id !== last.topic_id);
   soft((b) => isMeasure(b.topic_id) || (topicCount.get(b.topic_id) ?? 0) < 2);
   if (n >= 4) {
     soft((b) => ((skillCount.get(b.skill) ?? 0) + 1) / (n + 1) <= 0.5);
