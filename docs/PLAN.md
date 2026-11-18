@@ -6,7 +6,7 @@
 | Kapsam | `ROADMAP.md` M11 · `SPEC.md` rev. 5 (3, 4.1–4.4, 4.7, 4.8, 5.1–5.3, 6, Ek C) · `PRD.md` rev. 3 (F2, F4, F7–F10, F15, F16) · `SCOPE.md` rev. 3 |
 | Dal | `claude/inspiring-bohr-jltvny` |
 | Yetki | Kullanıcı: araştırma önerisi ve 13 karar "varsayılanlarla onay" (18.11.2026), ardından "Onay veriyorum, hepsini topluca uygula". Gerekçe ve simülasyonlar: `docs/arastirma/` |
-| Durum | Kod tamam; `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 38 dosya, 1032 test · `npm run build` ✅ · SQL testleri ✅ (yerel Postgres 16). Göç `20261118120000` henüz dev/prod'a uygulanmadı. Önceki plan (M9 + M10) git geçmişinde |
+| Durum | Kod tamam; `npm run lint` ✅ · `npx tsc --noEmit` ✅ · `npm test` ✅ 38 dosya, 1032 test · `npm run build` ✅ · SQL testleri ✅ (yerel Postgres 16). Göç `20261118120000` + seed dev ve prod'a uygulandı (18.11.2026). Önceki plan (M9 + M10) git geçmişinde |
 
 ## 1. Yapılanlar
 
@@ -61,8 +61,8 @@
 | Profil yeniden kurma = canlı güncelleme | ✅ | `tests/session/service.test.ts` "ipuçlu doğru cevap yarım ağırlıklı kanıttır…" |
 | Uyarlamalı test, kapı, yeniden test, ses yokken atlama | ✅ | `tests/session/placement.test.ts`, `tests/session/scope.test.ts` |
 | 3 örnekli değerlendirme | ✅ | `tests/ai/grade-vote.test.ts`, servis testi "grade_samples = 3…" |
-| `eval-generation` (kelime kapsamıyla) | ⏳ | Gerçek API çağırır (≈ 0,10–0,25 $); çalıştırmadan önce onay gerekir |
-| Göçün dev/prod'a uygulanması | ⏳ | `npx supabase db push` ya da panelden; sonra `tests/db/v2-measurement.sql` dev'de |
+| `eval-generation` (kelime kapsamıyla) | ⏳ | Onaylandı; ancak bu ortamda OpenRouter anahtarı yok. Betik artık kapsam eşiklerini geçiriyor ve kelime nedeniyle reddedilen / düşen slotları raporluyor; anahtarı olan bir makinede çalıştırılmalı |
+| Göçün dev/prod'a uygulanması | ✅ | Supabase MCP ile `apply_migration` (dev `bibo-dev`, prod `bibo-prod`); `schema_migrations` sürümü dosya adıyla eşitlendi (`20261118120000`); `seed.sql` konu upsert'i. Dev'de `tests/db/v2-measurement.sql` (geri alınan işlemde) geçti, artık veri kalmadı. Prod'da salt okunur doğrulama: 34 konu (2 ölçme), 19 yeni sütun, 8 politika, 6 ayar, RLS'i kapalı tablo 0 |
 
 ## 4. Elle kontrol (telefon)
 
@@ -79,6 +79,6 @@
 ## 5. Açık konular
 
 - Pedagoji onayları (ROADMAP P10–P13): yerleştirme bankası, konu müfredat alanları ve varsayılan yol, kelime listesi, okul programı haritası.
-- Göç dev ve prod'a uygulanmalı; uygulandıktan sonra mevcut kullanıcıların profili ilk cevaplarında `attempts`'ten kendiliğinden kurulur. Eski yerleştirme oturumları `bank_item_id` taşımadığı için IRT parametresi yerine konu modeliyle işlenir.
+- Mevcut kullanıcıların profili ilk cevaplarında `attempts`'ten kendiliğinden kurulur. Eski yerleştirme oturumları `bank_item_id` taşımadığı için IRT parametresi yerine konu modeliyle işlenir.
 - Mevcut (pilot öncesi deneme) kullanıcıların `scope_status`'u `in_scope`; isterlerse yerleştirmeyi yeniden yapmaları için adımlarını SQL ile `placement`'a almak gerekir.
 - Maliyet: serbest cevap değerlendirmesi ×3; `eval-generation` ve pilotun ilk haftasında `llm_usage` ile izlenmeli.

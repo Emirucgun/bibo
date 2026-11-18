@@ -44,6 +44,8 @@ export interface GenerationOutcome {
   dropped: DroppedSlot[];
   /** Yeniden üretilen slot numaraları. */
   regenerated: number[];
+  /** İlk turda kontrolden geçmeyen slotlar ve sorunları (yeniden üretim gerekçesi; ölçüm için). */
+  firstRoundProblems: DroppedSlot[];
   /** Yapılan model çağrısı sayısı (HTTP yeniden denemeleri hariç). */
   calls: number;
 }
@@ -203,6 +205,7 @@ export async function generateSession(
 
   // 2) Geçmeyen slotlar bir kez yeniden üretilir; yine geçmezse çıkarılır.
   const regenerated = [...failing.keys()];
+  const firstRoundProblems = [...failing].map(([slot, problems]) => ({ slot, problems: [...problems] }));
   if (regenerated.length > 0) {
     await runRound(
       input.slots.filter((s) => failing.has(s.position)),
@@ -219,5 +222,5 @@ export async function generateSession(
   if (items.length < MIN_SESSION_ITEMS) {
     throw new GenerationError("too_few_items", `${items.length} valid`);
   }
-  return { items, dropped, regenerated, calls };
+  return { items, dropped, regenerated, firstRoundProblems, calls };
 }
