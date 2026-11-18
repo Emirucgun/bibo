@@ -2,9 +2,9 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 2 |
+| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 3 (18 Kasım 2026: ölçme, öğrenme profili ve müfredat v2) |
 | Amaç | 50 kişilik, 2 aylık ücretsiz pilotu başlatmak için gereken en küçük ürün |
-| Bağlı belgeler | Özellik kimlikleri (F1–F14) `PRD.md`'den, teknik ayrıntı `SPEC.md`'den |
+| Bağlı belgeler | Özellik kimlikleri (F1–F16) `PRD.md`'den, teknik ayrıntı `SPEC.md`'den |
 
 ---
 
@@ -40,8 +40,10 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [x] **F1** Davet kodu, kohort kapasitesi (60), davetsiz erişimin engellenmesi
 - [x] **F1** 18+ beyanı, KVKK aydınlatma ve açık rıza (sürüm + zaman kaydı) _(16.11.2026: aydınlatma metni taslak; son hâli M10'da, "Gizlilik sayfası" maddesi o zaman işaretlenir)_
 - [x] **F2** Seviye beyanı (A1 / A2 / emin değilim), en az 2 ilgi alanı (12 seçenek)
-- [x] **F2** 14 soruluk sabit yerleştirme testi ve ustalık tohumlama
-- [x] **F2** "Tahmini zayıf noktalar" kartı (3 konu, "tahmin" etiketli)
+- [x] **F2** Çalışma modu (okul / kendi programım), hedef, isteğe bağlı okul programı _(18.11.2026: rev. 3)_
+- [ ] **F2** Uyarlamalı yerleştirme testi (Bayesçi sınıflama, 134 maddelik banka) ve profile işlenmesi _(18.11.2026: kod ve simülasyon tamam; banka taslak, pedagoji onayı bekliyor)_
+- [x] **F2** Kanıta dayalı test sonu kartı (iyi gidenler / zorlandıkların / netleştireceklerimiz) _(18.11.2026: önceki "tahmini zayıf noktalar" kartının yerine)_
+- [x] **F15** Kapsam kapısı: A2 üstüne "çok yakında" sayfası, bekleme listesi, bir kez yeniden test; sürekli kapı _(18.11.2026)_
 
 ### Öğrenme döngüsü
 
@@ -59,8 +61,11 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [ ] **F6** Bas-konuş WAV kaydı (16 kHz mono, ≤ 45 sn), ses saklanmaz _(17.11.2026: `bibo-prod`'da 8 başarılı transkript; ses saklanmıyor (ROADMAP M8). Bekleyen: iOS Safari / Android Chrome cihaz kontrolü ve iOS'ta 16 kHz)_
 - [ ] **F6** İki adımlı transkript (MAI-Transcribe-2, OpenRouter üzerinden, `verbatim`) + değerlendirme (Claude), transkriptin gösterilmesi, 1 yeniden kayıt hakkı _(17.11.2026: kod tamam, gerçek oturumlarda çalışıyor. Bekleyen: `eval-verbatim` (20 kayıt) ve aksan kontrolü; ROADMAP M8)_
 - [x] **F7** Hata etiketleme (çeldirici kodu, kural, yapay zekâ), `error_events` _(17.11.2026, M6: Bitti testi maddesi 2: 4 yanlış cevapta 6 hata olayı)_
-- [x] **F7** Kademeli ustalık puanı, aralıklı tekrar, yan kanıt
-- [x] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6
+- [x] **F7** Öğrenme profili (hiyerarşik Bayesçi model, `learner_state`), modelden aralıklı tekrar, yan kanıt _(18.11.2026: kademeli puanın yerine; SPEC 4.1)_
+- [x] **F7** Teşhis kuralları (beceri eksiği, konu eksiği, etkinlik uyumsuzluğu), güven eşiği 0,6, kesinlik öncelikli _(18.11.2026: sonsal + gözlenen karşıtlık; SPEC 4.3)_
+- [x] **F7** Müfredat motoru: konu durumu, varsayılan yol, ön koşul, köprü, tempo, yoklama/girdi/çıktı/akıcılık slotları _(18.11.2026: SPEC 4.4; `topics` müfredat alanları taslak, pedagoji onayı bekliyor)_
+- [x] **F4** Kesinlik öncelikli değerlendirme: 3 örnekli çoğunluk oyu, güven alanı _(18.11.2026: SPEC 5.1)_
+- [x] **F3** Üretimde kelime kapsamı denetimi (A1 %98, A2 %95) _(18.11.2026: kelime listesi taslak)_
 - [x] **F7** Etkinlik verimi verisinin toplanması (`activity_stats`) _(17.11.2026, M6: `applyCredit` + `retest` testi)_
 - [x] **F8** Oturum özeti, kanıtlı teşhis kartı, "Doğru / Bence değil", 1–5 puan ve not _(17.11.2026, M6: gerçek oturum + servis testleri)_
 
@@ -71,14 +76,19 @@ Aşağıdakilerin **hepsi** doğruysa v1 biter ve pilot başlar:
 - [x] **F12** Yönetim özeti: kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet, ay içi seslendirme karakteri
 - [x] **F13** Verimi indir (JSON), hesabımı sil (zincirleme silme)
 - [ ] Gizlilik sayfası (aydınlatma metni) _(17.11.2026: `/gizlilik` yayında, sağlayıcı listesi güncel (OpenRouter → Anthropic, OpenRouter → Microsoft, Speechify). Son hâli hukuki görüşü bekliyor)_
-- [x] Günlük cron işi (eski oturumlar, TTS temizliği, maliyet özeti)
+- [x] Günlük cron işi (eski oturumlar, TTS temizliği, yerleştirme maddesi kalibrasyonu, maliyet özeti)
+- [x] Yönetim panelinde modelin tahmin kalitesi (AUC, log-kayıp, kalibrasyon hatası) ve kapsam dağılımı _(18.11.2026)_
 - [ ] Değerlendirme betikleri: `eval-generation`, `eval-tagging`, `eval-verbatim`, `simulate` (gecikme ölçümü dahil) _(17.11.2026: dört betik `scripts/`'te var. Eksik: `simulate` gecikme ölçmüyor. `eval-tagging` altın seti, `eval-verbatim` ses kayıtlarını bekliyor)_
 
 ### İçerik (pedagoji)
 
 - [x] 32 konu (Ek A) doğrulandı _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
 - [x] 24 hata kodu (Ek B) doğrulandı, her birine örnek eklendi _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
-- [x] 14 yerleştirme sorusu yazıldı _(11.11.2026: geçici onay — devam etmek için yeterli; pilot öncesi yeniden kontrol edilecek)_
+- [x] 14 yerleştirme sorusu yazıldı _(11.11.2026: geçici onay; 18.11.2026: 134 maddelik uyarlamalı bankayla değiştirildi)_
+- [ ] Yerleştirme bankası (`placement_bank.json`, 134 madde, B1/B2 taslakları dil modelinden) pedagoji sahibi tarafından onaylandı
+- [ ] Konu müfredat alanları (`unit`, `value`, `exam_weight`, `confusables`, `goal_tags`, ön koşullar) ve varsayılan yol doğrulandı
+- [ ] Taslak A1/A2 kelime listesi (`lib/content/wordlist.ts`) NGSL ya da CEFR-J ile değiştirildi/doğrulandı
+- [ ] Okul programı haritası (`programs`, `program_weeks`): pilot tek üniversiteyse dolduruldu
 - [ ] Açıklama stil rehberi (1 sayfa)
 - [ ] 40 cümlelik altın etiket seti
 - [ ] 20 bilerek hatalı okunmuş ses kaydı (transkript testi)
@@ -96,6 +106,7 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 2 | Yönetim panelinde grafikler | Aynı ölçütler tablo olarak ya da kayıtlı SQL sorgularıyla |
 | 3 | **F9** İlerleme ekranı | Ana sayfada tek satır: "Bu hafta 3 oturum · en sık hatan: üçüncü tekil -s" |
 | 4 | **F10** Haftalık okul konusu | Pilotun 2. haftasında eklenir |
+| 4b | **F16** "Bugün ne çalışalım?" | Planlayıcı kendisi seçer |
 | 5 | Etkinlik verimine göre tür seçimi (ε-greedy) | Rastgele tür seçimi; veri yine toplanır, analiz pilot sonunda yapılır |
 | 6 | Teşhis "çözüldü" kartı | Yalnızca aktif teşhis gösterilir |
 
@@ -114,7 +125,7 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | Yerel iOS / Android uygulaması | Mağaza ücretleri ve inceleme süresi; PWA yeterli |
 | Bildirim (push, e-posta, SMS) | Pilotta WhatsApp grubu; maliyet ve geliştirme süresi sıfır |
 | Seri, rozet, liderlik tablosu, puan ekonomisi | "Manipülasyon yok" ilkesi; ayrıca kullanım ölçümünü kirletir |
-| A1–A2 dışındaki seviyeler | Teşhis modeli önce dar kitlede kanıtlanmalı |
+| A1–A2 dışındaki seviyeler | Teşhis modeli önce dar kitlede kanıtlanmalı. Rev. 3: A2 üstü öğrenci yerleştirmede *ölçülür* ve "çok yakında" sayfasına yönlendirilir (F15); öğretilmez |
 | 18 yaş altı kullanıcılar | KVKK ve rıza yükü; hedef kitle dışında |
 | Anadili Türkçe olmayanlar, İngilizce dışı diller | Savunma Türkçe L1 bilgisine dayanıyor |
 | Okul ve öğretmen hesapları, sınıf yönetimi | Doğrudan öğrenciye satış modeli; okullarla anlaşma yok |
@@ -122,7 +133,7 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | Aile veya üniversiteye satış | İş modeli kararı: önce öğrenci öder |
 | Kendi anahtarını getir (BYOK) | Hedef kullanıcının teknik bilgisi düşük; maliyet kontrolü ve destek yükü artar. **Karar: v2'ye de alınmıyor**, yeniden açılması için gerekçe gerekir |
 | E-posta veya Apple ile giriş | Pilot kitlesi için Google yeterli; e-posta altyapısı ek iş ve maliyet |
-| Kelime bilgisi teşhisi | Teşhis kapsamı dilbilgisi + 2 sesletim algısı konusu ile sınırlı |
+| Kelime bilgisi teşhisi | Teşhis kapsamı dilbilgisi + 2 sesletim algısı konusu ile sınırlı. Rev. 3: üretilen içeriğin kelime kapsamı denetlenir; kelime öğretim kolu pilot sonrası (v2) |
 | Ses kaydının saklanması | Veri asgarisi; transkript yeterli |
 | Çevrimdışı kullanım | İçerik üretimi ve değerlendirme sunucuda |
 | Ayrı hata izleme servisi | Vercel günlükleri ve yönetim paneli yeterli |
@@ -179,6 +190,9 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 
 | Tarih | Fikir | Kim | Not |
 | --- | --- | --- | --- |
+| 18.11.2026 | Kelime öğretim kolu (aralıklı tekrarla sık kelimeler) | Ekip | Karar 2: şimdilik yalnızca içerik kapsamı denetimi |
+| 18.11.2026 | Konu zorluğu (`topics.irt_b`) ve etkinlik türü ofsetlerinin veriden kalibrasyonu | Mühendis | 50 kişide güvenilir değil; gece işi şimdilik yalnızca yerleştirme maddelerini kalibre ediyor |
+| 18.11.2026 | B1+ öğrenciler için içerik (kapsam dışı sayfasındaki bekleme listesi) | Ekip | F15 bekleme listesi talebi ölçer |
 | 17.11.2026 | Uç nokta sürelerinin kalıcı ölçümü: `attempt` yanıtına `Server-Timing` başlığı ya da `events`'e süre (yalnızca sayı) | Mühendis | Vercel Hobby logları 1 saat tutuluyor; M6'da uç nokta süresi elle ölçüldü |
 
 ---
@@ -196,4 +210,5 @@ Süre taşarsa **yukarıdan aşağıya** kesilir. Kesilen maddenin yerine geçen
 | 11.11.2026 | `topics.csv` (32), `l1_codes.csv` (24), `placement.json` (14) geçici olarak onaylandı | M4'e geçmek için yeterli seviyede. Pilot öncesi yeniden kontrol edilecek; değişiklik olursa `scripts/build-seed.ts` + seed yeniden yüklenir | Pedagoji sahibi |
 | 17.11.2026 | M9–M10 insiyatifle tamamlandı (PLAN karar 22, 31–39): açık deneme için `auto_join_invite_code`, okul konusu çapraz tekrarda garanti, varsayılan seslendirme sesi kuralı | Kullanıcı MVP'nin canlıya alınmasını ve pedagoji kararlarının da verilmesini istedi; davet modeli sonra konuşulacak | Mühendis (kullanıcı yetkisiyle) |
 | 17.11.2026 | SPEC rev. 4: boşluk doldurmada anahtarda ve bilinen yanlışlarda olmayan cevap yapay zekâya sorulur ("boşluk hakemliği"); geçerli başka cevap değerlendirilmemiş sayılır. M6 uç nokta ayrıntıları (`next` açık oturumu döner, `attempt` yanıtında `errorNameTr`, açıklamada `?via=auto\|dismiss`) ve hata kodları SPEC'e yazıldı | 16.11.2026 denemesinde doğru cevap ("Ella wants to play piano") yanlış sayıldı; üretim komutundaki tek cevap kuralı tek başına yetmeyebilir. Ek maliyet çağrı başı ≈ 0,0007 $, oran pilotta izlenir | Ekip |
+| 18.11.2026 | Ölçme, öğrenme profili ve müfredat v2 (SPEC rev. 5, PRD rev. 3): uyarlamalı yerleştirme + kapsam kapısı (F15), hiyerarşik Bayesçi öğrenme profili, müfredat motoru ve "Bugün ne çalışalım?" (F16), çalışma modu ve hedef, kesinlik öncelikli değerlendirme (3 örnek), kelime kapsamı denetimi, gece kalibrasyonu. F8 ölçütü "ilk teşhis en geç 5. oturum" → "konuşma eksiği öğrencilerin ≥ yarısında en geç 8. oturum" | MVP denemesinde B1–B2 cevaplar veren kullanıcı çoğu konuyu "bilmiyor" göründü; sistemin üst sınırı yoktu; müfredat seçimi gerekçesizdi. Araştırma ve simülasyonlar: `docs/arastirma/` (13 karar varsayılanlarla onaylandı) | Kullanıcı (ekip adına), pedagoji onayı bekleyen içerik maddeleri işaretli |
 | 11.11.2026 | M6 öncesi SPEC rev. 3 kararları: oturum üretimi en çok 5 slotluk paralel çağrılarla ve slot anahtarlı şemayla; aylık tavan OpenRouter komisyonunu kapsar (`openrouter_fee_rate`); dinleme metni `item_keys`'te; günlük sınır `start`'ta, ön üretim serbest; `finish` `maxDuration = 300`; `sessions.status`'a `generating`; `PATCH /api/profile` ve `POST /api/events`; açıklama modu "kısa"ya da geri döner | eval-generation'da tek çağrı %100 şema hedefini tutturamadı, 6+ slotlu şema sağlayıcıda derlenmiyor; diğerleri M5 sırasında açık kalan PLAN #14–#23 | Ekip |

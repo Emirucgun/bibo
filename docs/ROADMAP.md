@@ -2,8 +2,8 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 2 |
-| Yapı | 10 kilometre taşı (M1–M10), her biri tek odaklı çalışma oturumunda bitirilebilir ve kendi testiyle kapanır |
+| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 3 (18 Kasım 2026: M11 eklendi — ölçme, öğrenme profili ve müfredat v2) |
+| Yapı | 11 kilometre taşı (M1–M11), her biri tek odaklı çalışma oturumunda bitirilebilir ve kendi testiyle kapanır |
 | Paralel iz | Pedagoji görevleri (P1–P9), mühendislik taşlarını besler |
 | Kurallar | Kapsam `SCOPE.md`, teknik ayrıntı `SPEC.md`, kabul kriterleri `PRD.md`; Claude Code çalışma düzeni `CLAUDE.md` ve `/kilometre-tasi` komutunda |
 
@@ -23,6 +23,7 @@
 | M8 | Konuşma | Bas-konuş, kelimesi kelimesine transkript, değerlendirme | M6 | P6 |
 | M9 | Başlangıç ve ilerleme | Yerleştirme testi, tahmini zayıf noktalar, ilerleme ekranı | M6 (M7, M8 tercihen) | P5 |
 | M10 | Yönetim ve pilot hazırlığı | Öğretmen kuyruğu, maliyet paneli, acil durdurma, pilot kapısı | M9 | P8 son |
+| M11 | Ölçme ve müfredat v2 | Uyarlamalı yerleştirme + kapsam kapısı, Bayesçi öğrenme profili, müfredat motoru, kesinlik öncelikli değerlendirme, kalibrasyon | M10 | P10–P13 |
 
 ```mermaid
 flowchart LR
@@ -38,7 +39,8 @@ flowchart LR
   M8 --> M9
   M2 --> M9
   M9 --> M10
-  M10 --> PILOT((Pilot))
+  M10 --> M11
+  M11 --> PILOT((Pilot))
 ```
 
 M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
@@ -271,6 +273,23 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 
 ---
 
+## M11 — Ölçme ve müfredat v2 (18 Kasım 2026)
+
+**Amaç:** Sistem öğrenciyi net tanısın ve sınırlarını bilsin: A2 üstüne hizmet vermesin, bilinmeyeni "zayıf" saymasın, konuları gerekçeli bir sırayla seçsin. Gerekçe ve simülasyonlar: `docs/arastirma/olcme-ve-ogrenen-modeli.md`, `docs/arastirma/mufredat-onerisi.md`, `docs/arastirma/kaynak-sistem-rehberi.pdf`.
+
+**Kapsam:** SPEC rev. 5 (3, 4.1–4.4, 4.7, 4.8, 5.1–5.3, 6, Ek C); PRD rev. 3 (F2, F4, F7–F10, F15, F16); göç `20261118120000_v2_measurement_curriculum.sql`.
+
+**Bitti testi**
+- [x] Motor testleri: yerleştirme (gerçek bankayla simülasyon: doğruluk > %82, ≤ 20 soru, yanlış dışlama ≤ %3), öğrenme profili, teşhis, müfredat, planlayıcı, kalibrasyon. _(18.11.2026: `npm test`)_
+- [x] `scripts/simulate.ts`: ön koşul ihlali 0; tekdüze başarılı öğrencide yanlış teşhis ≈ 0; konuşma eksiği öğrencilerin ≥ yarısında en geç 8. oturumda.
+- [x] Göç yerel Postgres'te uygulanıyor; `tests/db/v2-measurement.sql` ve `tests/db/rls.sql` geçiyor.
+- [x] Servis testleri: uyarlamalı test uçtan uca (A1 öğrenci, A2 üstü öğrenci, ses yokken atlama), kapsam sayfası, yeniden test, "Bugün ne çalışalım?", okul programı haritası, 3 örnekli değerlendirme.
+- [ ] Telefonda elle: uyarlamalı test (soru soru, geri bildirimsiz), A2 üstü sonuçta "çok yakında" sayfası, profil sorularının görünümü, ana sayfadaki seçenekler.
+- [ ] Pedagoji onayları: P10–P13.
+- [ ] `eval-generation` güncel kodla (kelime kapsamı denetimiyle) yeniden çalıştırıldı; düşen slot oranı ölçüldü.
+
+---
+
 ## Pedagoji izi (paralel)
 
 | # | Görev | Çıktı | Gerektiği taş |
@@ -283,6 +302,10 @@ M2 ile M3–M4 birbirinden bağımsızdır; sıra değiştirilebilir.
 | P6 | Bilerek hatalı okunmuş 20 ses kaydı + hata listesi | `verbatim/*.wav` | M8 |
 | P7 | ChatGPT ile çalışan 10–15 hazırlık öğrencisiyle görüşme | Kısa rapor; eşik: ≥ 6 kişi aynı tıkanmayı anlatıyor | M5'e kadar |
 | P8 | Aydınlatma ve açık rıza metni; hukuki görüş | Taslak (M2), son hâli (M10) | M2, M10 |
+| P10 | Yerleştirme bankasını (134 madde; B1/B2 taslakları dil modelinden) gözden geçir ve onayla | `placement_bank.json` `status: approved` | M11 |
+| P11 | Konu müfredat alanları ve ön koşullar; varsayılan yolun sırası | Onaylı `topics.csv` (`unit`, `value`, `exam_weight`, `confusables`, `goal_tags`) | M11 |
+| P12 | Kelime listesi: taslağı NGSL / CEFR-J ile değiştir ya da doğrula | `lib/content/wordlist.ts` | M11 |
+| P13 | Pilot tek üniversiteyse okul programı haritası | `programs`, `program_weeks` satırları | M11 |
 | P9 | Seslendirme sesi seçimi: Speechify Simba 3.5 en-US seslerinden 2–3 aday, A1 hızında da dinlenir | `tts_voice` değeri | M7 |
 
 P7 sonucu ürünle çelişirse (ör. öğrenciler asıl sorunun başka bir yerde olduğunu söylüyorsa) M6'dan önce kapsam yeniden konuşulur ve `SCOPE.md` günlüğüne yazılır.

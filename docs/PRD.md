@@ -4,7 +4,7 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · rev. 2 |
+| Sürüm | v1 (MVP / pilot) · rev. 3 (18 Kasım 2026: ölçme, öğrenme profili ve müfredat v2 — F2, F4, F7–F10 güncellendi; F15–F16 eklendi; gerekçe `docs/arastirma/`) · rev. 2 |
 | Tarih | 10 Kasım 2026 |
 | Ekip | Mühendis (bilgisayar müh., PoliTo) · Pedagoji (İngilizce öğretmenliği, ALKÜ) |
 | İlgili belgeler | `SPEC.md` (teknik) · `SCOPE.md` (kapsam) · `ROADMAP.md` (kilometre taşları) · finans tablosu (maliyet, fiyat, başabaş) |
@@ -125,12 +125,12 @@ Bu ilkeler, belirsiz bir karar anında hangi yöne gidileceğini belirler.
 | ID | Özellik | Ne yapar | Öncelik |
 | --- | --- | --- | --- |
 | F1 | Davetli giriş ve onam | Google ile giriş, davet kodu, 18+ beyanı, KVKK aydınlatma ve açık rıza | M |
-| F2 | Başlangıç ve yerleştirme | Seviye beyanı, ilgi alanları (en az 2), 7 dakikalık sabit yerleştirme testi, ilk "tahmini zayıf noktalar" kartı | M |
+| F2 | Başlangıç ve yerleştirme | Seviye beyanı, çalışma modu ve hedef, ilgi alanları (en az 2), uyarlamalı yerleştirme testi (çoğunlukla 14–19 soru), kanıta dayalı ilk kart | M |
 | F3 | Günlük oturum | 15–20 dk, 8–10 etkinlik, 4 beceri karışık, ilgi alanına göre içerik, kaldığı yerden devam | M |
 | F4 | Anında geri bildirim | Kısa Türkçe açıklama, doğru biçim, L1 karşılaştırması, "Daha fazla açıkla", "İpucu" | M |
 | F5 | Dinleme | Yüksek kaliteli bulut TTS ile seslendirilen dinle-seç ve dikte etkinlikleri, A1 için yavaşlatılmış hız | M |
 | F6 | Konuşma | Bas-konuş kayıt, kelimesi kelimesine transkript, dilbilgisi değerlendirmesi, 1 tekrar hakkı | M |
-| F7 | Teşhis motoru | Hata etiketleme, kademeli ustalık puanı, konu/beceri/etkinlik teşhisi, çapraz beceri tekrar planlama | M |
+| F7 | Teşhis motoru | Hata etiketleme, Bayesçi öğrenme profili, konu/beceri/etkinlik teşhisi, müfredat (sınırdaki konu, ön koşul, tekrar dozu) | M |
 | F8 | Oturum sonu ve teşhis kartı | Özet, kanıtlı teşhis kartı, "Doğru / Bence değil" geri bildirimi, oturum puanı | M |
 | F9 | İlerleme ekranı | Konu × beceri ızgarası, haftalık oturum sayısı, en sık 3 hata | S |
 | F10 | Haftalık okul konusu | "Bu hafta okulda ne gördün?" seçimi, planda öncelik | S |
@@ -138,6 +138,8 @@ Bu ilkeler, belirsiz bir karar anında hangi yöne gidileceğini belirler.
 | F12 | Yönetim ve maliyet koruması | Kullanıcı ve kullanım özeti, maliyet tavanları, acil durdurma, ayarlar | M |
 | F13 | Hesap ve veri hakları | Verimi indir, hesabımı sil (tüm veriler) | M |
 | F14 | Yüklenebilir web uygulaması (PWA) | Ana ekrana ekle, mobil öncelikli arayüz | S |
+| F15 | Kapsam kapısı (rev. 3) | A2 üstündeki öğrenciye hizmet yerine "çok yakında" ekranı, bekleme listesi, bir kez yeniden test; A2'yi bitirene aynı ekran | M |
+| F16 | "Bugün ne çalışalım?" (rev. 3) | Ana sayfada 2–3 konu seçeneği; seçilen konu sonraki oturumun odağı | S |
 
 ### Etkinlik türleri (v1)
 
@@ -238,10 +240,11 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 
 ### F2 Başlangıç ve yerleştirme
 
-- [ ] En az 2 ilgi alanı seçilmeden devam edilemez.
-- [ ] Yerleştirme testi sabit soru bankasından gelir ve dil modeli çağrısı yapmaz (konuşma sorusu hariç).
-- [ ] Test sonrası ustalık başlangıç değerleri L1 riskine ve test sonucuna göre atanır.
-- [ ] "Tahmini zayıf noktalar" kartında 3 konu ve "tahmin" etiketi görünür.
+- [ ] En az 2 ilgi alanı seçilmeden devam edilemez; çalışma modu ("okuldaki derslerime destek" / "kendi programım") ve hedef sorulur.
+- [ ] Yerleştirme testi uyarlamalıdır ve sabit soru bankasından gelir; dil modeli çağrısı yapmaz (konuşma sorusu hariç). Test sırasında doğru/yanlış gösterilmez.
+- [ ] Simülasyonda (gerçek banka): ortalama ≤ 20 soru, en çok 25 (+5 uzatma); sınıflama doğruluğu ≥ %82; A2 öğrencisini yanlışlıkla "A2 üstü" sayma ≤ %2.
+- [ ] Test sonu kartı kanıta dayanır: "zorlandıkların" yalnızca testte yanlış cevaplanmış konulardır; hiç sorulmamış konu zayıf sayılmaz ("netleştireceklerimiz").
+- [ ] Yerleştirme cevapları öğrenme profiline işlenir; ilk oturum bu profile göre planlanır.
 - [ ] Yeni bir kullanıcı davet linkinden ilk oturumun ilk etkinliğine 10 dakikadan kısa sürede ulaşır (3 kişiyle elle ölçülür).
 
 ### F3 Günlük oturum
@@ -261,7 +264,8 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 - [ ] Hata bir L1 koduyla eşleştiyse açıklama Türkçeyle karşılaştırma içerir.
 - [ ] "Daha fazla açıkla" uzun açıklamayı gösterir ve tıklama kaydedilir.
 - [ ] Son 2 oturumda yanlış cevapların ≥ %50'sinde uzun açıklama açılmışsa varsayılan mod "uzun"a geçer; uzun moddayken son 2 oturumda yanlışların < %20'sinde açılmışsa "kısa"ya döner (arada boşluk, mod sürekli gidip gelmesin diye).
-- [ ] İpucu kullanılan cevap ustalık hesabında en fazla 0,5 sayılır.
+- [ ] İpucu kullanılan cevap öğrenme profiline yarım ağırlıkla işlenir.
+- [ ] Serbest cevap `grade_samples` (3) bağımsız değerlendirmenin çoğunluk oyuyla değerlendirilir; tek değerlendirmenin işaretlediği hata öğrenciye gösterilmez.
 
 ### F5 Dinleme
 
@@ -282,27 +286,28 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 ### F7 Teşhis motoru
 
 - [ ] Her değerlendirilmiş cevap konu, beceri, etkinlik türü, L1 kodu (varsa), süre ve ipucu bilgisiyle kaydedilir.
-- [ ] Tek bir cevap bir ustalık puanını en fazla 0,25 değiştirir.
-- [ ] Birim testleri: "yazma 5/6, konuşma 1/4" → beceri eksiği (konuşma); "tüm beceriler < 0,45, toplam kanıt ≥ 6" → konu eksiği; aynı konu ve beceride bir etkinlik türü ≤ %35, diğeri ≥ %70 → etkinlik uyumsuzluğu.
-- [ ] Güveni 0,6'nın altındaki teşhis öğrenciye gösterilmez; bunun yerine eksik ölçülen beceride çapraz tekrar planlanır.
-- [ ] Planlayıcı her oturuma en az 1 çapraz beceri tekrar etkinliği koyar (uygun konu varsa).
+- [ ] Öğrenme profili sınırlıdır ve "kanıt yoksa hüküm yok" ilkesine uyar: B1–B2 düzeyinde cevap veren öğrenci konuları "bilmiyor" görünmez; hiç sorulmamış konu "zayıf" sayılmaz.
+- [ ] Birim testleri: güçlü yazma + zayıf konuşma (yeterli kanıtla) → beceri eksiği (konuşma); her yerde zayıf ve genel seviyesinden beklenenden kötü → konu eksiği; aynı konu ve beceride bir etkinlik türü ≤ %35, diğeri ≥ %70 → etkinlik uyumsuzluğu.
+- [ ] Simülasyon: tekdüze %97 başarılı öğrencide yanlış teşhis 0; %90'da öğrenci başına ≤ 0,3; odak konusu ön koşulu hazır olmadan seçilmez (ihlal 0).
+- [ ] Güveni 0,6'nın altındaki teşhis öğrenciye gösterilmez; planlayıcı ayırt edici bir yoklama (`probe`) etkinliği koyar.
+- [ ] Odak konusu öğrencinin sınırındaki hazır konulardan seçilir (ön koşul grafiği); "muhtemelen biliyor" konusu öğretilmez, yoklamayla doğrulanır.
 
 ### F8 Oturum sonu ve teşhis kartı
 
 - [ ] Teşhis kartı kanıtı sayılarla gösterir (beceri başına doğru/toplam).
 - [ ] "Doğru / Bence değil" seçimi kaydedilir.
 - [ ] Bir sonraki oturum, bu oturum bittikten sonra 60 sn içinde hazırlanmış olur (p90). Gerekçe: seçilen model `medium` düşünme seviyesinde ≈ 8.500 çıktı tokenı üretir; öğrenci günde en çok 2 oturum yaptığı için bu süre kullanıcıya görünmez. Aşılırsa slotlar iki paralel üretim çağrısına bölünür.
-- [ ] Gerçekçi kullanımda (günde 1 oturum) ilk güvenli teşhis en geç 5. oturumda görünür (sentetik kullanıcı simülasyonuyla doğrulanır).
+- [ ] Gerçekçi kullanımda (günde 1 oturum) "yazıda bilen, konuşmada bilmeyen" sentetik öğrencilerin en az yarısında beceri eksiği en geç 8. oturumda görünür (rev. 3; önceki ölçüt "5. oturum"du: kesinlik öncelikli model yanlış teşhisi sıfıra indirirken teşhisi biraz geciktirir; ölçüm: 5. oturumda %44, 8. oturumda %62).
 
 ### F9 İlerleme ekranı
 
-- [ ] Konu × beceri ızgarası 4 renk seviyesiyle (bilinmiyor / zayıf / gelişiyor / sağlam) görünür.
+- [ ] Konu × beceri ızgarası 4 renk seviyesiyle (bilinmiyor / zayıf / gelişiyor / sağlam) görünür; doğrudan cevabı olmayan ama tahmin edilen hücre soluk ve "tahmin" etiketlidir.
 - [ ] Bu haftaki oturum sayısı ve en sık 3 hata kodu Türkçe adlarıyla gösterilir.
 
 ### F10 Haftalık okul konusu
 
-- [ ] Haftada bir kez sorulur; atlanabilir.
-- [ ] Seçilen konu o hafta en az 2 oturumda odak veya tekrar olarak yer alır.
+- [ ] Haftada bir kez sorulur; atlanabilir; öğrencinin sınırına en yakın 3 konu öneri olarak gösterilir. "Kendi programım"da ya da okul programı haritası varsa sorulmaz (harita haftanın konusunu verir).
+- [ ] Seçilen konu o hafta odak olur; ön koşulu hazır değilse önce ona köprü olan konu çalışılır; öğrenci konuyu zaten biliyorsa kısa kontrolle geçilir.
 
 ### F11 Öğretmen inceleme kuyruğu
 
@@ -328,6 +333,18 @@ Her kriter pilot öncesi elle veya otomatik testle doğrulanır.
 - [ ] Android Chrome ve iOS Safari'de ana ekrana eklenebilir; 360–430 px genişlikte yatay kaydırma yoktur.
 
 ---
+
+### F15 Kapsam kapısı (rev. 3)
+
+- [ ] Yerleştirmede "A2 üstü" kararı ancak P ≥ 0,9 ile verilir; öğrenciye günlük oturum yerine "Çok yakında senin seviyen için de buradayız" sayfası gösterilir.
+- [ ] Bekleme listesi tek dokunuştur; yalnızca tercih ve zamanı kaydedilir (tek cümlelik KVKK notu).
+- [ ] 7 gün sonra test bir kez daha çözülebilir.
+- [ ] Günlük oturumlarda genel seviye A2|B1 kesiminin üstünde (P ≥ 0,95) ve A2 konularının ≥ %90'ı sağlamsa öğrenci "A2'yi tamamladın" mesajıyla aynı sayfaya geçer.
+
+### F16 "Bugün ne çalışalım?" (rev. 3)
+
+- [ ] Ana sayfada en iyi 2–3 konu (çalışılan ve hazır) gösterilir; seçim isteğe bağlıdır.
+- [ ] Seçim hazır oturumu bırakır; sonraki oturumun odağı seçilen konu olur; o oturum bitince seçim boşalır.
 
 ## 8. İçerik ve pedagoji gereksinimleri
 
