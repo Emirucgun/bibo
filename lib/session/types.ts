@@ -281,6 +281,8 @@ export interface SessionStore {
 
   // --- öğrenme profili, mastery önbelleği ve etkinlik verimi ---
   getLearnerState(userId: string): Promise<StoredLearnerState | null>;
+  /** Yerleştirme maddelerinin veriden güncellenmiş parametreleri (`item_calibration`). */
+  loadItemCalibration(): Promise<Map<string, { a: number; b: number }>>;
   saveLearnerState(userId: string, row: StoredLearnerState, now: Date): Promise<void>;
   /** Tüm değerlendirilmiş cevaplar, zaman sırasıyla (profilin yeniden kurulması). */
   listEvidence(userId: string): Promise<EvidenceRow[]>;

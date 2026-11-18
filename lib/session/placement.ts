@@ -52,18 +52,32 @@ export const PLACEMENT_BANK: readonly RawBankItem[] = RAW.items.filter((i) => is
 export const PLACEMENT_SPEAKING: RawSpeaking = RAW.speaking;
 const BY_ID = new Map(PLACEMENT_BANK.map((i) => [i.id, i]));
 
+/** `item_calibration`: veriden güncellenen ayırt edicilik ve zorluk (gece işi; yalnızca yeterli veride). */
+export type ItemCalibration = ReadonlyMap<string, { a: number; b: number }>;
+
+const irtOf = (raw: RawBankItem, calibration?: ItemCalibration): IrtParams => {
+  const c = calibration?.get(raw.id);
+  return c ? { ...raw.irt, a: c.a, b: c.b } : raw.irt;
+};
+
 /** Bankadaki maddenin IRT parametreleri (yerleştirme cevabının öğrenme profiline işlenmesi için). */
-export function bankIrt(bankItemId: string | null | undefined): IrtParams | null {
-  return (bankItemId && BY_ID.get(bankItemId)?.irt) || null;
+export function bankIrt(bankItemId: string | null | undefined, calibration?: ItemCalibration): IrtParams | null {
+  const raw = bankItemId ? BY_ID.get(bankItemId) : undefined;
+  return raw ? irtOf(raw, calibration) : null;
+}
+
+/** Bankanın önsel parametreleri (gece kalibrasyonunun başlangıç noktası). */
+export function bankPriors(): Map<string, IrtParams> {
+  return new Map(PLACEMENT_BANK.map((i) => [i.id, i.irt]));
 }
 
 /** Motorun gördüğü banka (seslendirme yoksa dinleme maddeleri yok). */
-export function engineBank(listening: boolean): PlacementBankItem[] {
+export function engineBank(listening: boolean, calibration?: ItemCalibration): PlacementBankItem[] {
   return PLACEMENT_BANK.flatMap((i) => {
     const type = i.activity_type as ActivityType;
     const skill = ACTIVITY_TYPE_INFO[type].skill;
     if (!listening && skill === "listening") return [];
-    return [{ id: i.id, cefr: i.cefr, topic_id: i.topic_id, activity_type: type, skill, irt: i.irt }];
+    return [{ id: i.id, cefr: i.cefr, topic_id: i.topic_id, activity_type: type, skill, irt: irtOf(i, calibration) }];
   });
 }
 
@@ -136,12 +150,13 @@ export function nextPlacement(args: {
   /** Seslendirme şu an kullanılabilir mi? */
   ttsAvailable: boolean;
   config: PlacementConfig;
+  calibration?: ItemCalibration;
 }): PlacementNext {
   const answered = new Set(args.attempts.map((a) => a.item_id));
   if (args.items.some((i) => !answered.has(i.id))) return { kind: "wait" };
   const position = args.items.reduce((m, i) => Math.max(m, i.position), 0) + 1;
   if (args.items.some((i) => i.activity_type === "speak_answer")) {
-    return { kind: "complete", outcome: placementOutcome(args.items, args.attempts, args.levelSelf, args.config) };
+    return { kind: "complete", outcome: placementOutcome(args.items, args.attempts, args.levelSelf, args.config, args.calibration) };
   }
   // Atlanan dinleme maddesi (ses çalınamadı): testin geri kalanında dinleme yok.
   const skippedListening = args.items.some(
@@ -149,7 +164,7 @@ export function nextPlacement(args: {
   );
   const answers = placementAnswers(args.items, args.attempts);
   const step = nextPlacementStep({
-    bank: engineBank(args.ttsAvailable && !skippedListening),
+    bank: engineBank(args.ttsAvailable && !skippedListening, args.calibration),
     answers,
     levelSelf: args.levelSelf,
     listening: args.ttsAvailable && !skippedListening,
@@ -168,8 +183,9 @@ export function placementOutcome(
   attempts: readonly AttemptRow[],
   levelSelf: string | null | undefined,
   config: PlacementConfig,
+  calibration?: ItemCalibration,
 ): PlacementOutcome {
-  const status = placementStatus(engineBank(true), placementAnswers(items, attempts), placementPrior(levelSelf, config), config);
+  const status = placementStatus(engineBank(true, calibration), placementAnswers(items, attempts), placementPrior(levelSelf, config), config);
   return decide(status, config);
 }
 

@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { TTS_BUCKET } from "@/lib/tts/cache";
 import { listVoices, pickDefaultVoice } from "@/lib/tts/voices";
 import { cronAuthorized, CRON_LIMITS } from "./auth";
+import { runCalibration } from "./calibration";
 
 export { cronAuthorized };
 
@@ -78,7 +79,14 @@ export async function runDailyCron(db: SupabaseClient, now: Date, opts: { speech
     }
   }
 
-  // 6) Dünün maliyet özeti (yalnızca sayı).
+  // 6) Yerleştirme maddelerinin kalibrasyonu; hata günlük işi durdurmaz.
+  try {
+    Object.assign(out, await runCalibration(db, now));
+  } catch (err) {
+    out.calibration_error = err instanceof Error ? err.message.slice(0, 60) : "unknown";
+  }
+
+  // 7) Dünün maliyet özeti (yalnızca sayı).
   const day = await db.rpc("llm_cost_since", { since: iso(new Date(t - 86_400_000)) });
   out.cost_last_24h_usd = day.error ? null : Number(day.data ?? 0);
   return out;

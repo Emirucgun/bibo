@@ -150,9 +150,11 @@ export interface LoadedModel {
   /** Saklanan durum kullanılamadı, `attempts`'ten yeniden kuruldu (kaydedilmiş kanıtlar zaten içinde). */
   rebuilt: boolean;
   topics: EngineTopic[];
+  /** Yerleştirme maddelerinin kalibre parametreleri (yerleştirme cevaplarının kanıtı için). */
+  calibration: Map<string, { a: number; b: number }>;
 }
 
-const toAttemptEvidence = (r: EvidenceRow): AttemptEvidence => ({
+const toAttemptEvidence = (r: EvidenceRow, calibration: Map<string, { a: number; b: number }>): AttemptEvidence => ({
   topic_id: r.topic_id,
   skill: r.skill,
   mode: r.mode,
@@ -160,7 +162,7 @@ const toAttemptEvidence = (r: EvidenceRow): AttemptEvidence => ({
   evidence_weight: r.evidence_weight,
   hint_used: r.hint_used,
   incidental: r.incidental,
-  irt: bankIrt(r.bank_item_id),
+  irt: bankIrt(r.bank_item_id, calibration),
   at: r.created_at,
 });
 
@@ -170,16 +172,24 @@ const toAttemptEvidence = (r: EvidenceRow): AttemptEvidence => ({
  * başına son değerlendirilmiş deneme; konuşmanın 1. denemesi yalnızca oturumu bitmişse.
  */
 export async function loadLearnerModel(store: SessionStore, userId: string, levelSelf: string | null | undefined): Promise<LoadedModel> {
-  const [topics, settings, stored] = await Promise.all([
+  const [topics, settings, stored, calibration] = await Promise.all([
     store.loadTopics(),
     store.loadModelSettings(),
     store.getLearnerState(userId),
+    store.loadItemCalibration(),
   ]);
   const ctx = modelContextFor(topics, settings.learner_model as Partial<LearnerModelConfig>);
   const restored = stored ? restoreState(ctx, stored.state) : null;
-  if (restored) return { ctx, state: restored, n_obs: stored!.n_obs, rebuilt: false, topics };
+  if (restored) return { ctx, state: restored, n_obs: stored!.n_obs, rebuilt: false, topics, calibration };
   const evidence = await store.listEvidence(userId);
-  return { ctx, state: rebuildState(ctx, evidence.map(toAttemptEvidence), levelSelf), n_obs: evidence.length, rebuilt: true, topics };
+  return {
+    ctx,
+    state: rebuildState(ctx, evidence.map((e) => toAttemptEvidence(e, calibration)), levelSelf),
+    n_obs: evidence.length,
+    rebuilt: true,
+    topics,
+    calibration,
+  };
 }
 
 /**
@@ -220,7 +230,7 @@ function attemptEvidence(
     evidence_weight: weight,
     hint_used: hintUsed,
     incidental: graded.incidental.length > 0 ? graded.incidental : null,
-    irt: bankIrt(item.bank_item_id),
+    irt: bankIrt(item.bank_item_id, model.calibration),
     at,
   };
 }
@@ -231,7 +241,7 @@ function predictFor(model: LoadedModel, item: ItemRow): number | null {
     topic_id: item.topic_id,
     skill: item.skill,
     mode: item.mode,
-    ...(bankIrt(item.bank_item_id) ? { irt: bankIrt(item.bank_item_id)! } : {}),
+    ...(bankIrt(item.bank_item_id, model.calibration) ? { irt: bankIrt(item.bank_item_id, model.calibration)! } : {}),
   });
   return p === null ? null : Math.round(p * 10_000) / 10_000;
 }
@@ -423,9 +433,10 @@ export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{
     return { sessionId: again.id };
   }
   try {
-    const [tts, settings] = await Promise.all([
+    const [tts, settings, calibration] = await Promise.all([
       listeningAvailable(deps.media, deps.now()).catch(() => false),
       store.loadModelSettings(),
+      store.loadItemCalibration(),
     ]);
     const next = nextPlacement({
       sessionId,
@@ -434,6 +445,7 @@ export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{
       levelSelf: learner.level_self,
       ttsAvailable: tts,
       config: placementConfig(settings.placement_model),
+      calibration,
     });
     if (next.kind !== "item") throw new Error("placement: empty bank");
     await store.insertItems(sessionId, actor.userId, [next.row]);
@@ -455,11 +467,12 @@ export type PlacementProgress = "item" | "done";
 async function advancePlacement(deps: SessionDeps, userId: string, sessionId: string): Promise<PlacementProgress> {
   const { store } = deps;
   const items = await store.listItems(sessionId);
-  const [attempts, learner, settings, tts] = await Promise.all([
+  const [attempts, learner, settings, tts, calibration] = await Promise.all([
     store.listAttempts(items.map((i) => i.id)),
     store.getLearner(userId),
     store.loadModelSettings(),
     listeningAvailable(deps.media, deps.now()).catch(() => false),
+    store.loadItemCalibration(),
   ]);
   const next = nextPlacement({
     sessionId,
@@ -468,6 +481,7 @@ async function advancePlacement(deps: SessionDeps, userId: string, sessionId: st
     levelSelf: learner.level_self,
     ttsAvailable: tts,
     config: placementConfig(settings.placement_model),
+    calibration,
   });
   if (next.kind === "complete") return "done";
   if (next.kind === "wait") return "item";
@@ -1373,7 +1387,7 @@ async function finishPlacement(
   const [learner, settings] = await Promise.all([store.getLearner(actor.userId), store.loadModelSettings()]);
   const model = await loadLearnerModel(store, actor.userId, learner.level_self);
   if (args.first) await applyPendingSpeech(deps, model, items, attempts, now);
-  const outcome = placementOutcome(items, attempts, learner.level_self, placementConfig(settings.placement_model));
+  const outcome = placementOutcome(items, attempts, learner.level_self, placementConfig(settings.placement_model), model.calibration);
   const levelEst: "A1" | "A2" = outcome.level === "A1" ? "A1" : "A2";
   const cards = placementCards({ ctx: model.ctx, state: model.state, topics: model.topics, items, attempts, level: outcome.level });
   const result: PlacementResult = {

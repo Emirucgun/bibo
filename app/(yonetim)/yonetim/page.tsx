@@ -31,6 +31,8 @@ export default function AdminPage() {
   );
 }
 
+const num3 = (x: number | null) => (x === null ? "—" : x.toLocaleString("tr-TR", { maximumFractionDigits: 3 }));
+
 async function Overview() {
   await connection();
   const viewer = await getViewer();
@@ -79,6 +81,33 @@ async function Overview() {
           Başlangıç hunisi: davet {o.funnel.byStep.invite} · onam {o.funnel.byStep.consent} · profil {o.funnel.byStep.profile} ·
           yerleştirme {o.funnel.byStep.placement} · tamam {o.funnel.byStep.done}
         </p>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Seviye ve kapsam</h2>
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {stat("Kapsam içi", String(o.scope.inScope), `${o.scope.placed} kişi test çözdü`)}
+          {stat("A2 üstü", String(o.scope.aboveScope), `${o.scope.waitlist} kişi haber bekliyor`)}
+          {stat("A2'yi bitiren", String(o.scope.graduated))}
+          {stat("Test uzunluğu", o.scope.meanItems === null ? "—" : `${o.scope.meanItems} soru`, `${o.scope.borderline} sınırda sonuç`)}
+        </dl>
+        <p className="text-sm text-muted-foreground">
+          Yerleştirme sonucu: A1 {o.scope.levels.A1} · A2 {o.scope.levels.A2} · A2 üstü {o.scope.levels["B1+"]}
+        </p>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Öğrenme profilinin isabeti (son {o.model.days} gün)</h2>
+        <p className="text-sm text-muted-foreground">
+          Model her cevaptan önce doğru olasılığını tahmin eder. AUC 0,5 rastgele, 1 kusursuz; kalibrasyon hatası 0&apos;a ne kadar
+          yakınsa tahminler o kadar dürüst.
+        </p>
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {stat("AUC (günlük)", num3(o.model.daily.auc), `${o.model.daily.n} cevap`)}
+          {stat("Kalibrasyon hatası", num3(o.model.daily.ece), `log-kayıp ${num3(o.model.daily.log_loss)}`)}
+          {stat("AUC (yerleştirme)", num3(o.model.placement.auc), `${o.model.placement.n} cevap`)}
+          {stat("Kalibrasyon (yerleştirme)", num3(o.model.placement.ece), `log-kayıp ${num3(o.model.placement.log_loss)}`)}
+        </dl>
       </section>
 
       <section className="flex flex-col gap-3">

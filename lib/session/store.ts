@@ -101,6 +101,7 @@ const toDiagnosis = (r: Row): DiagnosisRow => ({
 const TAXONOMY_TTL_MS = 10 * 60_000;
 let topicsCache: { at: number; rows: EngineTopic[] } | null = null;
 let codesCache: { at: number; rows: EngineL1Code[] } | null = null;
+let calibrationCache: { at: number; rows: Map<string, { a: number; b: number }> } | null = null;
 
 export function createSessionStore(db: SupabaseClient): SessionStore {
   return {
@@ -327,6 +328,15 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
     },
 
     // --- öğrenme profili, mastery önbelleği ve etkinlik verimi ---
+    async loadItemCalibration() {
+      if (calibrationCache && performance.now() - calibrationCache.at < TAXONOMY_TTL_MS) return calibrationCache.rows;
+      const { data, error } = await db.from("item_calibration").select("item_id, a, b");
+      if (error) fail("item_calibration", error);
+      const rows = new Map((data ?? []).map((r) => [r.item_id as string, { a: Number(r.a), b: Number(r.b) }]));
+      calibrationCache = { at: performance.now(), rows };
+      return rows;
+    },
+
     async getLearnerState(userId) {
       const { data, error } = await db
         .from("learner_state")

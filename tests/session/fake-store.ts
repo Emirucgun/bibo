@@ -220,6 +220,10 @@ export class FakeSessionStore implements SessionStore {
     this.errorEvents.push(...rows);
   }
 
+  calibration = new Map<string, { a: number; b: number }>();
+  async loadItemCalibration() {
+    return this.calibration;
+  }
   async getLearnerState(userId: string) {
     return this.learnerStates.get(userId) ?? null;
   }

@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { utcMonthStart } from "@/lib/ai/guard";
 import { L1_CODES, TOPICS } from "@/lib/content/taxonomy";
 import { istanbulWeek } from "@/lib/progress/progress";
+import { modelMetrics } from "@/lib/engine/calibration";
 import { alerts, costSummary, engagement, reviewAgreement, type UsageRow } from "./metrics";
 import { EDITABLE_KEYS, parseSettingValue, type EditableKey } from "./settings";
 
@@ -81,7 +82,10 @@ export async function getOverview(db: SupabaseClient, now: Date) {
   for (const m of members ?? []) memberCount.set(m.cohort_id as string, (memberCount.get(m.cohort_id as string) ?? 0) + 1);
 
   const num = (k: string, d = 0) => (typeof settings[k] === "number" ? (settings[k] as number) : d);
+  const [model, scope] = await Promise.all([modelQuality(db, now), scopeSummary(db)]);
   return {
+    model,
+    scope,
     funnel: {
       signedUp: students.length,
       byStep: Object.fromEntries(
@@ -107,6 +111,60 @@ export async function getOverview(db: SupabaseClient, now: Date) {
 }
 
 export type Overview = Awaited<ReturnType<typeof getOverview>>;
+
+/** Modelin tahmin kalitesine bakılan dönem. */
+export const MODEL_METRICS_DAYS = 30;
+
+/**
+ * Öğrenme profilinin tahmin kalitesi (son 30 gün): cevaptan önce yazılan `pred_p` ile sonuç.
+ * Yerleştirme ve günlük oturum ayrı (yerleştirme maddeleri IRT ile, günlükler konu modeliyle).
+ */
+async function modelQuality(db: SupabaseClient, now: Date) {
+  const since = new Date(now.getTime() - MODEL_METRICS_DAYS * 86_400_000).toISOString();
+  const rows = await all<{ pred_p: number; score: number; items: { purpose: string } | { purpose: string }[] }>(
+    (f, t) =>
+      db
+        .from("attempts")
+        .select("pred_p, score, items!inner(purpose)")
+        .not("pred_p", "is", null)
+        .not("score", "is", null)
+        .gte("created_at", since)
+        .range(f, t),
+    "attempts.pred",
+  );
+  const purposeOf = (r: (typeof rows)[number]) => (Array.isArray(r.items) ? r.items[0]?.purpose : r.items?.purpose);
+  const toRow = (r: (typeof rows)[number]) => ({ pred_p: Number(r.pred_p), score: Number(r.score) });
+  return {
+    days: MODEL_METRICS_DAYS,
+    daily: modelMetrics(rows.filter((r) => purposeOf(r) !== "placement").map(toRow)),
+    placement: modelMetrics(rows.filter((r) => purposeOf(r) === "placement").map(toRow)),
+  };
+}
+
+/** Kapsam durumu ve yerleştirme sonuçlarının dağılımı (yalnızca sayılar). */
+async function scopeSummary(db: SupabaseClient) {
+  const rows = await all<{ scope_status: string; placement_result: { level?: string; n?: number; borderline?: boolean } | null; notify_opt_in_at: string | null }>(
+    (f, t) => db.from("profiles").select("scope_status, placement_result, notify_opt_in_at").eq("role", "student").range(f, t),
+    "profiles.scope",
+  );
+  const placed = rows.filter((r) => r.placement_result);
+  const items = placed.map((r) => Number(r.placement_result?.n ?? 0)).filter((n) => n > 0);
+  const count = (pred: (r: (typeof rows)[number]) => boolean) => rows.filter(pred).length;
+  return {
+    inScope: count((r) => r.scope_status === "in_scope"),
+    aboveScope: count((r) => r.scope_status === "above_scope"),
+    graduated: count((r) => r.scope_status === "graduated"),
+    waitlist: count((r) => r.notify_opt_in_at !== null),
+    placed: placed.length,
+    levels: {
+      A1: placed.filter((r) => r.placement_result?.level === "A1").length,
+      A2: placed.filter((r) => r.placement_result?.level === "A2").length,
+      "B1+": placed.filter((r) => r.placement_result?.level === "B1+").length,
+    },
+    borderline: placed.filter((r) => r.placement_result?.borderline).length,
+    meanItems: items.length ? Math.round((items.reduce((a, b) => a + b, 0) / items.length) * 10) / 10 : null,
+  };
+}
 
 export async function patchSetting(db: SupabaseClient, key: EditableKey, value: unknown, now: Date): Promise<boolean> {
   const parsed = parseSettingValue(key, value);
