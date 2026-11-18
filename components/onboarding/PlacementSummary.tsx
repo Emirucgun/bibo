@@ -2,49 +2,76 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ScopeNotice } from "@/components/onboarding/ScopeNotice";
 import { Button } from "@/components/ui/button";
 import type { FinishResult, PlacementResult } from "@/lib/session/service";
+import type { TopicLine } from "@/lib/session/placement";
 
-// Yerleştirme sonu: "Tahmini zayıf noktalar" kartı (PRD F2: 3 konu, "tahmin" etiketi) ve ilk oturuma geçiş.
+const LEVEL_TEXT: Record<"A1" | "A2", string> = {
+  A1: "A1: temel cümleleri kuruyorsun; şimdi bunları sağlamlaştırma zamanı.",
+  A2: "A2: günlük konularda iletişim kurabiliyorsun; şimdi A2'yi tamamlama zamanı.",
+};
+
+function TopicList({ title, note, topics, tone }: { title: string; note: string; topics: TopicLine[]; tone: "good" | "work" | "open" }) {
+  if (topics.length === 0) return null;
+  const box = tone === "good" ? "border-emerald-300 bg-emerald-50" : tone === "work" ? "border-primary/30 bg-primary/5" : "border-border";
+  return (
+    <section className={`flex flex-col gap-3 rounded-lg border p-4 ${box}`}>
+      <h2 className="text-base font-semibold">{title}</h2>
+      <p className="text-sm text-muted-foreground">{note}</p>
+      <ul className="flex flex-col gap-2">
+        {topics.map((t) => (
+          <li key={t.topicId} className="flex flex-col">
+            <span className="text-base font-medium">{t.titleTr}</span>
+            {t.ruleTr ? <span className="text-sm leading-relaxed text-muted-foreground">{t.ruleTr}</span> : null}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+// Yerleştirme sonu (PRD F2): seviye, kanıta dayalı kartlar ("kanıt yoksa hüküm yok") ve ilk oturuma geçiş.
+// A2 üstü öğrenciye hizmet yerine "çok yakında" ekranı (docs/SPEC.md 4.7 kapsam kapısı).
 export function PlacementSummary({ result }: { result: FinishResult & { placement: PlacementResult } }) {
   const router = useRouter();
   const [leaving, setLeaving] = useState(false);
-  const { summary, placement } = result;
+  const { placement } = result;
+
+  if (placement.gate) return <ScopeNotice status="above_scope" />;
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">Testi bitirdin</h1>
-        <p className="text-sm text-muted-foreground">
-          {summary.correct} / {summary.total} doğru · Başlangıç seviyen: {placement.levelEst}
-        </p>
+        <p className="text-base leading-relaxed">{LEVEL_TEXT[placement.levelEst]}</p>
+        {placement.borderline ? (
+          <p className="text-sm text-muted-foreground">
+            Sonucun iki seviyenin sınırında. İlk oturumlarda bunu netleştireceğiz; seviyen kendiliğinden güncellenir.
+          </p>
+        ) : null}
       </header>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-base font-semibold">Tahmini zayıf noktaların</h2>
-          <span className="rounded-full border border-primary/40 px-2 py-0.5 text-xs font-medium">Tahmin</span>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Bu, 14 soruya dayanan ilk tahminimiz. Oturumlar ilerledikçe kesinleşecek ya da değişecek.
-        </p>
-        <ol className="flex flex-col gap-3">
-          {placement.weakPoints.map((w, i) => (
-            <li key={w.topicId} className="flex gap-3">
-              <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-                {i + 1}
-              </span>
-              <span className="flex flex-col">
-                <span className="text-base font-medium">{w.titleTr}</span>
-                {w.ruleTr ? <span className="text-sm leading-relaxed text-muted-foreground">{w.ruleTr}</span> : null}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
+      <TopicList
+        title="İyi gidenler"
+        note="Bu konularda cevapların sağlamdı."
+        topics={placement.strengths}
+        tone="good"
+      />
+      <TopicList
+        title="Zorlandıkların"
+        note="Bu testte yanlış cevapladığın ve üzerinde çalışmaya değer konular. Kesin hüküm değil, ilk tahmin."
+        topics={placement.weakPoints}
+        tone="work"
+      />
+      <TopicList
+        title="Netleştireceklerimiz"
+        note="Bunlara henüz hiç bakmadık. İlk oturumlarda kısa sorularla göreceğiz."
+        topics={placement.toClarify}
+        tone="open"
+      />
 
-      <p className="text-sm leading-relaxed">
-        İlk günlük oturumun şu an bu konulara göre hazırlanıyor. Yarım dakika kadar sürer.
-      </p>
+      <p className="text-sm leading-relaxed">İlk günlük oturumun şu an hazırlanıyor. Yarım dakika kadar sürer.</p>
       <Button
         type="button"
         disabled={leaving}

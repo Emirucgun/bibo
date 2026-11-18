@@ -1,16 +1,20 @@
-// İlerleme ekranı (PRD F9, SPEC 4.1 "Dört renk seviyesi", 6 `GET /api/progress`). Saf: satırlar ve
-// zaman parametre olarak gelir.
+// İlerleme ekranı (PRD F9, SPEC 4.1 "Izgara etiketleri", 6 `GET /api/progress`). Saf: öğrenme
+// profili, satırlar ve zaman parametre olarak gelir.
 import { SKILLS, type Skill } from "@/lib/content/activity-types";
 import { L1_CODES, TOPICS } from "@/lib/content/taxonomy";
+import { cell, cellLabel, type CellLabel, type LearnerState, type ModelContext } from "@/lib/engine/learner-model";
 
 export type MasteryLevel = "unknown" | "weak" | "developing" | "solid";
 
-/** SPEC 4.1: `n = 0` bilinmiyor · `m < 0.45` zayıf · `0.45–0.7` gelişiyor · `≥ 0.7` sağlam. */
-export function masteryLevel(score: number | null, n: number): MasteryLevel {
-  if (n <= 0 || score === null) return "unknown";
-  if (score < 0.45) return "weak";
-  if (score < 0.7) return "developing";
-  return "solid";
+/** Modelin etiketi → ızgara seviyesi ("kanıt yoksa hüküm yok": belirsiz hücre `unknown`). */
+export function masteryLevel(label: CellLabel): MasteryLevel {
+  return label === "needs_work" ? "weak" : label;
+}
+
+export interface GridCell {
+  level: MasteryLevel;
+  /** Bu hücrede doğrudan cevap yok; seviye diğer kanıtlardan tahmin edildi. */
+  predicted: boolean;
 }
 
 export interface GridRow {
@@ -19,7 +23,7 @@ export interface GridRow {
   level: "A1" | "A2";
   kind: "grammar" | "pron";
   /** Sesletim konuları yalnızca dinlemede ölçülür; diğer hücreler `null`. */
-  cells: Record<Skill, MasteryLevel | null>;
+  cells: Record<Skill, GridCell | null>;
 }
 
 export interface Progress {
@@ -36,24 +40,32 @@ export const TOP_ERROR_DAYS = 28;
 
 export function buildProgress(input: {
   levelEst: "A1" | "A2";
-  mastery: { topic_id: string; skill: string; score: number; n: number }[];
+  /** Öğrenme profili; henüz yoksa tüm hücreler "bilinmiyor". */
+  model: { ctx: ModelContext; state: LearnerState } | null;
   weekSessions: number;
   errorCodes: string[];
   diagnoses: { id: string; topic_id: string; message_tr: string }[];
 }): Progress {
-  const byKey = new Map(input.mastery.map((m) => [`${m.topic_id}|${m.skill}`, m]));
-  const grid = TOPICS.filter((t) => t.active && (input.levelEst === "A2" || t.level === "A1")).map((t) => {
-    const cells = {} as Record<Skill, MasteryLevel | null>;
+  const grid: GridRow[] = [];
+  for (const t of TOPICS) {
+    if (!t.active || t.kind === "measure" || t.level === "B1" || t.level === "B2") continue;
+    if (input.levelEst === "A1" && t.level !== "A1") continue;
+    const cells = {} as Record<Skill, GridCell | null>;
     for (const s of SKILLS) {
       if (t.kind === "pron" && s !== "listening") {
         cells[s] = null;
         continue;
       }
-      const m = byKey.get(`${t.id}|${s}`);
-      cells[s] = masteryLevel(m ? m.score : null, m?.n ?? 0);
+      const view = input.model ? cell(input.model.ctx, input.model.state, t.id, s) : null;
+      if (!view || !input.model) {
+        cells[s] = { level: "unknown", predicted: false };
+        continue;
+      }
+      const level = masteryLevel(cellLabel(input.model.ctx, input.model.state, view));
+      cells[s] = { level, predicted: view.n === 0 && level !== "unknown" };
     }
-    return { topicId: t.id, titleTr: t.title_tr, level: t.level, kind: t.kind, cells };
-  });
+    grid.push({ topicId: t.id, titleTr: t.title_tr, level: t.level, kind: t.kind, cells });
+  }
 
   const counts = new Map<string, number>();
   for (const c of input.errorCodes) if (!SKIP_CODES.has(c)) counts.set(c, (counts.get(c) ?? 0) + 1);

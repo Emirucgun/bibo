@@ -1,0 +1,38 @@
+Yerleştirme: 14/14 doğru → level_est=A2
+Kusursuz öğrenciye gösterilen 'Tahmini zayıf noktaların':
+  - am / is / are
+  - Özne zamirleri (he / she / it)
+  - do / does ile soru ve olumsuz
+Yerleştirmeden sonra ölçülen hücreler:
+  g.be_present|reading: 0.32 → weak
+  g.subject_pronouns|reading: 0.32 → weak
+  g.do_does_q_neg|reading: 0.32 → weak
+  g.wh_questions|reading: 0.32 → weak
+  g.present_simple|reading: 0.448 → weak
+  g.present_perfect|reading: 0.32 → weak
+  g.present_simple_3sg|writing: 0.4 → weak
+  g.articles_a_an|writing: 0.4 → weak
+  g.plurals|writing: 0.513 → developing
+  g.prep_time|writing: 0.4 → weak
+  p.th|listening: 0.32 → weak
+  p.w_v|listening: 0.32 → weak
+  g.word_order_svo|writing: 0.4 → weak
+  g.present_simple|speaking: 0.513 → developing
+Izgara: { unknown: 108, weak: 12, developing: 2, solid: 0 }
+Oturum 1: odak=g.be_present ızgara { unknown: 101, weak: 18, developing: 3, solid: 0 }
+Oturum 2: odak=g.be_present ızgara { unknown: 96, weak: 20, developing: 6, solid: 0 }
+Oturum 3: odak=g.subject_pronouns ızgara { unknown: 91, weak: 23, developing: 8, solid: 0 }
+Oturum 10: odak=g.present_continuous ızgara { unknown: 75, weak: 18, developing: 28, solid: 1 }
+  !! oturum 17: YANLIŞ teşhis skill_gap → g.be_present (güven 0.84)
+  !! oturum 20: YANLIŞ teşhis skill_gap → g.past_q_neg (güven 1)
+Oturum 20: odak=g.past_q_neg ızgara { unknown: 48, weak: 18, developing: 51, solid: 5 }
+  !! oturum 26: YANLIŞ teşhis skill_gap → g.word_order_svo (güven 0.75)
+  !! oturum 27: YANLIŞ teşhis skill_gap → g.adverbs_frequency (güven 0.63)
+  !! oturum 28: YANLIŞ teşhis skill_gap → g.prep_place (güven 0.78)
+Oturum 30: odak=g.plurals ızgara { unknown: 30, weak: 10, developing: 63, solid: 19 }
+  !! oturum 35: YANLIŞ teşhis skill_gap → g.articles_the (güven 1)
+Oturum 40: odak=g.do_does_q_neg ızgara { unknown: 18, weak: 2, developing: 70, solid: 32 }
+Odak konuları: g.be_present, g.be_present, g.subject_pronouns, g.possessives, g.do_does_q_neg, g.possessives, g.articles_the, g.articles_the, g.present_continuous, g.present_continuous, g.prep_time, g.prep_place …
+
+20 tohum, p=0.9, 40 oturum: en az bir yanlış teşhis alan 20/20, toplam 112 yanlış teşhis
+Son ızgaralar (sağlam/gelişiyor/zayıf/bilinmiyor): 32/78/2/10 31/72/6/13 39/71/1/11 27/81/4/10 31/80/2/9 37/61/5/19 32/70/2/18 32/68/3/19 35/76/0/11 29/74/5/14 33/72/5/12 29/80/2/11 32/66/4/20 28/79/2/13 27/71/5/19 36/68/2/16 31/65/5/21 26/73/6/17 36/62/4/20 35/72/2/13

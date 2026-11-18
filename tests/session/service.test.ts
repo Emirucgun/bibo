@@ -27,11 +27,33 @@ import { validItem } from "../ai/fixtures";
 import { splitGeneratedItem } from "@/lib/session/save-items";
 import { ACTIVITY_TYPE_INFO, type ActivityType } from "@/lib/content/activity-types";
 import type { ItemRow } from "@/lib/session/types";
-import { masteryFrom } from "../engine/fixtures";
+import { TOPICS } from "../engine/fixtures";
+import { cell, emptyState, observe, type LearnerState } from "@/lib/engine/learner-model";
+import { freshState, modelContextFor, rebuildState, restoreState, serialize } from "@/lib/session/learner";
+import type { Skill } from "@/lib/content/activity-types";
 import { L1_CODES as TAXONOMY_CODES } from "@/lib/content/taxonomy";
-import { GRADE_OK, GRADE_WRONG, OTHER, setup, USER, uuid } from "./fake-store";
+import { GRADE_OK, GRADE_WRONG, OTHER, setup, T0, USER, uuid } from "./fake-store";
 
 const actor = { userId: USER };
+const MCTX = modelContextFor(TOPICS);
+
+/** Öğrencinin geçmişini öğrenme profiline yazar (`[konu, beceri, cevaplar]`, 1 = doğru). */
+function seedHistory(env: Env, answers: [string, Skill, number[]][]) {
+  const state = emptyState(MCTX, { mu: -0.5, sd: 1.6 });
+  let i = 0;
+  const at0 = env.store.clock.now.getTime() - 86_400_000;
+  for (const [topicId, skill, list] of answers) {
+    for (const score of list) {
+      const mode = skill === "reading" || skill === "listening" ? "recognition" : skill === "speaking" ? "free" : "controlled";
+      observe(MCTX, state, { topic_id: topicId, skill, mode, score, weight: 1, at: new Date(at0 + i++ * 60_000) });
+    }
+  }
+  env.store.learnerStates.set(USER, { version: 1, state: serialize(state), n_obs: i });
+}
+
+function storedState(env: Env): LearnerState {
+  return restoreState(MCTX, env.store.learnerStates.get(USER)!.state)!;
+}
 const HOUR = 3_600_000;
 const TOPIC = "g.present_simple_3sg";
 
@@ -388,7 +410,7 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     expect(env.store.errorEvents[1]).toMatchObject({ source: "distractor", l1_code: "L1.3SG_S", skill: "reading" });
   });
 
-  it("tek cevap ustalığı en çok 0,25 değiştirir; ipuçlu doğru cevap en çok 0,5 sayılır", async () => {
+  it("ipuçlu doğru cevap yarım ağırlıklı kanıttır: profil daha az değişir, ağırlık cevaba yazılır", async () => {
     const plain = setup();
     const hinted = setup();
     for (const env of [plain, hinted]) {
@@ -398,14 +420,45 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
       // İstemci bayrağı göndermese de sunucu ipucunun açıldığını bilir.
       await answer(env, item, true);
     }
-    const score = (env: Env) => env.store.mastery.get(USER)!.find((r) => r.skill === "writing")!.score;
-    const topicId = firstOfType(hinted, hinted.store.sessions[0].id, "gap_fill").topic_id;
-    const prior = masteryFrom(topicId, "writing", []).score;
-    expect(hinted.store.attempts[0].hint_used).toBe(true);
-    expect(score(plain)).toBeGreaterThan(score(hinted));
-    expect(Math.abs(score(plain) - prior)).toBeLessThanOrEqual(0.25 + 1e-9);
-    // o = min(1, 0.5) → m + 0.25 × (0.5 − m)
-    expect(score(hinted)).toBeCloseTo(prior + 0.25 * (0.5 - prior), 3);
+    for (const env of [plain, hinted]) {
+      const topicId = firstOfType(env, env.store.sessions[0].id, "gap_fill").topic_id;
+      const prior = cell(MCTX, freshState(MCTX, "A1"), topicId, "writing")!;
+      const after = cell(MCTX, storedState(env), topicId, "writing")!;
+      expect(after.mean).toBeGreaterThan(prior.mean);
+      expect(after).toMatchObject({ n: 1, correct: 1 });
+      // Tahmin cevaptan önce yazılır (kalibrasyon için).
+      expect(env.store.attempts[0].pred_p).toBeGreaterThan(0);
+      expect(env.store.attempts[0].pred_p).toBeLessThan(1);
+      // Olay kaynaklı yeniden kurma canlı güncellemeyle aynı durumu verir (ağırlık dahil).
+      const rebuilt = rebuildState(MCTX, (await env.store.listEvidence(USER)).map((r) => ({ ...r, irt: null, at: r.created_at })), "A1");
+      expect(cell(MCTX, rebuilt, topicId, "writing")!.mean).toBeCloseTo(after.mean, 4);
+    }
+    expect(hinted.store.attempts[0]).toMatchObject({ hint_used: true, evidence_weight: 0.5 });
+    expect(plain.store.attempts[0]).toMatchObject({ hint_used: false, evidence_weight: 1 });
+    // Aynı konuda yarım ağırlık daha küçük adım.
+    const topicId = firstOfType(plain, plain.store.sessions[0].id, "gap_fill").topic_id;
+    const at = new Date(T0);
+    const step = (weight: number) => {
+      const st = freshState(MCTX, "A1");
+      observe(MCTX, st, { topic_id: topicId, skill: "writing", mode: "controlled", score: 1, weight, at });
+      return cell(MCTX, st, topicId, "writing")!.mean;
+    };
+    expect(step(1)).toBeGreaterThan(step(0.5));
+  });
+
+  it("grade_samples = 3: tek örneğin yanlış alarmı öğrenciyi yanlış saymaz; uyum kanıt ağırlığını düşürür", async () => {
+    const env = setup();
+    env.store.modelSettings.grade_samples = 3;
+    env.llm.gradeQueue = [GRADE_WRONG, GRADE_OK, GRADE_OK];
+    const id = await openSession(env);
+    const item = firstFree(env, id);
+    const res = await answer(env, item, true);
+    expect(env.llm.gradeCalls).toBe(3);
+    expect(env.aiStore.rows.filter((r) => r.purpose === "grade")).toHaveLength(3);
+    expect(res).toMatchObject({ isCorrect: true, score: 1, correction: null });
+    expect(env.store.errorEvents).toHaveLength(0);
+    // 2/3 uyum × yüksek güven.
+    expect(env.store.attempts[0].evidence_weight).toBeCloseTo(0.667, 3);
   });
 
   it("yapay zekâ değerlendirmesi: hatalar `llm` kaynağıyla, yan kanıt ayrı konuya yarım ağırlıkla", async () => {
@@ -428,10 +481,12 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     });
     const rows = env.store.mastery.get(USER)!;
     const incidental = rows.find((r) => r.topic_id === "g.be_present");
+    expect(env.store.attempts[0].incidental).toEqual(GRADE_WRONG.evidence);
     if (item.topic_id !== "g.be_present") {
-      expect(incidental).toMatchObject({ n: 1, correct: 1, skill: "writing" });
-      const before = masteryFrom("g.be_present", "writing", []).score;
-      expect(incidental!.score).toBeCloseTo(before + 0.125 * (1 - before), 3);
+      // Yan kanıt yarım ağırlıklı (< 0,5): hücre sayımına girmez ama profili kıpırdatır.
+      expect(incidental).toMatchObject({ n: 0, correct: 0, skill: item.skill });
+      const before = cell(MCTX, emptyState(MCTX, { mu: -0.5, sd: 1.6 }), "g.be_present", item.skill)!.mean;
+      expect(cell(MCTX, storedState(env), "g.be_present", item.skill)!.mean).not.toBeCloseTo(before, 3);
     }
     expect(rows.find((r) => r.topic_id === item.topic_id)).toMatchObject({ n: 1, correct: 0 });
   });
@@ -760,14 +815,18 @@ describe("finishSession (POST /api/sessions/:id/finish)", () => {
     expect(env.store.sessions.filter((s) => s.status === "ready")).toHaveLength(1);
   });
 
-  it("yazma 5/6 + konuşma 1/4 birikmişken oturum biterse `skill_gap(speaking)` kartı kanıtıyla döner", async () => {
+  it("yazma 10/10 + konuşma 1/7 birikmişken oturum biterse `skill_gap(speaking)` kartı kanıtıyla döner", async () => {
     const env = setup();
     const id = await openSession(env);
     const item = firstOfType(env, id, "gap_fill");
-    // Konunun geçmişi: yazma oturmuş, konuşma zayıf (M4 fikstürü).
-    env.store.mastery.set(USER, [
-      masteryFrom(item.topic_id, "writing", [1, 1, 1, 1, 0, 1]),
-      masteryFrom(item.topic_id, "speaking", [0, 0, 1, 0], "free"),
+    // Konunun geçmişi: yazma oturmuş, konuşma zayıf; konuşma başka konularda da kanıtlı.
+    const other = item.topic_id === "g.be_present" ? "g.plurals" : "g.be_present";
+    // v2 teşhisi kesinlik önceliklidir: 4 konuşma cevabı yetmez (docs/arastirma/olcme-ve-ogrenen-modeli.md).
+    seedHistory(env, [
+      [item.topic_id, "writing", [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+      [item.topic_id, "speaking", [0, 0, 1, 0, 0, 0, 0]],
+      [other, "writing", [1, 1, 1]],
+      [other, "speaking", [1, 1, 0, 0]],
     ]);
     await answer(env, item, true);
     const res = await finishSession(env.deps, actor, id, {});
@@ -776,8 +835,8 @@ describe("finishSession (POST /api/sessions/:id/finish)", () => {
     expect(res.diagnosis!.messageTr).toContain("konuşma");
     expect(res.diagnosis!.evidence).toEqual(
       expect.arrayContaining([
-        { skill: "konuşma", correct: 1, n: 4 },
-        { skill: "yazma", correct: 6, n: 7 },
+        { skill: "konuşma", correct: 1, n: 7 },
+        { skill: "yazma", correct: 11, n: 11 },
       ]),
     );
     const stored = env.store.diagnoses[0];

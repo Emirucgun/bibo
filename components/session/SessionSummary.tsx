@@ -15,8 +15,24 @@ export function SessionSummary({ sessionId, result }: { sessionId: string; resul
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold">Oturum bitti</h1>
-        <p className="text-sm text-muted-foreground">Bir sonraki oturumun arka planda hazırlanıyor.</p>
+        {result.graduated ? null : (
+          <p className="text-sm text-muted-foreground">Bir sonraki oturumun arka planda hazırlanıyor.</p>
+        )}
       </header>
+
+      {result.graduated ? (
+        // Sürekli kapı (docs/SPEC.md 4.7): A2 tamamlandı, günlük oturumlar burada biter.
+        <section className="flex flex-col gap-3 rounded-lg border border-emerald-300 bg-emerald-50 p-4">
+          <h2 className="text-base font-semibold">Tebrikler, A2&apos;yi tamamladın</h2>
+          <p className="text-sm leading-relaxed">
+            Cevapların artık A2&apos;nin üstünde olduğunu gösteriyor. Şu an yalnızca A1–A2 için çalışıyoruz; çok yakında
+            senin seviyen için de buradayız.
+          </p>
+          <Link href="/kapsam" className={cn(buttonVariants(), "h-12 w-full text-base")}>
+            Devam et
+          </Link>
+        </section>
+      ) : null}
 
       <dl className="grid grid-cols-2 gap-3">
         <div className="rounded-lg border border-border p-4">

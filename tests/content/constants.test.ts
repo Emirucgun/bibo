@@ -17,8 +17,13 @@ const sql = readdirSync(migrationsDir)
   .map((f) => readFileSync(new URL(f, migrationsDir), "utf8"))
   .join("\n");
 
-/** Tablonun `create table` bloğundaki `<column> in ('a', 'b', ...)` değer listesi. */
+/**
+ * Kısıtın geçerli değer listesi: sonraki bir göçte `add constraint <table>_<column>_check` ile
+ * yeniden tanımlandıysa en sonuncusu; değilse `create table` bloğundaki `<column> in (...)`.
+ */
 function checkList(table: string, column: string): string[] {
+  const altered = [...sql.matchAll(new RegExp(`add constraint ${table}_${column}_check\\s+check \\(${column} in \\(([^)]*)\\)\\)`, "g"))];
+  if (altered.length > 0) return [...altered[altered.length - 1][1].matchAll(/'([^']*)'/g)].map((v) => v[1]);
   const block = sql.match(new RegExp(`create table public\\.${table} \\(([\\s\\S]*?)\\n\\);`));
   if (!block) throw new Error(`tablo bulunamadı: ${table}`);
   const m = block[1].match(new RegExp(`\\b${column}\\s+in\\s*\\(([^)]*)\\)`));

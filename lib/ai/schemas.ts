@@ -2,10 +2,11 @@
 // `z.record` yok (katı JSON şeması serbest anahtarlı nesneyi desteklemez).
 import { z } from "zod";
 import { ACTIVITY_TYPES } from "@/lib/content/activity-types";
-import { L1_CODE_IDS, TOPIC_IDS } from "@/lib/content/taxonomy";
+import { L1_CODE_IDS, TAUGHT_TOPIC_IDS } from "@/lib/content/taxonomy";
 
 export const L1Code = z.enum(L1_CODE_IDS);
-export const TopicId = z.enum(TOPIC_IDS);
+/** Ölçme konuları (B1/B2) değerlendirmede etiketlenmez: öğretilen konular. */
+export const TopicId = z.enum(TAUGHT_TOPIC_IDS);
 export const ActivityType = z.enum(ACTIVITY_TYPES);
 
 export const GeneratedPayload = z.object({
@@ -85,5 +86,7 @@ export const GradeResult = z.object({
     )
     .max(5),
   evidence: z.array(z.object({ topic_id: TopicId, correct: z.boolean() })).max(6),
+  /** Kararın güveni; kanıt ağırlığına çarpan olarak girer (kesinlik önceliği). */
+  confidence: z.enum(["high", "medium", "low"]),
 });
 export type GradeResult = z.infer<typeof GradeResult>;

@@ -37,7 +37,7 @@ async function ProgressBody() {
       </p>
     );
   }
-  const measured = p.grid.some((r) => Object.values(r.cells).some((c) => c && c !== "unknown"));
+  const measured = p.grid.some((r) => Object.values(r.cells).some((c) => c && c.level !== "unknown"));
   return (
     <div className="flex flex-col gap-6">
       <dl className="grid grid-cols-2 gap-3">

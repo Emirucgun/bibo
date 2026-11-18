@@ -146,6 +146,7 @@ const GRADE_OK = {
   explanation_long_tr: "...",
   errors: [{ span: "play", correction: "plays", l1_code: "L1.3SG_S" as const, topic_id: "g.present_simple_3sg" as const }],
   evidence: [{ topic_id: "g.present_simple_3sg" as const, correct: false }],
+  confidence: "high" as const,
 };
 
 describe("gradeFreeAnswer", () => {
@@ -153,7 +154,7 @@ describe("gradeFreeAnswer", () => {
     const store = new FakeStore();
     const llm = new FakeLlm([ok(GRADE_OK)]);
     const out = await gradeFreeAnswer({ store, llm }, CTX, GRADE_INPUT);
-    expect(out).toEqual({ kind: "ok", result: GRADE_OK });
+    expect(out).toEqual({ kind: "ok", result: GRADE_OK, confidence: 1, samples: 1 });
     expect(llm.calls[0]).toMatchObject({ effort: "low", thinking: "adaptive", maxTokens: 3000, timeoutMs: 20000 });
     expect(store.rows[0].purpose).toBe("grade");
   });

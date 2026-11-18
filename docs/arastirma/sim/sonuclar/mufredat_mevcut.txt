@@ -1,0 +1,22 @@
+
+== Seviye A1, başlangıç başarısı 0.45: odak konularının ilk görünme sırası
+1:be_present(r2)  3:possessives(r2)  4:subject_pronouns(r2)  8:present_simple_3sg(r2)  12:prep_time(r2)  13:word_order_svo(r2)  14:do_does_q_neg(r2)  17:present_continuous(r2)  20:wh_questions(r2)  25:articles_a_an(r2)  26:prep_place(r2)  28:object_pronouns(r1)  30:articles_the(r2)  33:there_is_are(r1)  35:some_any_much_many(r1)
+Sıra ihlalleri (4):
+  - g.possessives (oturum 3) ← ön koşul g.subject_pronouns oturum 4
+  - g.present_simple_3sg (oturum 8) ← ön koşul g.present_simple hiç odak olmadı
+  - g.there_is_are (oturum 33) ← ön koşul g.plurals hiç odak olmadı
+  - g.some_any_much_many (oturum 35) ← ön koşul g.plurals hiç odak olmadı
+40 oturumda hiç odak olmayan açık konular (5): g.plurals, g.present_simple, g.have_has, g.can, g.adverbs_frequency
+20 tohum: sıra ihlali sayısı ortalama 3.4 (min 2, maks 4)
+
+== Seviye A2, başlangıç başarısı 0.6: odak konularının ilk görünme sırası
+1:be_present(r2)  2:possessives(r2)  3:subject_pronouns(r2)  6:articles_the(r2)  7:present_simple_3sg(r2)  8:word_order_svo(r2)  9:prep_place(r2)  11:do_does_q_neg(r2)  14:prep_time(r2)  15:present_continuous(r2)  18:wh_questions(r2)  19:past_q_neg(r2)  21:present_perfect(r2)  27:present_simple(r1)  30:have_has(r1)  32:object_pronouns(r1)  33:adverbs_frequency(r1)  35:verb_patterns(r1)  38:past_simple_regular(r1)  39:past_be(r1)  40:comparatives(r1)
+Sıra ihlalleri (6):
+  - g.possessives (oturum 2) ← ön koşul g.subject_pronouns oturum 3
+  - g.articles_the (oturum 6) ← ön koşul g.articles_a_an hiç odak olmadı
+  - g.present_simple_3sg (oturum 7) ← ön koşul g.present_simple oturum 27
+  - g.past_q_neg (oturum 19) ← ön koşul g.past_simple_regular oturum 38
+  - g.present_perfect (oturum 21) ← ön koşul g.past_simple_irregular hiç odak olmadı
+  - g.present_perfect (oturum 21) ← ön koşul g.have_has oturum 30
+40 oturumda hiç odak olmayan açık konular (9): g.articles_a_an, g.plurals, g.there_is_are, g.can, g.some_any_much_many, g.past_simple_irregular, g.going_to, g.will_future, g.modals_obligation
+20 tohum: sıra ihlali sayısı ortalama 5.6 (min 4, maks 8)

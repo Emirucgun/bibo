@@ -14,10 +14,11 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { generateSession, GenerationError } from "@/lib/ai/generate-session";
 import type { GeneratedItem } from "@/lib/ai/schemas";
-import { emptyMastery } from "@/lib/engine/mastery";
+import { observe, type LearnerState, type ModelContext } from "@/lib/engine/learner-model";
 import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
-import type { EngineTopic, Interest, Level, MasteryRow, Skill } from "@/lib/engine/types";
+import type { EngineTopic, Interest, Level, Skill } from "@/lib/engine/types";
+import { freshState, modelContextFor } from "@/lib/session/learner";
 import { SKILLS } from "@/lib/content/activity-types";
 import { mean, percentile, sample, summarizeUsage } from "./lib/eval";
 import { arg, fmtSec, fmtUsd, setupDeps } from "./lib/eval-env";
@@ -41,24 +42,23 @@ const PROFILES: Profile[] = [
 
 const DAY_MS = 86_400_000;
 
-function masteryFor(p: Profile, topics: EngineTopic[], now: Date): MasteryRow[] {
-  const rows: MasteryRow[] = [];
+/** Profilin geçmişi: `known_until_sort`'a kadar konularda beceri başına 4 cevap (öğrenme profiline). */
+function modelFor(p: Profile, topics: EngineTopic[], now: Date): { ctx: ModelContext; state: LearnerState } {
+  const ctx = modelContextFor(topics);
+  const state = freshState(ctx, p.level);
+  let i = 0;
+  const at0 = now.getTime() - 3 * DAY_MS;
   for (const t of topics) {
-    if (t.sort > p.known_until_sort) continue;
+    if (t.sort > p.known_until_sort || t.kind === "measure") continue;
     for (const skill of SKILLS) {
-      rows.push({
-        ...emptyMastery(t),
-        topic_id: t.id,
-        skill,
-        score: p.skill_scores[skill],
-        n: 4,
-        correct: Math.round(4 * p.skill_scores[skill]),
-        last_seen_at: new Date(now.getTime() - 3 * DAY_MS),
-        next_review_at: new Date(now.getTime() + ((t.sort % 3) - 1) * DAY_MS),
-      });
+      const correct = Math.round(4 * p.skill_scores[skill]);
+      for (let k = 0; k < 4; k++) {
+        const mode = skill === "reading" || skill === "listening" ? "recognition" : skill === "speaking" ? "free" : "controlled";
+        observe(ctx, state, { topic_id: t.id, skill, mode, score: k < correct ? 1 : 0, weight: 1, at: new Date(at0 + i++ * 60_000) });
+      }
     }
   }
-  return rows;
+  return { ctx, state };
 }
 
 interface SessionReport {
@@ -69,10 +69,17 @@ interface SessionReport {
   items: number;
   dropped: number;
   regenerated: number;
+  /** İlk turda kelime kapsamı yüzünden reddedilen / sonunda yine bu yüzden düşen slot. */
+  vocab_rejected: number;
+  vocab_dropped: number;
   calls: number;
   latency_ms: number;
   cost_usd: number;
 }
+
+/** `app_settings.curriculum` göç varsayılanları (SPEC 3); `--no-db` ile ayar okunmaz. */
+const COVERAGE = { a1: 0.98, a2: 0.95 };
+const VOCAB = "vocabulary_above_level";
 
 async function main() {
   const nProfiles = Number(arg("profiles") ?? 4);
@@ -96,26 +103,40 @@ async function main() {
         interests: p.interests,
         topics,
         l1_codes: codes,
-        mastery: masteryFor(p, topics, now),
+        model: modelFor(p, topics, now),
         activity_stats: [],
         active_diagnoses: [],
         recent_errors: [],
         school_topic_id: null,
+        study_mode: "school",
+        goal: null,
+        focus_choice: null,
+        recent_focus: [],
+        session_index: s,
         settings: { tts_enabled: true, general_content_rate: 0.2 },
       });
       const rowsBefore = deps.store.rows.length;
       const t0 = performance.now();
       const report: SessionReport = {
         profile: p.name, index: s + 1, ok: false, error: null, items: 0, dropped: 0,
-        regenerated: 0, calls: 0, latency_ms: 0, cost_usd: 0,
+        regenerated: 0, vocab_rejected: 0, vocab_dropped: 0, calls: 0, latency_ms: 0, cost_usd: 0,
       };
       try {
         const out = await generateSession(
           deps,
           { userId: null, sessionId: null, now },
-          { level: p.level, explainMode: "short", varietySeed: `eval-${seed}-${p.name}-${s}`, slots: plan.slots },
+          { level: p.level, explainMode: "short", varietySeed: `eval-${seed}-${p.name}-${s}`, slots: plan.slots, coverage: COVERAGE },
         );
-        Object.assign(report, { ok: true, items: out.items.length, dropped: out.dropped.length, regenerated: out.regenerated.length, calls: out.calls });
+        Object.assign(report, {
+          ok: true,
+          items: out.items.length,
+          dropped: out.dropped.length,
+          regenerated: out.regenerated.length,
+          vocab_rejected: out.firstRoundProblems.filter((d) => d.problems.includes(VOCAB)).length,
+          vocab_dropped: out.dropped.filter((d) => d.problems.includes(VOCAB)).length,
+          calls: out.calls,
+        });
+        for (const d of out.firstRoundProblems) console.log(`    ilk tur slot ${d.slot}: ${d.problems.join(", ")}`);
         for (const item of out.items) generated.push({ profile: p.name, level: p.level, item });
       } catch (err) {
         report.error = err instanceof GenerationError ? err.code : err instanceof Error ? err.name + ":" + err.message.slice(0, 60) : "unknown";
@@ -125,7 +146,7 @@ async function main() {
       reports.push(report);
       console.log(
         `${p.name.padEnd(32)} #${s + 1}  ${report.ok ? "OK " : "ERR"}  ${report.items} etkinlik  ` +
-          `düşen ${report.dropped}  yeniden ${report.regenerated}  ${fmtSec(report.latency_ms)}  ${fmtUsd(report.cost_usd)}` +
+          `düşen ${report.dropped}  yeniden ${report.regenerated} (kelime ${report.vocab_rejected})  ${fmtSec(report.latency_ms)}  ${fmtUsd(report.cost_usd)}` +
           (report.error ? `  (${report.error})` : ""),
       );
     }
@@ -143,6 +164,9 @@ async function main() {
     avg_items: mean(reports.filter((r) => r.ok).map((r) => r.items)),
     dropped_slots: reports.reduce((a, r) => a + r.dropped, 0),
     regenerated_slots: reports.reduce((a, r) => a + r.regenerated, 0),
+    vocab_rejected_slots: reports.reduce((a, r) => a + r.vocab_rejected, 0),
+    vocab_dropped_slots: reports.reduce((a, r) => a + r.vocab_dropped, 0),
+    total_slots: reports.reduce((a, r) => a + r.items + r.dropped, 0),
     usage,
     llm_usage_in_db: deps.db,
   };
@@ -151,6 +175,10 @@ async function main() {
   console.log(`Şema geçerli oturum: ${okCount}/${reports.length} (hedef %100)`);
   console.log(`Ortalama maliyet: ${fmtUsd(summary.avg_cost_per_session_usd)}/oturum (hedef ≤ 0,02 $)`);
   console.log(`Üretim süresi p50 ${fmtSec(summary.latency_p50_ms)}, p90 ${fmtSec(summary.latency_p90_ms)} (hedef p90 ≤ 60 sn)`);
+  console.log(
+    `Kelime kapsamı: ilk turda ${summary.vocab_rejected_slots}/${summary.total_slots} slot reddedildi, ` +
+      `${summary.vocab_dropped_slots} slot yine geçmeyip düştü · toplam düşen ${summary.dropped_slots}, yeniden üretilen ${summary.regenerated_slots}`,
+  );
   console.log(`Çağrı: ${usage.calls}, önbellek isabeti (ilk çağrıdan sonra): ${(usage.cache_hit_rate_after_first * 100).toFixed(0)}%`);
   console.log(`Toplam: ${fmtUsd(usage.cost_usd)} · girdi ${usage.input_tokens}, çıktı ${usage.output_tokens}, önbellek okuma ${usage.cache_read_tokens}, yazma ${usage.cache_write_tokens}`);
 

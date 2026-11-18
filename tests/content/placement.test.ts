@@ -1,100 +1,101 @@
 import { describe, expect, it } from "vitest";
-import { ACTIVITY_TYPES, isActivityType } from "@/lib/content/activity-types";
-import { loadL1Codes, loadPlacement, loadTopics } from "../../scripts/lib/seed";
+import { ACTIVITY_TYPE_INFO, isActivityType } from "@/lib/content/activity-types";
+import { p4 } from "@/lib/engine/irt";
+import { nextPlacementStep, type PlacementAnswer, type PlacementBankItem } from "@/lib/engine/placement-cat";
+import { createRng } from "@/lib/engine/random";
+import { loadL1Codes, loadPlacementBank, loadTopics } from "../../scripts/lib/seed";
 
-const placement = loadPlacement();
-const items = placement.items;
-const topicIds = new Set(loadTopics().map((t) => t.id));
+const bank = loadPlacementBank();
+const topics = new Map(loadTopics().map((t) => [t.id, t]));
 const codes = new Set(loadL1Codes().map((c) => c.code));
+const LOCAL = new Set(["mcq_read", "gap_fill", "word_order", "listen_choose", "dictation"]);
+const BANDS: Record<string, [number, number]> = { preA1: [-3, -1.5], A1: [-1.5, 0], A2: [0, 1.5], B1: [1.5, 3], B2: [3, 4.5] };
+const words = (s: string) => s.toLowerCase().replace(/[.,!?]/g, "").split(/\s+/).filter(Boolean).sort();
 
-const words = (s: string) =>
-  s.toLowerCase().replace(/[.,!?]/g, "").split(/\s+/).filter(Boolean).sort();
-
-describe("placement.json (SPEC Ek C)", () => {
-  it("14 soru, sıra 1–14", () => {
-    expect(items).toHaveLength(14);
-    expect(items.map((i) => i.position)).toEqual(Array.from({ length: 14 }, (_, n) => n + 1));
+describe("placement_bank.json (docs/SPEC.md 4.7, Ek C)", () => {
+  it("taslak durumda ve en az 120 madde; her seviyede yeterli madde", () => {
+    expect(bank.status).toBe("draft_pending_pedagogy");
+    expect(bank.items.length).toBeGreaterThanOrEqual(120);
+    const by = (c: string) => bank.items.filter((i) => i.cefr === c).length;
+    expect(by("preA1")).toBeGreaterThanOrEqual(10);
+    expect(by("A1")).toBeGreaterThanOrEqual(25);
+    expect(by("A2")).toBeGreaterThanOrEqual(25);
+    expect(by("B1")).toBeGreaterThanOrEqual(25);
+    expect(by("B2")).toBeGreaterThanOrEqual(10);
   });
 
-  it("tür dağılımı: 6 mcq_read + 4 gap_fill, 2 listen_choose, 1 word_order, 1 speak_answer", () => {
-    const types = items.map((i) => i.activity_type);
-    expect(types.slice(0, 10).filter((t) => t === "mcq_read")).toHaveLength(6);
-    expect(types.slice(0, 10).filter((t) => t === "gap_fill")).toHaveLength(4);
-    expect(types.slice(10)).toEqual(["listen_choose", "listen_choose", "word_order", "speak_answer"]);
-    for (const t of types) expect(ACTIVITY_TYPES).toContain(t);
-  });
-
-  it("hedef kodlar Ek C ile aynı", () => {
-    expect(new Set(items.slice(0, 10).map((i) => i.l1_target))).toEqual(
-      new Set([
-        "L1.BE_OMIT", "L1.3SG_S", "L1.HE_SHE", "L1.ART_OMIT", "L1.DO_SUPPORT",
-        "L1.Q_INVERSION", "L1.PLURAL_NUM", "L1.PREP_IN_ON_AT", "L1.SIMPLE_CONT", "L1.PERFECT_PAST",
-      ]),
-    );
-    expect(items.slice(10, 13).map((i) => i.l1_target)).toEqual([
-      "L1.TH_SOUND", "L1.W_V", "L1.WORD_ORDER_SOV",
-    ]);
-    expect(items[13].payload.prompt_en).toBe("Tell me about your day.");
-  });
-
-  it("konu ve kod kimlikleri seed'de var", () => {
-    for (const i of items) {
-      expect(topicIds, `#${i.position}`).toContain(i.topic_id);
-      if (i.l1_target) expect(codes, `#${i.position}`).toContain(i.l1_target);
-      for (const d of i.key.distractors ?? []) expect(codes, `#${i.position}`).toContain(d.code);
-      for (const w of i.key.wrong_patterns ?? []) expect(codes, `#${i.position}`).toContain(w.code);
+  it("kimlikler tekil, türler yerel puanlanır, konu ve kodlar seed'de var", () => {
+    expect(new Set(bank.items.map((i) => i.id)).size).toBe(bank.items.length);
+    for (const i of bank.items) {
+      expect(isActivityType(i.activity_type), i.id).toBe(true);
+      expect(LOCAL.has(i.activity_type), i.id).toBe(true);
+      expect(topics.has(i.topic_id), i.id).toBe(true);
+      if (i.cefr === "B1" || i.cefr === "B2") expect(topics.get(i.topic_id)!.kind, i.id).toBe("measure");
+      if (i.l1_target) expect(codes, i.id).toContain(i.l1_target);
+      for (const d of i.key.distractors ?? []) expect(codes, i.id).toContain(d.code);
+      for (const w of i.key.wrong_patterns ?? []) expect(codes, i.id).toContain(w.code);
     }
   });
 
-  it("SPEC 5.2 uzunluk sınırları", () => {
-    for (const { position, payload: p, key: k } of items) {
-      const at = `#${position}`;
-      expect(p.instruction_tr.length, at).toBeLessThanOrEqual(140);
-      expect((p.text_en ?? "").length, at).toBeLessThanOrEqual(600);
-      expect((p.question_en ?? "").length, at).toBeLessThanOrEqual(160);
-      expect((p.prompt_en ?? "").length, at).toBeLessThanOrEqual(200);
-      for (const o of p.options ?? []) expect(o.length, at).toBeLessThanOrEqual(80);
-      expect(k.explanation_short_tr.length, at).toBeLessThanOrEqual(220);
-      expect(k.explanation_long_tr.length, at).toBeLessThanOrEqual(700);
-      expect(k.hint_tr.length, at).toBeLessThanOrEqual(140);
-      for (const d of k.distractors ?? []) expect(d.feedback_tr.length, at).toBeLessThanOrEqual(200);
+  it("IRT önselleri bant içinde ve geçerli", () => {
+    for (const i of bank.items) {
+      const [lo, hi] = BANDS[i.cefr];
+      expect(i.irt.b, i.id).toBeGreaterThanOrEqual(lo - 0.3);
+      expect(i.irt.b, i.id).toBeLessThanOrEqual(hi + 0.3);
+      expect(i.irt.a).toBeGreaterThan(0);
+      expect(i.irt.c).toBeGreaterThanOrEqual(0);
+      expect(i.irt.d).toBeLessThanOrEqual(1);
     }
   });
 
-  it("çoktan seçmelilerde doğru şık tam bir kez, her yanlış şık için bir çeldirici kaydı", () => {
-    for (const i of items.filter((i) => ["mcq_read", "listen_choose"].includes(i.activity_type))) {
-      const opts = i.payload.options!;
-      expect(opts.length).toBeGreaterThanOrEqual(3);
-      expect(opts.length).toBeLessThanOrEqual(4);
-      expect(opts.filter((o) => o === i.key.correct), `#${i.position}`).toHaveLength(1);
-      const wrong = opts.filter((o) => o !== i.key.correct).sort();
-      expect(i.key.distractors!.map((d) => d.option).sort(), `#${i.position}`).toEqual(wrong);
+  it("anahtarlar türle tutarlı", () => {
+    for (const i of bank.items) {
+      const t = i.activity_type;
+      if (t === "mcq_read" || t === "listen_choose") {
+        expect(i.payload.options, i.id).toContain(i.key.correct);
+        expect(new Set(i.payload.options).size, i.id).toBe(i.payload.options!.length);
+        expect(i.key.distractors!.length, i.id).toBe(i.payload.options!.length - 1);
+      }
+      if (t === "listen_choose" || t === "dictation") expect(i.key.text_en, i.id).toBeTruthy();
+      if (t === "gap_fill") {
+        expect(i.payload.text_en, i.id).toContain("___");
+        expect(i.key.accepted!.length, i.id).toBeGreaterThan(0);
+      }
+      if (t === "word_order") for (const a of i.key.accepted!) expect(words(a), i.id).toEqual(words(i.payload.tokens!.join(" ")));
+      if (t === "dictation") expect(i.key.correct, i.id).toBe(i.key.text_en);
     }
   });
 
-  it("dinleme türlerinde seslendirilen metin payload'da yok (cevap sızmaz)", () => {
-    for (const i of items.filter((i) => i.activity_type === "listen_choose")) {
-      expect(i.payload.text_en, `#${i.position}`).toBeUndefined();
-      expect(i.key.correct).toBeTruthy();
+  it("konuşma maddesi var", () => {
+    expect(bank.speaking.activity_type).toBe("speak_answer");
+    expect(ACTIVITY_TYPE_INFO.speak_answer.grading).toBe("llm_audio");
+    expect(bank.speaking.payload.prompt_en).toBeTruthy();
+  });
+
+  it("gerçek bankayla simülasyon: önseller doğruysa %82+ doğruluk, ≤ 20 madde, yanlış dışlama ≤ %3", () => {
+    const items: PlacementBankItem[] = bank.items.map((i) => ({
+      id: i.id, cefr: i.cefr, topic_id: i.topic_id, activity_type: i.activity_type as PlacementBankItem["activity_type"],
+      skill: ACTIVITY_TYPE_INFO[i.activity_type as PlacementBankItem["activity_type"]].skill, irt: i.irt,
+    }));
+    const N = 150;
+    let right = 0, n = 0, a2 = 0, falseGate = 0;
+    for (let s = 0; s < N; s++) {
+      const theta = -2.4 + (5.6 * (s + 0.5)) / N;
+      const rng = createRng(1000 + s);
+      const answers: PlacementAnswer[] = [];
+      let outcome;
+      for (let g = 0; g < 40 && !outcome; g++) {
+        const step = nextPlacementStep({ bank: items, answers, listening: true, rng });
+        if (step.kind === "done") outcome = step.outcome;
+        else answers.push({ item_id: step.item.id, score: rng() < p4(theta, step.item.irt) ? 1 : 0 });
+      }
+      const truth = theta < 0 ? "A1" : theta < 1.5 ? "A2" : "B1+";
+      if (outcome!.level === truth) right++;
+      if (truth === "A2") { a2++; if (outcome!.gate) falseGate++; }
+      n += answers.length;
     }
-  });
-
-  it("boşluk doldurmada kabul edilen cevap var, yanlış kalıplar doğru cevaptan farklı", () => {
-    for (const i of items.filter((i) => i.activity_type === "gap_fill")) {
-      expect(i.payload.text_en, `#${i.position}`).toContain("___");
-      expect(i.key.accepted!.length).toBeGreaterThan(0);
-      for (const w of i.key.wrong_patterns ?? []) expect(i.key.accepted).not.toContain(w.answer);
-    }
-  });
-
-  it("word_order: tokens, accepted[0]'ın bir permütasyonu ve karışık", () => {
-    const i = items.find((i) => i.activity_type === "word_order")!;
-    expect(words(i.payload.tokens!.join(" "))).toEqual(words(i.key.accepted![0]));
-    expect(i.payload.tokens!.join(" ")).not.toBe(i.key.accepted![0]);
-  });
-
-  it("geçerli etkinlik türü yardımcıları", () => {
-    expect(isActivityType("mcq_read")).toBe(true);
-    expect(isActivityType("essay")).toBe(false);
+    expect(right / N).toBeGreaterThan(0.82);
+    expect(n / N).toBeLessThanOrEqual(20);
+    expect(falseGate / a2).toBeLessThanOrEqual(0.03);
   });
 });

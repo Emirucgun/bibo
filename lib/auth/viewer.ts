@@ -6,12 +6,18 @@ import { toOnboardingStep, type OnboardingStep } from "@/lib/onboarding/steps";
 
 export type { Role };
 
+export type ScopeStatus = "in_scope" | "above_scope" | "graduated";
+
 export interface ViewerProfile {
   displayName: string | null;
   role: Role;
   cohortId: string | null;
   onboardingStep: OnboardingStep;
+  /** A2 üstü (`above_scope`) ya da A2'yi bitirmiş (`graduated`) öğrenciye günlük oturum yok. */
+  scopeStatus: ScopeStatus;
 }
+
+const toScope = (v: unknown): ScopeStatus => (v === "above_scope" || v === "graduated" ? v : "in_scope");
 
 /** Giriş yapmış kullanıcı. Token var ama `profiles` satırı yoksa `profile` `null`. */
 export interface Viewer {
@@ -35,7 +41,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   const { data: row, error: profileError } = await supabase
     .from("profiles")
-    .select("display_name, role, cohort_id, onboarding_step")
+    .select("display_name, role, cohort_id, onboarding_step, scope_status")
     .eq("id", userId)
     .maybeSingle();
   if (profileError) throw new Error(`profil okunamadı: ${profileError.code}`);
@@ -48,6 +54,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
           role: toRole(row.role),
           cohortId: row.cohort_id,
           onboardingStep: toOnboardingStep(row.onboarding_step),
+          scopeStatus: toScope(row.scope_status),
         }
       : null,
   };

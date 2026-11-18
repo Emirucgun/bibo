@@ -9,8 +9,8 @@ describe("lib/content/taxonomy.ts", () => {
     expect(onDisk).toBe(buildTaxonomyTs(loadTopics(), loadL1Codes()));
   });
 
-  it("32 konu ve 24 kod; kimlik listeleri satırlarla aynı sırada", () => {
-    expect(TOPIC_IDS).toHaveLength(32);
+  it("34 konu ve 24 kod; kimlik listeleri satırlarla aynı sırada", () => {
+    expect(TOPIC_IDS).toHaveLength(34);
     expect(L1_CODE_IDS).toHaveLength(24);
     expect(TOPICS.map((t) => t.id)).toEqual([...TOPIC_IDS]);
     expect(L1_CODES.map((c) => c.code)).toEqual([...L1_CODE_IDS]);

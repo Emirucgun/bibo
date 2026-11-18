@@ -2,7 +2,7 @@
 
 | | |
 | --- | --- |
-| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 4 (17 Kasım 2026: boşluk hakemliği, M6 uç nokta ayrıntıları ve hata kodları; rev. 3, 11 Kasım 2026: OpenRouter erişimi, parçalı oturum üretimi, M6 öncesi kararlar; rev. 2: model yığını ve maliyet) |
+| Sürüm | v1 (MVP / pilot) · 10 Kasım 2026 · rev. 5 (18 Kasım 2026: ölçme, öğrenme profili ve müfredat v2 — uyarlamalı yerleştirme ve kapsam kapısı, hiyerarşik Bayesçi öğrenme profili, müfredat motoru, kesinlik öncelikli değerlendirme; gerekçe `docs/arastirma/olcme-ve-ogrenen-modeli.md`, `docs/arastirma/mufredat-onerisi.md`) · rev. 4 (17 Kasım 2026: boşluk hakemliği, M6 uç nokta ayrıntıları ve hata kodları; rev. 3, 11 Kasım 2026: OpenRouter erişimi, parçalı oturum üretimi, M6 öncesi kararlar; rev. 2: model yığını ve maliyet) |
 | Okuyucu | Mühendis; ayrıca Claude Code gibi kodlama asistanları |
 | Bağlam | Ürün kararları `PRD.md`'de, kapsam `SCOPE.md`'de, sıra `ROADMAP.md`'de; maliyet ve fiyat hesabı finans tablosunda (Google Sheets: Özet, Model Seçimi (AA), Oturum Maliyeti, Pilot) |
 | Ana kısıt | 50 kişilik pilot, aylık altyapı ≤ 50 €, tek mühendis |
@@ -137,8 +137,8 @@ kaynak/
 │  ├─ session/{SessionRunner,TodayCard,FeedbackCard,ProgressBar,SessionSummary}.tsx
 │  └─ ui/                             # shadcn
 ├─ lib/
-│  ├─ engine/{types,mastery,diagnosis,planner,effectiveness,grade-local,normalize}.ts
-│  ├─ ai/{client,generate-session,grade,schemas,cost,guard}.ts
+│  ├─ engine/{types,irt,placement-cat,learner-model,curriculum,calibration,diagnosis,planner,effectiveness,grade-local,normalize}.ts
+│  ├─ ai/{client,generate-session,grade,grade-vote,schemas,cost,guard}.ts
 │  ├─ ai/prompts/{generate,grade}.ts
 │  ├─ stt/{index,mai}.ts              # transkript arayüzü + MAI-Transcribe-2 (OpenRouter)
 │  ├─ tts/{speechify,cache}.ts
@@ -151,7 +151,7 @@ kaynak/
 ├─ supabase/
 │  ├─ migrations/*.sql
 │  ├─ seed.sql
-│  └─ seed/{topics.csv,l1_codes.csv,placement.json}
+│  └─ seed/{topics.csv,l1_codes.csv,placement_bank.json}
 ├─ scripts/{eval-generation,eval-tagging,eval-verbatim,simulate}.ts
 ├─ tests/engine/*.test.ts
 └─ proxy.ts                           # Next 16'da middleware'in yeni adı: oturum yenileme + yönlendirme
@@ -170,7 +170,10 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | `skill` | `reading`, `listening`, `writing`, `speaking` |
 | `mode` | `recognition`, `controlled`, `free` |
 | `activity_type` | `mcq_read`, `gap_fill`, `word_order`, `listen_choose`, `dictation`, `translate_tr_en`, `short_write`, `speak_answer` |
-| `purpose` | `placement`, `review`, `focus`, `retest`, `stretch` |
+| `purpose` | `placement`, `review`, `focus`, `retest`, `stretch`, `probe`, `input`, `output`, `fluency` |
+| `scope_status` | `in_scope`, `above_scope`, `graduated` |
+| `study_mode` | `school`, `self` |
+| `goal` | `communication`, `exam`, `work_travel` |
 | `role` | `student`, `teacher`, `admin` |
 | İlgi alanları (`lib/content/interests.ts`) | `football`, `other_sports`, `gaming`, `music`, `series_film`, `tech`, `social_media`, `fashion`, `food`, `travel`, `science_space`, `cars` |
 
@@ -209,7 +212,15 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | role | text default 'student' | yalnızca SQL ile değiştirilir |
 | cohort_id | uuid → cohorts | |
 | level_self | text | `A1`, `A2`, `unsure` |
-| level_est | text | yerleştirme sonrası `A1` / `A2` |
+| level_est | text | yerleştirme sonrası içerik seviyesi `A1` / `A2` (A2 üstünde de `A2`) |
+| scope_status | text default 'in_scope' | `above_scope`: yerleştirmede A2 üstü (P ≥ `gate_p`); `graduated`: sürekli kapı (4.7). İkisinde de günlük oturum yok |
+| notify_opt_in_at | timestamptz | kapsam dışı öğrenci "hazır olunca haber ver" dedi (KVKK: yalnızca tercih ve zaman) |
+| study_mode | text | `school` (okul programını izler) / `self` (kendi programı) |
+| goal | text | `communication` / `exam` / `work_travel` |
+| program_id | text → programs | okul programı haritası; doluysa haftalık okul sorusu sorulmaz |
+| focus_choice | text → topics | "Bugün ne çalışalım?" seçimi; o odakla bir oturum bitince boşalır |
+| placement_result | jsonb | `{level, probs, theta_mean, theta_sd, n, gate, borderline}` (yalnızca sayılar) |
+| placement_done_at | timestamptz | yeniden test tarihi bunun üstüne `retest_after_days` |
 | interests | text[] | en az 2 |
 | explain_mode | text default 'short' | `short` / `long` |
 | adult_confirmed_at | timestamptz | 18+ beyanı; doğum tarihi tutulmaz |
@@ -222,14 +233,20 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | Alan | Tür | Not |
 | --- | --- | --- |
 | id | text PK | `g.present_simple_3sg` |
-| level | text | `A1` / `A2` |
-| kind | text | `grammar` / `pron` |
+| level | text | `A1` / `A2`; ölçme konularında `B1` / `B2` |
+| kind | text | `grammar` / `pron` / `measure` (yalnızca yerleştirmede; öğretilmez, değerlendirmede etiketlenmez) |
 | title_tr, title_en | text | |
 | description_tr | text | 1 cümle |
 | l1_risk | smallint 0–2 | Türkçe kaynaklı zorluk; başlangıç ustalığını belirler |
 | prereqs | text[] | konu kimlikleri |
 | sort | int | |
 | active | bool default true | |
+| irt_b | real null | ortak θ ölçeğinde zorluk; boşsa seviye ve L1 riskinden (4.1) |
+| unit | smallint default 0 | varsayılan yoldaki ünite (4.4) |
+| value | smallint 1–3 default 2 | iletişimsel değer |
+| exam_weight | smallint 0–2 default 1 | hazırlık sınavı ağırlığı |
+| confusables | text[] | karışık çalışmada birlikte sorulan konular |
+| goal_tags | text[] | uygun hedefler |
 
 #### `l1_codes` — hata sınıflandırması (seed, Ek B)
 
@@ -274,6 +291,7 @@ Tüm zaman alanları `timestamptz`, tüm kimlikler aksi belirtilmedikçe `uuid d
 | l1_target | text → l1_codes null | |
 | payload | jsonb | yönerge, metin, şıklar, karışık kelimeler… (Bölüm 5.2). Dinleme türlerinde (`listen_choose`, `dictation`) seslendirilen `text_en` burada **tutulmaz**, `item_keys`'e taşınır; istemci yalnızca ses URL'si alır |
 | credited | bool default false | etkinlik verimi hesabında kullanıldı mı |
+| bank_item_id | text null | yerleştirme bankası maddesi (`placement_bank.json`) |
 | created_at | timestamptz | |
 
 #### `item_keys` — cevap anahtarları (yalnızca sunucu okur)
@@ -303,9 +321,12 @@ Bu tabloda öğrenci ve öğretmen için **hiçbir** RLS `select` politikası yo
 | feedback_short_tr | text | |
 | explanation_long_tr | text | yapay zekâ ile değerlendirilenlerde saklanır |
 | correction | text | |
+| pred_p | real 0–1 | cevaptan **önce** modelin doğru olasılığı (kalibrasyon, AUC) |
+| evidence_weight | real 0–1 | kanıt ağırlığı: ipucu (0,5) × değerlendirme güveni (5.1) |
+| incidental | jsonb | serbest cevaptaki yan kanıt `[{topic_id, correct}]` |
 | created_at | timestamptz | |
 
-Benzersiz: `(item_id, try_no)`.
+Benzersiz: `(item_id, try_no)`. Öğrenme profili bu tablodan olay kaynaklı yeniden kurulabilir (4.1).
 
 #### `error_events` — etiketlenmiş hatalar (savunma verisi)
 
@@ -324,12 +345,14 @@ Benzersiz: `(item_id, try_no)`.
 
 İndeks: `(user_id, l1_code, created_at)`, `(review_sampled) where review_sampled`.
 
-#### `mastery` — kademeli ustalık puanı
+#### `mastery` — ustalık önbelleği (rev. 5: türetilmiş)
+
+`learner_state`'ten türetilir; dışa aktarma ve öğretmen görünümü içindir. Kararlar `learner_state`'ten okunur.
 
 | Alan | Tür | Not |
 | --- | --- | --- |
 | user_id, topic_id, skill | PK | |
-| score | numeric(4,3) | 0–1 |
+| score | numeric(4,3) | 0–1: P(hücre ustalığı ≥ `mastery_p`) |
 | n | int default 0 | kanıt sayısı |
 | correct | int default 0 | |
 | last_seen_at | timestamptz | |
@@ -368,7 +391,28 @@ Benzersiz: `(item_id, try_no)`.
 | --- | --- | --- |
 | user_id, week_start | PK (`date`, pazartesi) | |
 | topic_id | text null | `null` = hatırlamıyor |
+| source | text default 'student' | `program` / `student` |
 | created_at | timestamptz | |
+
+#### `learner_state` — öğrenme profili (rev. 5)
+
+| Alan | Tür | Not |
+| --- | --- | --- |
+| user_id | uuid PK → auth.users on delete cascade | |
+| version | int | model sürümü (`app_settings.learner_model.version`) |
+| state | jsonb | ortalama vektörü, kovaryans (üst üçgen, float32 base64), hücre sayımları (4.1) |
+| n_obs | int | işlenen kanıt sayısı |
+| updated_at | timestamptz | |
+
+Önbellektir: yoksa, bozuksa ya da konu listesi / sürüm değiştiyse `attempts`'ten yeniden kurulur. RLS: öğrenci kendi satırını, öğretmen hepsini okur; yazma yalnızca servis istemcisi.
+
+#### `programs`, `program_weeks` — okul programı haritası (rev. 5)
+
+`programs(id text PK, name, school, active, created_at)`; `program_weeks(program_id, week_start date pazartesi, topic_id)` PK `(program_id, week_start)`. Pedagoji sahibi doldurur; herkes okur, yalnızca admin yazar.
+
+#### `item_calibration` — yerleştirme maddelerinin kalibrasyonu (rev. 5)
+
+`item_id text PK, a, b, n, updated_at`. Gece işi yazar (4.8); yalnızca admin okur.
 
 #### `teacher_reviews` — öğretmen etiketleri (altın veri)
 
@@ -432,6 +476,12 @@ Benzersiz: `(item_id, try_no)`.
 | `tts_monthly_char_alert` | `400000` | ücretsiz kotanın (500.000) %80'i; aşılınca panelde uyarı |
 | `review_sample_rate` | `0.15` | |
 | `general_content_rate` | `0.2` | |
+| `placement_model` | `{"stop_p":0.95,"min_items":8,"max_items":25,"gate_p":0.9,"extension_low":0.6,"extension_items":5}` | 4.7; motor varsayılanlarının üzerine yazılır |
+| `learner_model` | `{"version":1}` | sürüm değişince profiller yeniden kurulur |
+| `curriculum` | `{"coverage_a1":0.98,"coverage_a2":0.95}` | üretimde kelime kapsamı eşikleri (5.3) |
+| `grade_samples` | `3` | serbest cevapta bağımsız değerlendirme sayısı, çoğunluk oyu (5.1) |
+| `continuous_gate_p` | `0.95` | sürekli kapı eşiği (4.7) |
+| `retest_after_days` | `7` | kapsam dışı öğrencinin tek yeniden test hakkı |
 
 #### `events` — ürün analitiği
 
@@ -465,61 +515,55 @@ RLS doğrulama testi (M2): iki test kullanıcısıyla A'nın B'ye ait `sessions`
 
 `lib/engine/*` saf fonksiyonlardır: veritabanı ya da ağ çağrısı yapmaz, girdi alır çıktı döner. Bu sayede tümü Vitest ile test edilir.
 
-### 4.1 Kademeli ustalık puanı
+### 4.1 Öğrenme profili (rev. 5: hiyerarşik Bayesçi model, `lib/engine/learner-model.ts`)
 
-```ts
-prior(topic) = 0.50 - 0.15 * topic.l1_risk        // 0.50 / 0.35 / 0.20
+Eski kademeli puan (`m += α(o − m)`) sınırsızdı ve kanıtı olmayan konuyu "zayıf" sayıyordu (B1–B2 cevap veren öğrenci çoğu konuyu bilmiyor görünüyordu). Yerine tek bir ortak ölçekte (θ, logit) hiyerarşik model:
 
-// her kanıt için (hedef cevap ya da serbest cevaptaki yan kanıt)
-o = attempt.score                                  // 0..1
-if (attempt.hint_used) o = Math.min(o, 0.5)
-alpha = mode === 'recognition' ? 0.15 : 0.25
-if (evidence.incidental) alpha *= 0.5              // hedef dışı yan kanıt
-m = m + alpha * (o - m)                            // |Δm| ≤ 0.25
-n += 1
+```text
+η(öğrenci, konu t, beceri k) = θ_genel + s_k + d_t + e_tk − b_t − mod_ofseti
+P(doğru) = c_mod + (d − c_mod) · σ(a · η)        // c: tahmin (tanıma 0,3; kontrollü 0,02; serbest 0)
+önsel: θ_genel ~ N(beyana göre μ, 1,6²), s_k ~ N(0, 0,5²), d_t ~ N(0, 0,6²), e_tk ~ N(0, 0,6²)
+b_t = topics.irt_b ?? (A1 −0,75 · A2 0,75 · B1 2,25 · B2 3,75) + 0,25 · (l1_risk − 1)
 ```
 
-Dört renk seviyesi (ilerleme ızgarası): `n = 0` bilinmiyor · `m < 0.45` zayıf · `0.45–0.7` gelişiyor · `≥ 0.7` sağlam.
+- **Güncelleme:** her kanıt tek bir varsayımsal yoğunluk filtresi adımıdır (ADF / moment eşleme, 81 noktalı kareleme); ortalama vektörü ve tam kovaryans tutulur. Böylece bir konudaki kanıt genel seviyeyi ve beceri terimini de günceller; hiç sorulmamış konu da genel seviyeden *tahmin edilir*.
+- **Kanıt ağırlığı:** ipucu 0,5; değerlendirme güveni (5.1) çarpan; serbest cevaptaki yan kanıt × 0,5. Ağırlık < 0,5 olan kanıt hücre sayımına girmez.
+- **Unutma:** her gün varyansa süreç gürültüsü eklenir (konu ve hücrede L1 riskiyle artar).
+- **Yerleştirme cevapları** maddenin kendi IRT parametreleriyle (`placement_bank.json` ya da `item_calibration`) işlenir.
+- **Yeniden kurma:** `learner_state` önbellektir; `attempts`'ten aynı kuralla yeniden kurulur (etkinlik başına son değerlendirilmiş deneme; konuşmanın 1. denemesi yalnızca oturumu bitmişse).
+- **Tahmin kaydı:** her cevaptan önce `pred_p` yazılır (4.8).
+
+**Izgara etiketleri ("kanıt yoksa hüküm yok"):** `p_mastered` = P(kontrollü maddede doğru olasılığı ≥ 0,8).
+
+| Etiket | Kural |
+| --- | --- |
+| sağlam | `p_mastered ≥ 0,8` |
+| zayıf | `p_mastered ≤ 0,2` ve konuda ≥ 2 doğrudan cevap |
+| gelişiyor | sonsal dar (sd ≤ 0,6) ya da hücrede ≥ 2 doğrudan cevap |
+| bilinmiyor | diğer |
+
+Doğrudan cevabı olmayan ama etiketi "bilinmiyor" dışında olan hücre arayüzde soluk ve "tahmin" olarak gösterilir.
 
 ### 4.2 Aralıklı tekrar
 
-```ts
-interval = !correct      ? 1 gün
-         : m < 0.50      ? 1 gün
-         : m < 0.70      ? 3 gün
-         : m < 0.85      ? 7 gün
-         :                 14 gün
-next_review_at = now + interval
+Hücrenin tekrar zamanı modelden: unutma varyansıyla P(ustalık) 0,8'in altına düşene kadar geçecek gün (1–30 gün arası); zaten altındaysa vadesi gelmiştir. `mastery.next_review_at` bu değerin önbelleğidir.
+
+### 4.3 Teşhis kuralları (rev. 5: sonsal + gözlenen karşıtlık)
+
+Oturum bitiminde, oturumda dokunulan her konu için çalışır. Kesinlik önceliklidir: yanlış teşhis, geç teşhisten pahalıdır.
+
+```text
+1) skill_gap(zayıf k): konuda k'de ≥ 3 cevap ve öğrencinin k'de toplam ≥ 4 cevabı; k'de doğru oranı ≤ %50;
+   P(s_k + e_tk < 0) ≥ 0,9; başka bir beceride ≥ 2 cevap, doğru oranı ≥ %75 ve p_mastered ≥ 0,5.
+   güven = P(...)
+2) topic_gap: konuda ≥ 4 cevap, doğru oranı ≤ %50, konu ustalığı ≤ 0,3 ve P(d_t < −0,5) ≥ 0,9.
+3) activity_mismatch: aynı beceride iki tür (tür başına ≥ 4 cevap): biri ≤ %35, diğeri ≥ %70.
+4) Belirsiz → kaydedilmez.
 ```
 
-### 4.3 Teşhis kuralları
-
-Oturum bitiminde, oturumda dokunulan her konu için çalışır. `S` = bu konuda `n ≥ 3` olan beceriler.
-
-```ts
-// 1) Beceri eksiği: konu bir beceride oturmuş, diğerinde değil
-if (S.length >= 2) {
-  hi = argmax(m over S); lo = argmin(m over S); gap = m[hi] - m[lo]
-  if (gap >= 0.30 && m[hi] >= 0.65 && m[lo] <= 0.45)
-    → skill_gap(weak = lo)
-      confidence = clamp((gap - 0.15) / 0.25) * min(1, n[lo] / 4)
-}
-// 2) Konu eksiği: her yerde zayıf
-else-if (S.length >= 2 && all(m <= 0.45) && sum(n) >= 6)
-    → topic_gap
-      confidence = clamp((0.55 - mean(m)) / 0.25) * min(1, sum(n) / 8)
-// 3) Etkinlik uyumsuzluğu: aynı konu+beceride bir tür tutmuyor, diğeri tutuyor
-else-if (bir beceride, n ≥ 3 olan iki tür için: min başarı ≤ 0.35 ve max ≥ 0.70)
-    → activity_mismatch(weak_activity)
-      confidence = clamp((max - min - 0.20) / 0.30) * min(1, n_min / 4)
-// 4) Belirsiz
-else → kaydedilmez; planlayıcı en az ölçülen becerede çapraz tekrar koyar
-```
-
-- Güven ≥ 0,6 ise teşhis `active` olur ve oturum sonunda gösterilir; aynı konudaki eski aktif teşhis `superseded` olur.
-- Zayıf beceri `m ≥ 0.65`'e çıkınca teşhis `resolved` olur ve öğrenciye "çözüldü" kartı gösterilir.
-
-**Örnek (birim testi):** L1 riski 1 olan konu, başlangıç 0,35. Yazma cevapları 1,1,1,1,0,1 → m ≈ 0,70. Konuşma 0,0,1,0 → m ≈ 0,30. Fark 0,40 → `skill_gap(speaking)`, güven ≈ 1,0.
+- Güven ≥ 0,6 ise teşhis `active` olur ve oturum sonunda gösterilir; aynı konudaki farklı eski aktif teşhis `superseded` olur.
+- Çözülme: zayıf hücrede `p_mastered ≥ 0,65` ya da eksik olasılığı < 0,7 (histerezis).
+- Simülasyon (`scripts/simulate.ts`): tekdüze %97 başarılı öğrencide 0 yanlış teşhis; %90'da öğrenci başına ≤ 0,3. "Yazıda bilen, konuşmada bilmeyen" öğrencide konuşma eksiği tohumların %44'ünde 5., %62'sinde 8. oturumda bulunur (PRD F8 ölçütü rev. 5'te güncellendi).
 
 **Mesaj şablonları** (dil modeli çağrısı yok):
 
@@ -529,36 +573,48 @@ else → kaydedilmez; planlayıcı en az ölçülen becerede çapraz tekrar koya
 | `topic_gap` | "{konu} henüz oturmamış: tüm becerilerde toplam {d}/{n}. Konuyu baştan, kısa adımlarla ele alacağız." |
 | `activity_mismatch` | "{konu}: {zayıf_etkinlik} türünde {d}/{n}, {güçlü_etkinlik} türünde {d2}/{n2}. Sende {güçlü_etkinlik} daha iyi işliyor; ona ağırlık vereceğiz." |
 
-### 4.4 Oturum planlayıcısı
+### 4.4 Müfredat ve oturum planlayıcısı (rev. 5: `lib/engine/curriculum.ts`, `planner.ts`)
 
-Hedef: 8–10 etkinlik, `est_seconds` toplamı 900–1200 sn, dört beceri en az birer kez.
+**Açık konular:** A1 konuları her zaman; A2 konuları `level_est = A2` ya da P(θ ≥ 0) ≥ 0,5 ise. Sesletim ve ölçme konuları odak olmaz.
+
+**Konu durumu** (bilgi alanı teorisinin "dış sınırı"):
+
+| Durum | Kural |
+| --- | --- |
+| sağlam | üretimde (yazma/konuşma) `p_mastered ≥ 0,8` ve okumada ≥ 0,6 |
+| çalışılıyor | konuda ≥ 3 doğrudan cevap |
+| muhtemelen biliyor | beklenen doğruluk ≥ 0,75 → odak değil, kısa yoklama (`probe`) ile doğrulanır |
+| hazır | ön koşulların hepsinde beklenen doğruluk ≥ 0,65 ya da sağlam |
+| kilitli | diğer |
+
+**Varsayılan yol:** ünite (`unit`), sonra `sort`; ön koşul grafiğiyle topolojik sıra (pedagoji sahibi doğrular).
+
+**Odak seçimi:** öğrencinin seçimi (`focus_choice`) → bu haftanın okul konusu (kilitliyse en yakın hazır ön koşula **köprü**) → süren odak (en çok 3 oturum, üretimde 0,6'ya ulaşmadıysa) → çalışılan konu sınırı (en çok 3) → en yüksek puanlı hazır konu.
 
 ```text
-açık konular = level ≤ level_est olan aktif konular
-  (level_est: A2 beyanı veya yerleştirmede ≥ %60 doğru → A2; yoksa A1)
-
-1. Tekrar (1): next_review_at ≤ şimdi olan en eski (konu, beceri); yoksa atla.
-2. Odak konusu F = argmax öncelik(t):
-     öncelik = (1 − min_beceri_ustalığı(t))
-             + 0.15 × l1_risk
-             + 0.20 × [t bu haftanın okul konusu]
-             + 0.10 × [t üzerinde aktif teşhis var]
-   F için 3 etkinlik, en az 2 farklı beceri.
-   skill_gap varsa: 2 etkinlik zayıf beceriden.
-   Beceri içinde etkinlik türü: ε-greedy (ε = 0.2), skor = (retained_n + 1) / (taught_n + 2).
-3. Çapraz tekrar (2): belirsiz konular veya son 3 günde hata yapılan konular;
-   en az ölçülmüş beceride ve hatanın yapıldığı beceriden FARKLI bir beceride.
-4. Kapsama: dinleme ya da konuşma yoksa F veya tekrar konusundan ekle.
-5. Germe (1): önkoşulları m ≥ 0.6 olan, n = 0 sonraki konu.
-6. Süre ayarı: > 1200 sn → önce germe, sonra tekrar çıkar; < 900 sn → çapraz tekrar ekle.
-7. İlgi alanı: etkinliklere öğrencinin ilgi alanları sırayla atanır;
-   general_content_rate (%20) oranında interest = null (genel içerik).
-8. Seslendirme kapalıysa (tts_enabled = false): dinleme slotları aynı konu ve
-   moddaki metin türüne düşer (listen_choose → mcq_read, dictation → gap_fill);
-   bu durumda dört beceri kuralı dinleme hariç uygulanır.
+puan = 1,0 · ihtiyaç + 1,2 · yol_yakınlığı + 0,6 · iletişimsel_değer + 0,4 · hedef_uyumu + 0,4 · sınav_ağırlığı
 ```
 
-Planlayıcı çıktısı slot listesidir: `{position, topic_id, skill, activity_type, purpose, l1_target, interest}`. Bu liste `sessions.plan`'a gerekçeleriyle yazılır, sonra içerik üreticiye verilir.
+L1 riski sırayı değil **tekrar dozunu** belirler (unutma hızı, 4.1).
+
+**Okul konusu:** öğrencinin haftalık cevabı; yoksa `program_weeks` (okul programı haritası). `study_mode = self` ise okul konusu yok.
+
+**Slot sırası (8–10 etkinlik, 900–1200 sn):**
+
+```text
+odak ×3 (skill_gap: 2'si zayıf beceriden; konu daha önce görüldüyse 3. slot karışabilir konu — interleaving)
+yoklama ×1 (probe: güçlü olduğu bir beceride ayırt edici soru ya da "muhtemelen biliyor" konusunu doğrulama)
+tekrar ×2 (vadesi gelen hücreler)
+girdi (input: anlam odaklı okuma/dinleme; kendi programında her oturum, okul modunda çift oturumlarda)
+çıktı (output: anlam odaklı üretim)
+akıcılık (fluency: kolay, tanıdık malzeme; kendi programında tek oturumlarda) ya da germe (stretch)
+kapsama (dört beceri), doldurma (çalışılan > muhtemelen > hazır)
+süre fazlaysa düşme sırası: doldurma, akıcılık, germe, girdi, tekrar, kapsama, karışık, yoklama
+```
+
+İlgi alanı ataması, seslendirme kapalıyken dinleme slotlarının metne düşmesi ve etkinlik türü seçimi (ε-greedy, ε = 0,2) değişmedi. Planlayıcı çıktısı slot listesidir (`bridge_for` dahil) ve `sessions.plan`'a gerekçeleriyle yazılır.
+
+**Ana sayfa:** "Bugün ne çalışalım?" en iyi 2–3 aday (çalışılan + hazır); seçim hazır oturumu bırakır, sonraki oturumun odağı olur. Haftalık okul sorusunda varsayılan yolda öğrencinin sınırına en yakın 3 konu öneri olarak gösterilir.
 
 ### 4.5 Etkinlik verimi
 
@@ -591,6 +647,34 @@ purpose = 'retest' olan bir cevap r geldiğinde (konu T):
 
 Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk tek, kıvrık kesme işareti düz, sondaki noktalama yok sayılır, kısaltma eşdeğerleri (`don't` ↔ `do not`, `I'm` ↔ `I am` …).
 
+### 4.7 Yerleştirme testi ve kapsam kapısı (rev. 5: `lib/engine/placement-cat.ts`)
+
+Bayesçi sınıflama testi (uyarlamalı). θ için 241 noktalı ızgarada sonsal; madde 4PL (`placement_bank.json`, 134 taslak madde: preA1 12, A1 30, A2 40, B1 40, B2 12; B1/B2 maddeleri `measure` konularında).
+
+```text
+kesimler: A1|A2 = 0, A2|B1 = 1,5     sınıflar: A1 (alt seviyeler dahil), A2, A2 üstü
+önsel: N(beyan A1 −0,5 · A2 0,6 · emin değilim 0,25, 1,6²)
+ısınma: ilk 2 madde kolay (A1 / preA1)
+sonraki madde: beklenen sınıf entropisini en çok azaltan ilk 3 maddeden biri (maruz kalma kontrolü)
+yumuşak kısıtlar: aynı konu art arda yok; konu başına ≤ 2; 4. maddeden sonra beceri payı ≤ %50, şıklı ≤ %60
+durma: ≥ 8 madde ve en olası sınıf P ≥ 0,95; ya da 25 madde
+uzatma: 25. maddede P(A2 üstü) ∈ [0,6, 0,9) ise +5 madde
+karar: en olası sınıf; "A2 üstü" ancak P ≥ 0,9 (asimetrik kapı), değilse A2
+```
+
+- Maddeler **tek tek** eklenir (`items.bank_item_id`); test sırasında doğru/yanlış gösterilmez; ipucu yok. Sesi çalınamayan dinleme maddesi atlanır (`POST /api/items/:id/skip`), testin geri kalanında dinleme sorulmaz.
+- Sınıflama bitince (kapı değilse) bir konuşma sorusu eklenir; konuşma yalnızca öğrenme profiline destek kanıttır, seviye kararını değiştirmez. Testteki tek yapay zekâ çağrısı budur.
+- Simülasyon (gerçek banka, önseller doğruysa): doğruluk %85, ortalama 18 madde, yanlış dışlama %0,9 (hedef ≤ %2).
+- **Kapsam kapısı:** "A2 üstü" → `scope_status = above_scope`; günlük oturum yerine "Çok yakında senin seviyen için de buradayız" sayfası (`/kapsam`), bekleme listesi (`notify_opt_in_at`) ve `retest_after_days` (7) sonra **bir kez** yeniden test.
+- **Sürekli kapı:** günlük oturum sonunda P(θ ≥ 1,5) ≥ `continuous_gate_p` (0,95) ve A2 konularının ≥ %90'ı sağlamsa `scope_status = graduated`.
+- **Sonuç kartları:** iyi gidenler (testte hepsi doğru ve beklenen doğruluk ≥ 0,75), zorlandıkların (en az bir yanlış ve beklenen doğruluk < 0,5), netleştireceklerimiz (açık ama hiç sorulmamış konular). Sorulmamış konu zayıf sayılmaz.
+
+### 4.8 Kalibrasyon ve izleme (rev. 5: `lib/engine/calibration.ts`)
+
+- **Gece işi:** yerleştirme maddelerinin zorluğu (b), öğrencilerin yerleştirme θ'sından MAP ile güncellenir (önsel = banka değeri, sd 0,5; a, c, d sabit; madde başına ≥ 20 cevap) → `item_calibration`.
+- **Panel:** son 30 günün `pred_p`'leriyle AUC, log-kayıp, Brier ve beklenen kalibrasyon hatası (10 kutu), günlük ve yerleştirme ayrı; kapsam dağılımı, ortalama test uzunluğu, sınırda sonuçlar. Yalnızca sayılar.
+- Konu zorluğu (`topics.irt_b`) ve tür ofsetlerinin veriden güncellenmesi pilot sonrasına bırakıldı (50 kişide güvenilir değil).
+
 ---
 
 ## 5. Yapay zekâ katmanı
@@ -604,6 +688,8 @@ Normalizasyon (`normalize.ts`): küçük harf, baş/son boşluk, çoklu boşluk 
 | Boşluk hakemliği | `gap_fill` cevabı anahtarda ve `wrong_patterns`'ta yokken (Bölüm 4.6) | Claude (OpenRouter) · `model_grade`, `effort_grade` (low), `thinking_grade`; `llm_usage.purpose = 'grade'` | boşluklu cümle, tamamlanmış model cümle(ler), öğrencinin tamamladığı cümle (sınırlayıcılar içinde), konu ve L1 kod listesi | `GradeResult` |
 | Transkript | `speak_answer` kaydında | OpenRouter · `model_transcribe` (MAI-Transcribe-2) | WAV ses; `language: "en"`; biçim seçeneği gönderilmez (varsayılan `verbatim`) | `{ transcript: string, unclear: boolean }` (`unclear` = boş ya da çok kısa transkript) |
 | Konuşma değerlendirme | transkriptten sonra | Claude (OpenRouter) · `model_grade`, `effort_grade` | transkript + etkinlik | `GradeResult` |
+
+**Kesinlik öncelikli değerlendirme (rev. 5):** serbest cevap, boşluk hakemliği ve konuşma değerlendirmesi `grade_samples` (3) bağımsız çağrıyla **paralel** istenir (her biri guard → çağrı → `llm_usage`) ve `lib/ai/grade-vote.ts` ile birleştirilir: bir hata ancak örneklerin yarısından fazlası aynı düzeltmeyi işaretlediyse kalır; "yanlış" kararı da çoğunluk ister, eşitlikte cevap doğru sayılır; metinler kararla en uyumlu örnekten alınır. Değerlendirme güveni = uyum × modelin `confidence` alanı (high 1, medium 0,8, low 0,5) ve kanıt ağırlığına çarpan olarak girer (4.1). Gerekçe: öğrenciye haksız "yanlış" demek kaçırılan hatadan pahalıdır (GEC literatüründe F0.5). Maliyet: değerlendirme çağrısı ×3 (oturum başına ≈ 2–4 serbest cevap).
 
 Ayrı bir "uzun açıklama" çağrısı yoktur: yerel değerlendirilen etkinliklerin uzun açıklaması üretim anında `item_keys`'e, yapay zekâ ile değerlendirilenlerinki (boşluk hakemliğinde "yanlış" çıkan cevaplar dahil) `GradeResult` içinde gelir. "Daha fazla açıkla" maliyetsizdir.
 
@@ -621,7 +707,7 @@ Transkript ve değerlendirme bilerek **iki ayrı adımdır** (ve iki ayrı sağl
 
 ```ts
 const L1Code = z.enum([...L1_CODES])        // Ek B'deki 24 kod
-const TopicId = z.enum([...TOPIC_IDS])      // Ek A'daki 32 konu
+const TopicId = z.enum([...TAUGHT_TOPIC_IDS]) // Ek A'daki 32 öğretilen konu (ölçme konuları hariç)
 
 const GeneratedItem = z.object({
   slot: z.number().int(),
@@ -667,6 +753,7 @@ const GradeResult = z.object({
     span: z.string(), correction: z.string(), l1_code: L1Code, topic_id: TopicId,
   })).max(5),
   evidence: z.array(z.object({ topic_id: TopicId, correct: z.boolean() })).max(6),
+  confidence: z.enum(["high", "medium", "low"]),   // rev. 5: kanıt ağırlığına çarpan
 })
 ```
 
@@ -678,7 +765,7 @@ const GradeResult = z.object({
 - Şema karmaşıklık sınırı: `GeneratedItem` `$defs`'te bir kez tanımlansa da Anthropic onu her slot için açar; 6 ve daha fazla slotlu şema "Schema is too complex for compilation" hatası verir (ölçüm 11.11.2026). Bu yüzden oturum en çok 5 slotluk **paralel** çağrılarla üretilir: 10 → 5+5, 9 → 5+4, 8 → 4+4. Yeni bir şema ilk kullanımda ≈ 30 sn derlenir, sonra sağlayıcıda önbellekte kalır; yerel anahtarlar sayesinde en çok 5 farklı şema vardır.
 - Şema değişirse istem önbelleği geçersiz olur; şema sabit tutulur.
 
-**Üretim sonrası kod kontrolleri** (şemadan geçse de): `options` doğru cevabı tam bir kez içerir; `tokens` `accepted[0]`'ın bir permütasyonudur; cümle uzunluğu A1 ≤ 12, A2 ≤ 16 kelime; `distractors` her yanlış şık için tam bir kayıt içerir. Şemadan kısmen geçen yanıtta geçerli slotlar tutulur. Kod kontrolünden ya da şemadan geçmeyen, eksik ya da reddedilen slotlar tek bir yeniden üretim turunda (yine ≤ 5'lik paralel çağrılar) yeniden üretilir; yine geçmezse çıkarılır (oturum ≥ 8 etkinlik kalmalı). Ölçüm (eval-generation, 11.11.2026): 20/20 oturum geçerli, p50 20,6 sn, p90 30,0 sn, 0,0039 $/oturum.
+**Üretim sonrası kod kontrolleri** (şemadan geçse de): `options` doğru cevabı tam bir kez içerir; `tokens` `accepted[0]`'ın bir permütasyonudur; cümle uzunluğu A1 ≤ 12, A2 ≤ 16 kelime; `distractors` her yanlış şık için tam bir kayıt içerir; **kelime kapsamı** (rev. 5): öğrencinin okuduğu İngilizce metinde seviye listesi (`lib/content/wordlist.ts`, taslak) + slotun ilgi alanı kelimeleri dışındaki sözcük oranı `curriculum.coverage_a1` (0,98) / `coverage_a2` (0,95) eşiğinin altındaysa ve birden çok farklı sözcükse slot reddedilir (özel adlar bilinen sayılır; sesletim konuları muaf). Şemadan kısmen geçen yanıtta geçerli slotlar tutulur. Kod kontrolünden ya da şemadan geçmeyen, eksik ya da reddedilen slotlar tek bir yeniden üretim turunda (yine ≤ 5'lik paralel çağrılar) yeniden üretilir; yine geçmezse çıkarılır (oturum ≥ 8 etkinlik kalmalı). Ölçüm (eval-generation, 11.11.2026): 20/20 oturum geçerli, p50 20,6 sn, p90 30,0 sn, 0,0039 $/oturum.
 
 ### 5.3 Komut ilkeleri (`lib/ai/prompts/*`)
 
@@ -686,6 +773,8 @@ const GradeResult = z.object({
 - Öğrenci metni `<student_answer>…</student_answer>` içinde veri olarak verilir; içindeki talimatlar yok sayılır.
 - Değerlendirme kuralları: noktalama ve büyük harf hata sayılmaz; aksan ve telaffuz yorumlanmaz; yalnızca gerçekten kullanılan yapılar için `evidence` üretilir; hata gerçekten Türkçe kaynaklıysa `L1.*`, değilse `GEN.*` kodu.
 - Açıklama stili: "sen" dili, yargısız, önce doğru biçim, sonra Türkçeyle tek cümlelik karşılaştırma.
+- Değerlendirmede kesinlik önceliği (rev. 5): "emin değilsen işaretleme"; üslup ve kabul edilebilir varyant hata değildir; `confidence` alanı doldurulur.
+- Slot amaçları (rev. 5): `probe` bilgi yoklaması (tipik, ipucusuz cümle), `input` anlam odaklı okuma/dinleme, `output` anlam odaklı üretim, `fluency` çok kolay ve tanıdık malzeme. Ölçme konuları komutlarda listelenmez.
 - İçerik kuralları: `PRD.md` Bölüm 8.
 
 ### 5.4 Maliyet koruması (`lib/ai/guard.ts`)
@@ -723,6 +812,8 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | `session_not_active` | 409 | cevap/ipucu/bitiş çağrılan oturum açık değil |
 | `daily_limit` | 429 | günlük oturum sınırı (Bölüm 5.4) |
 | `ai_unavailable` | 503 | acil durdurma ya da aylık tavan nedeniyle oturum hazırlanamıyor |
+| `out_of_scope` | 403 | rev. 5: kapsam dışı öğrenci (`above_scope` / `graduated`) günlük akış uç noktasını çağırdı |
+| `retest_unavailable` | 409 | rev. 5: yeniden test hakkı yok ya da tarihi gelmedi |
 | `server_error` | 500 | beklenmeyen hata (ayrıntı yanıta ve günlüğe içerik olarak yazılmaz) |
 
 ### Kimlik ve başlangıç
@@ -732,8 +823,11 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | GET | `/auth/callback` | — | `code` | oturum çerezini kurar, yönlendirir |
 | POST | `/api/onboarding/invite` | öğrenci | `{ code }` | `{ ok, cohortName }` · kapasite doluysa `409` |
 | POST | `/api/onboarding/consent` | öğrenci | `{ adult: true, consentVersion }` | `{ ok }` |
-| POST | `/api/onboarding/profile` | öğrenci | `{ levelSelf, interests: string[≥2] }` | `{ ok }` |
-| POST | `/api/placement` | öğrenci | — | `{ sessionId }` sabit bankadan yerleştirme oturumu |
+| POST | `/api/onboarding/profile` | öğrenci | `{ levelSelf, interests: string[≥2], studyMode?, goal?, programId? }` | `{ ok }` · `programId` yalnızca okul modunda ve etkin programsa |
+| POST | `/api/placement` | öğrenci | — | `{ sessionId }` uyarlamalı yerleştirme oturumu (ilk madde eklenmiş); yeniden teste açılmış öğrencide yeni oturum |
+| POST | `/api/placement/retest` | öğrenci (kapsam dışı) | — | `{ ok }` · hak yoksa `409 retest_unavailable` |
+| GET | `/api/scope` | öğrenci | — | `{ status, notified, canRetest, retestAt }` |
+| POST | `/api/waitlist` | öğrenci (kapsam dışı) | `{ optIn: true }` | `{ ok }` · yalnızca tercih ve zamanı yazılır |
 
 ### Oturum ve etkinlikler
 
@@ -742,12 +836,13 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | POST | `/api/sessions/next` | öğrenci | — | `{ sessionId, status }` · 24 saatten yeni `active` oturum varsa onu (kaldığı yerden devam), yoksa `ready` ya da `generating` oturumu döner; hiçbiri yoksa üretimi `after()` ile başlatır (`maxDuration = 300`); koruma kontrolleri (günlük sınırda `429 daily_limit` + `limit_hit`, acil durdurma ve tavanda `503 ai_unavailable`) |
 | GET | `/api/sessions/:id` | sahibi | — | `{ session, items (anahtarsız), attempts }` |
 | POST | `/api/sessions/:id/start` | sahibi | — | `{ ok }` · bugün başlatılan oturum sayısı `≥ daily_session_limit` ise `429` + `{ error: { code: 'daily_limit' } }` ve `limit_hit` olayı |
-| POST | `/api/items/:id/attempt` | sahibi | `{ response, timeMs, hintUsed }` | `{ attemptId, isCorrect, score, feedbackShortTr, correction, errorNameTr }` · değerlendirilemeyen cevapta (Bölüm 5.1 refusal/hata, boşluk hakemliğinde geçerli başka cevap) `isCorrect` ve `score` `null`; `errorNameTr` yanlış cevapta ilk anlamlı hatanın `l1_codes.name_tr`'si (`GEN.OTHER` hariç), yoksa `null` · `maxDuration = 60` · aynı etkinliğe ikinci gönderim ilk sonucu döner |
+| POST | `/api/items/:id/attempt` | sahibi | `{ response, timeMs, hintUsed }` | `{ attemptId, isCorrect, score, feedbackShortTr, correction, errorNameTr, placement? }` · rev. 5: yerleştirmede değerlendirme gösterilmez (`isCorrect`… `null`), `placement: 'item' \| 'done'` (sıradaki madde eklendi / test bitti) · değerlendirilemeyen cevapta (Bölüm 5.1 refusal/hata, boşluk hakemliğinde geçerli başka cevap) `isCorrect` ve `score` `null`; `errorNameTr` yanlış cevapta ilk anlamlı hatanın `l1_codes.name_tr`'si (`GEN.OTHER` hariç), yoksa `null` · `maxDuration = 60` · aynı etkinliğe ikinci gönderim ilk sonucu döner |
 | POST | `/api/items/:id/speech` | sahibi | `multipart`: `audio` (WAV ≤ 2 MB, ≤ 45 sn), `timeMs`, `tryNo` | `{ attemptId, transcript, isCorrect, score, feedbackShortTr, correction }` |
+| POST | `/api/items/:id/skip` | sahibi | — | `{ placement }` · yalnızca yerleştirmedeki dinleme maddesi (ses çalınamadı) |
 | GET | `/api/items/:id/hint` | sahibi | — | `{ hintTr }` |
 | GET | `/api/attempts/:id/explanation` | sahibi | `?via=auto \| dismiss` (isteğe bağlı) | `{ explanationLongTr }` · varsayılan (tıklama): `explain_opened = true` + `explain_open` olayı; `via=auto` (uzun modda kendiliğinden gösterim): `explain_opened = true`, olay yok; `via=dismiss` ("Kısa yeter"): `explain_opened = false` |
 | GET | `/api/items/:id/audio` | sahibi | — | `{ url }` 1 saatlik imzalı URL · seslendirme kullanılamıyorsa `503` + `{ error: { code: 'tts_unavailable' } }` |
-| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` (boş gövde olabilir) | `{ summary, diagnosis? }` · sonraki oturum `after()` ile üretilir (`maxDuration = 300`) · bitmiş oturumda yeniden çağrı aynı özeti döner ve yalnızca gönderilen puan/notu yazar |
+| POST | `/api/sessions/:id/finish` | sahibi | `{ rating?, comment? }` (boş gövde olabilir) | `{ summary, diagnosis?, placement?, graduated? }` · yerleştirmede `placement = { level, levelEst, gate, borderline, confidence, items, strengths, weakPoints, toClarify }` · sonraki oturum `after()` ile üretilir (`maxDuration = 300`) · bitmiş oturumda yeniden çağrı aynı özeti döner ve yalnızca gönderilen puan/notu yazar |
 | POST | `/api/diagnoses/:id/feedback` | sahibi | `{ feedback: 'agree' \| 'disagree' }` | `{ ok }` |
 
 ### İlerleme ve hesap
@@ -755,7 +850,9 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 | Yöntem | Yol | Rol | Girdi | Çıktı |
 | --- | --- | --- | --- | --- |
 | GET | `/api/progress` | öğrenci | — | `{ grid, weekSessions, topErrors, diagnoses }` |
-| PATCH | `/api/profile` | öğrenci | `{ displayName?, interests?: string[≥2], explainMode? }` | `{ ok }` · yalnızca bu üç alan (RLS tablosuyla aynı) |
+| PATCH | `/api/profile` | öğrenci | `{ displayName?, interests?: string[≥2], explainMode?, studyMode?, goal? }` | `{ ok }` · yalnızca bu alanlar; çalışma modu ya da hedef değişince hazır oturum bırakılır |
+| GET | `/api/home` | öğrenci (kapsam içi) | — | `{ focusChoices, focusChoice, school }` · "Bugün ne çalışalım?" ve haftalık okul sorusu (öneriler dahil; kendi programında ya da program haritalıysa `null`) |
+| POST | `/api/focus-choice` | öğrenci (kapsam içi) | `{ topicId \| null }` | `{ ok }` · yalnızca güncel seçeneklerden; hazır oturum bırakılır |
 | POST | `/api/events` | öğrenci | `{ name, props? }` | `{ ok }` · `name` yalnızca `events` tablosundaki listeden; `props` ≤ 1 KB, öğrenci metni içermez |
 | POST | `/api/school-topic` | öğrenci | `{ topicId \| null }` | `{ ok }` |
 | GET | `/api/account/export` | öğrenci | — | JSON dosyası (tüm kişisel kayıtlar) |
@@ -765,14 +862,14 @@ Tümü Next.js Route Handler. Gövde ve yanıt JSON; girdiler Zod ile doğrulan�
 
 | Yöntem | Yol | Rol | Girdi | Çıktı |
 | --- | --- | --- | --- | --- |
-| GET | `/api/admin/overview` | teacher, admin | — | kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet (sağlayıcıya göre), oturum başı maliyet, ay içi TTS karakteri, önbellek isabet oranı |
+| GET | `/api/admin/overview` | teacher, admin | — | kayıtlı/aktif kullanıcı, haftada ≥ 4 oturum oranı, W4, ay içi maliyet (sağlayıcıya göre), oturum başı maliyet, ay içi TTS karakteri, önbellek isabet oranı; rev. 5: modelin tahmin kalitesi (AUC, log-kayıp, ECE; günlük / yerleştirme) ve kapsam dağılımı |
 | GET | `/api/admin/review-queue` | teacher, admin | `?limit=20` | incelenmemiş `review_sampled` hatalar + bağlam |
 | POST | `/api/admin/reviews` | teacher, admin | `{ errorEventId, verdict, correctedL1Code?, note? }` | `{ ok }` |
 | GET | `/api/admin/review-stats` | teacher, admin | — | haftalık uyum yüzdesi, koda göre kırılım |
 | GET, PATCH | `/api/admin/settings` | admin | `{ key, value }` | ayarlar |
 | GET | `/api/cron/daily` | Vercel Cron (`Authorization: Bearer CRON_SECRET`) | — | `{ ok }` |
 
-**Günlük cron işi:** 72 saatten eski `ready` oturumları yeniden planla işaretle; 24 saatten eski `active` oturumları `abandoned` yap; 21 gündür kullanılmayan TTS dosyalarını sil; günlük maliyet özetini hesapla. (Supabase ücretsiz projelerinin 7 gün hareketsizlikte durmasını da önler.)
+**Günlük cron işi:** 72 saatten eski `ready` oturumları yeniden planla işaretle; 24 saatten eski `active` oturumları `abandoned` yap; 21 gündür kullanılmayan TTS dosyalarını sil; yerleştirme maddelerini kalibre et (4.8); günlük maliyet özetini hesapla. (Supabase ücretsiz projelerinin 7 gün hareketsizlikte durmasını da önler.)
 
 ---
 
@@ -992,13 +1089,16 @@ Sesletim konuları v1'de yalnızca dinleme ile (minimal çiftler, `listen_choose
 | `GEN.VOCAB` | — | Yanlış kelime seçimi | | |
 | `GEN.OTHER` | — | Diğer | | |
 
-## Ek C — Yerleştirme testi planı (14 soru, ≈ 7 dk)
+## Ek C — Yerleştirme bankası (rev. 5: uyarlamalı, çoğunlukla 14–19 soru, ≈ 8 dk)
 
-| # | Tür | Hedef konu / kod |
-| --- | --- | --- |
-| 1–10 | `mcq_read` (6) + `gap_fill` (4) | BE_OMIT, 3SG_S, HE_SHE, ART_OMIT, DO_SUPPORT, Q_INVERSION, PLURAL_NUM, PREP_IN_ON_AT, SIMPLE_CONT, PERFECT_PAST |
-| 11–12 | `listen_choose` | TH_SOUND, W_V (minimal çiftler) |
-| 13 | `word_order` | WORD_ORDER_SOV |
-| 14 | `speak_answer` (≈ 20 sn) | "Tell me about your day." serbest kanıt |
+Soru bankası `supabase/seed/placement_bank.json` dosyasındadır (`status: draft_pending_pedagogy`; pedagoji sahibi onaylar) ve dil modeli tarafından üretilmez; LLM yalnızca B1/B2 maddelerinin taslağını yazdı (karar 10). Üretim betiği `scripts/build-placement-bank.py`.
 
-Soru bankası `supabase/seed/placement.json` dosyasındadır ve dil modeli tarafından üretilmez. Dinleme sesleri bir kez üretilip tüm öğrenciler için önbellekten verilir.
+| Bant | Madde | θ aralığı (b önseli) | Konular |
+| --- | --- | --- | --- |
+| preA1 | 12 | −3 … −1,5 | temel A1 konuları (be, özne zamirleri, çoğul…) |
+| A1 | 30 | −1,5 … 0 | A1 dilbilgisi + iki sesletim (TH_SOUND, W_V) |
+| A2 | 40 | 0 … 1,5 | A2 dilbilgisi; A2|B1 kesimi yakınında kurgulu maddeler |
+| B1 | 40 | 1,5 … 3 | `m.b1` (ölçme) |
+| B2 | 12 | 3 … 4,5 | `m.b2` (ölçme) |
+
+Türler yalnızca yerel değerlendirilenler (`mcq_read`, `gap_fill`, `word_order`, `listen_choose`, `dictation`); her maddede 4PL önseli (`irt: {a, b, c, d}`), gece kalibrasyonu `item_calibration`'a yazar (4.8). Sınıflama bitince eklenen konuşma maddesi: "Tell me about your day." (`speaking`). Dinleme sesleri bir kez üretilip tüm öğrenciler için önbellekten verilir. Seçim ve durma kuralları: Bölüm 4.7.

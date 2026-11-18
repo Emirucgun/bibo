@@ -4,7 +4,7 @@
 import type { z } from "zod";
 import type { Level } from "@/lib/engine/types";
 import { formatIssues, type StructuredCall } from "./client";
-import { checkItem } from "./checks";
+import { checkItem, type CoverageThresholds } from "./checks";
 import { guardedLlmCall, type AiDeps, type CallContext } from "./guard";
 import { buildGenerateUser, GENERATE_SYSTEM, type GenerateSlotInput, type GenerateUserInput } from "./prompts/generate";
 import { GeneratedItem, SessionGen, slotKey } from "./schemas";
@@ -44,12 +44,16 @@ export interface GenerationOutcome {
   dropped: DroppedSlot[];
   /** Yeniden üretilen slot numaraları. */
   regenerated: number[];
+  /** İlk turda kontrolden geçmeyen slotlar ve sorunları (yeniden üretim gerekçesi; ölçüm için). */
+  firstRoundProblems: DroppedSlot[];
   /** Yapılan model çağrısı sayısı (HTTP yeniden denemeleri hariç). */
   calls: number;
 }
 
 export interface GenerateSessionInput extends GenerateUserInput {
   level: Level;
+  /** Kelime kapsamı eşikleri (`app_settings.curriculum`); verilmezse kapsam denetlenmez. */
+  coverage?: CoverageThresholds;
 }
 
 /** Bir etkinlik için kaydedilen Zod sorunları en çok bu kadar (yeniden üretim notu kısa kalsın). */
@@ -180,7 +184,7 @@ export async function generateSession(
         result.kind === "failed"
           ? [result.problem]
           : item
-            ? checkItem(item, slot, input.level)
+            ? checkItem(item, slot, input.level, input.coverage)
             : (result.batch.problems.get(pos) ?? ["missing_item"]);
       if (problems.length === 0 && item) {
         valid.set(pos, item);
@@ -201,6 +205,7 @@ export async function generateSession(
 
   // 2) Geçmeyen slotlar bir kez yeniden üretilir; yine geçmezse çıkarılır.
   const regenerated = [...failing.keys()];
+  const firstRoundProblems = [...failing].map(([slot, problems]) => ({ slot, problems: [...problems] }));
   if (regenerated.length > 0) {
     await runRound(
       input.slots.filter((s) => failing.has(s.position)),
@@ -217,5 +222,5 @@ export async function generateSession(
   if (items.length < MIN_SESSION_ITEMS) {
     throw new GenerationError("too_few_items", `${items.length} valid`);
   }
-  return { items, dropped, regenerated, calls };
+  return { items, dropped, regenerated, firstRoundProblems, calls };
 }

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { SessionRunner } from "@/components/session/SessionRunner";
 import { callApi } from "@/lib/api/client";
 
-// Yerleştirme testi (PRD F2): kısa giriş → sabit bankadan oturum → oturum ekranı → zayıf noktalar kartı.
+// Yerleştirme testi (PRD F2, docs/SPEC.md 4.7): kısa giriş → uyarlamalı test (soru soru) → sonuç kartları.
 export function PlacementFlow() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -31,13 +31,14 @@ export function PlacementFlow() {
         <p className="text-sm text-muted-foreground">Adım 2/2</p>
         <h1 className="text-2xl font-semibold">Kısa bir tanışma testi</h1>
         <p className="text-base leading-relaxed">
-          14 kısa soru, yaklaşık 7 dakika. Bu bir sınav değil: amacımız nerede zorlandığını tahmin edip ilk
-          oturumunu ona göre hazırlamak.
+          Çoğu kişi için 14–19 kısa soru, yaklaşık 8 dakika. Bu bir sınav değil: amacımız seni tanıyıp ilk
+          oturumunu sana göre hazırlamak.
         </p>
       </header>
       <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm leading-relaxed">
-        <li>Okuma, boşluk doldurma, cümle dizme ve dinleme soruları var.</li>
-        <li>Son soruda telefonuna kısaca konuşacaksın; mikrofon izni isteyeceğiz.</li>
+        <li>Sorular cevaplarına göre değişir: doğru bildikçe zorlaşır, zorlandıkça kolaylaşır.</li>
+        <li>Test sırasında doğru ya da yanlış göstermiyoruz; sonuçları sonda birlikte göreceğiz.</li>
+        <li>Okuma, boşluk doldurma, cümle dizme ve dinleme soruları var. Sonda telefonuna kısaca konuşacaksın.</li>
         <li>Bilmediğin soruda tahmin etmen yeterli. Yanlışlar da bize çok şey anlatır.</li>
       </ul>
       {error ? (

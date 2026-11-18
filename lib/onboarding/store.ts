@@ -57,6 +57,12 @@ export function createOnboardingStore(admin: SupabaseClient): OnboardingStore {
       return (data?.length ?? 0) > 0;
     },
 
+    async programExists(programId) {
+      const { data, error } = await admin.from("programs").select("id").eq("id", programId).eq("active", true).maybeSingle();
+      if (error) throw new Error(`programs: ${error.code}`);
+      return data !== null;
+    },
+
     async deleteUser(userId) {
       const { error } = await admin.auth.admin.deleteUser(userId);
       if (error) throw new Error(`deleteUser: ${error.code ?? error.status ?? "unknown"}`);

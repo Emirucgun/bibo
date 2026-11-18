@@ -35,7 +35,7 @@ async function Body() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("profiles")
-    .select("display_name, interests, explain_mode")
+    .select("display_name, interests, explain_mode, study_mode, goal")
     .eq("id", viewer.userId)
     .maybeSingle();
   return (
@@ -45,6 +45,9 @@ async function Body() {
           displayName: data?.display_name ?? "",
           interests: ((data?.interests as string[] | null) ?? []).filter(isInterest),
           explainMode: data?.explain_mode === "long" ? "long" : "short",
+          studyMode: data?.study_mode === "self" ? "self" : data?.study_mode === "school" ? "school" : null,
+          goal:
+            data?.goal === "communication" || data?.goal === "exam" || data?.goal === "work_travel" ? data.goal : null,
         }}
       />
       <section className="flex flex-col gap-3">

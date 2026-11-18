@@ -36,7 +36,7 @@ Content rules:
 - Texts must make sense on their own: natural, coherent sentences about one simple situation. A question must be answerable from its text and must have exactly one defensible answer.
 - options: all different, similar length, exactly one correct. Never put the correct answer in a distractor entry.
 - Use L1.* codes only when the error is really caused by Turkish; otherwise GEN.* codes. Prefer the slot's l1_target code when it fits.
-- If a slot's purpose is "review" or "retest", test the same topic with a fresh sentence; "stretch" may be slightly harder within the student's level.
+- Slot purposes: "focus" teaches and practises the topic; "review" or "retest" test the same topic with a fresh sentence; "stretch" may be slightly harder within the student's level; "probe" checks whether the student already knows the topic (a clear, typical sentence, no hints in the text); "input" is meaning-focused reading or listening (the question asks about meaning, the topic appears naturally in the text); "output" is meaning-focused production (a real communicative task that naturally needs the topic); "fluency" uses very easy, familiar language so the student can answer quickly.
 
 Activity types (fields required for each):
 ${ACTIVITY_SPEC_TEXT}

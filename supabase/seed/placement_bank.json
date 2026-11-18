@@ -1,0 +1,5190 @@
+{
+  "version": "2026-11-18",
+  "status": "draft_pending_pedagogy",
+  "note": "TASLAK: dil modeli (Claude) tarafından yazıldı; pedagoji sahibi onaylayacak, düzenleyecek ve aynı seviyedeki maddeleri zorluğa göre sıralayacak. irt.b uzman önselidir; pilot verisiyle kalibre edilir (item_calibration). B1/B2 maddeleri yalnızca ölçme içindir, öğretilmez. Dinleme maddelerinde seslendirilen metin key.text_en'dedir.",
+  "items": [
+    {
+      "id": "prea1-01",
+      "cefr": "preA1",
+      "topic_id": "g.be_present",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 0.9,
+        "b": -2.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ Ayşe.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "am",
+          "is",
+          "are",
+          "be"
+        ]
+      },
+      "key": {
+        "correct": "am",
+        "distractors": [
+          {
+            "option": "is",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "are",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-02",
+      "cefr": "preA1",
+      "topic_id": "g.subject_pronouns",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.HE_SHE",
+      "irt": {
+        "a": 0.9,
+        "b": -2.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "This is my father. ___ is a teacher.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "He",
+          "She",
+          "It",
+          "They"
+        ]
+      },
+      "key": {
+        "correct": "He",
+        "distractors": [
+          {
+            "option": "She",
+            "code": "L1.HE_SHE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It",
+            "code": "L1.HE_SHE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "They",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-03",
+      "cefr": "preA1",
+      "topic_id": "g.articles_a_an",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.ART_OMIT",
+      "irt": {
+        "a": 0.9,
+        "b": -2.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "It is ___ apple.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "an",
+          "a",
+          "the",
+          "two"
+        ]
+      },
+      "key": {
+        "correct": "an",
+        "distractors": [
+          {
+            "option": "a",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "the",
+            "code": "L1.ART_THE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "two",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-04",
+      "cefr": "preA1",
+      "topic_id": "g.plurals",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PLURAL_NUM",
+      "irt": {
+        "a": 0.9,
+        "b": -2.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I have two ___.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "cats",
+          "cat",
+          "cates",
+          "a cat"
+        ]
+      },
+      "key": {
+        "correct": "cats",
+        "distractors": [
+          {
+            "option": "cat",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "cates",
+            "code": "GEN.SPELLING",
+            "feedback_tr": ""
+          },
+          {
+            "option": "a cat",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-05",
+      "cefr": "preA1",
+      "topic_id": "g.be_present",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 1.2,
+        "b": -2.0,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "They ___ (be) my friends."
+      },
+      "key": {
+        "accepted": [
+          "are"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "is",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "be",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "-",
+            "code": "L1.BE_OMIT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-06",
+      "cefr": "preA1",
+      "topic_id": "g.possessives",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.HIS_HER",
+      "irt": {
+        "a": 0.9,
+        "b": -2.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "My name is Can. ___ name is Can.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "My",
+          "Me",
+          "I",
+          "Mine"
+        ]
+      },
+      "key": {
+        "correct": "My",
+        "distractors": [
+          {
+            "option": "Me",
+            "code": "L1.HIS_HER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "I",
+            "code": "L1.SUBJ_DROP",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Mine",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-07",
+      "cefr": "preA1",
+      "topic_id": "g.word_order_svo",
+      "activity_type": "word_order",
+      "l1_target": "L1.WORD_ORDER_SOV",
+      "irt": {
+        "a": 1.1,
+        "b": -1.9,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "I",
+          "like",
+          "tea."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "I like tea."
+        ]
+      }
+    },
+    {
+      "id": "prea1-08",
+      "cefr": "preA1",
+      "topic_id": "g.be_present",
+      "activity_type": "listen_choose",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 0.9,
+        "b": -2.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "How old is Mert?",
+        "options": [
+          "20",
+          "12",
+          "2",
+          "22"
+        ]
+      },
+      "key": {
+        "correct": "20",
+        "text_en": "Hello, I am Mert. I am twenty.",
+        "distractors": [
+          {
+            "option": "12",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          },
+          {
+            "option": "2",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          },
+          {
+            "option": "22",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-09",
+      "cefr": "preA1",
+      "topic_id": "g.there_is_are",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.THERE_HAVE",
+      "irt": {
+        "a": 0.9,
+        "b": -1.7,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "___ a book on the table.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "There is",
+          "There are",
+          "It have",
+          "Is"
+        ]
+      },
+      "key": {
+        "correct": "There is",
+        "distractors": [
+          {
+            "option": "There are",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It have",
+            "code": "L1.THERE_HAVE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Is",
+            "code": "L1.SUBJ_DROP",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-10",
+      "cefr": "preA1",
+      "topic_id": "g.be_present",
+      "activity_type": "dictation",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 1.2,
+        "b": -1.8,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "She is my sister.",
+        "text_en": "She is my sister.",
+        "target_words": [
+          "is",
+          "sister"
+        ]
+      }
+    },
+    {
+      "id": "prea1-11",
+      "cefr": "preA1",
+      "topic_id": "g.can",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": -1.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ swim.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "can",
+          "cans",
+          "can to",
+          "am can"
+        ]
+      },
+      "key": {
+        "correct": "can",
+        "distractors": [
+          {
+            "option": "cans",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "can to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "am can",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "prea1-12",
+      "cefr": "preA1",
+      "topic_id": "g.subject_pronouns",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.SUBJ_DROP",
+      "irt": {
+        "a": 1.2,
+        "b": -1.6,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "My mother is a nurse. ___ works in a hospital."
+      },
+      "key": {
+        "accepted": [
+          "she"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "he",
+            "code": "L1.HE_SHE"
+          },
+          {
+            "answer": "it",
+            "code": "L1.HE_SHE"
+          },
+          {
+            "answer": "-",
+            "code": "L1.SUBJ_DROP"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-01",
+      "cefr": "A1",
+      "topic_id": "g.present_simple_3sg",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.3SG_S",
+      "irt": {
+        "a": 0.9,
+        "b": -1.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "My brother ___ football every Saturday.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "plays",
+          "play",
+          "playing",
+          "is play"
+        ]
+      },
+      "key": {
+        "correct": "plays",
+        "distractors": [
+          {
+            "option": "play",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          },
+          {
+            "option": "playing",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "is play",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-02",
+      "cefr": "A1",
+      "topic_id": "g.present_simple_3sg",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.3SG_S",
+      "irt": {
+        "a": 1.2,
+        "b": -1.2,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "Elif ___ (watch) TV every evening."
+      },
+      "key": {
+        "accepted": [
+          "watches"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "watch",
+            "code": "L1.3SG_S"
+          },
+          {
+            "answer": "watchs",
+            "code": "GEN.SPELLING"
+          },
+          {
+            "answer": "watching",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-03",
+      "cefr": "A1",
+      "topic_id": "g.do_does_q_neg",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 0.9,
+        "b": -1.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Mert ___ like fish.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "doesn't",
+          "don't",
+          "not",
+          "isn't"
+        ]
+      },
+      "key": {
+        "correct": "doesn't",
+        "distractors": [
+          {
+            "option": "don't",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "not",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "isn't",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-04",
+      "cefr": "A1",
+      "topic_id": "g.do_does_q_neg",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.Q_INVERSION",
+      "irt": {
+        "a": 0.9,
+        "b": -1.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "___ you speak English?",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "Do",
+          "Does",
+          "Are",
+          "Is"
+        ]
+      },
+      "key": {
+        "correct": "Do",
+        "distractors": [
+          {
+            "option": "Does",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Are",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Is",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-05",
+      "cefr": "A1",
+      "topic_id": "g.do_does_q_neg",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 1.2,
+        "b": -0.8,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I ___ (not / like) coffee."
+      },
+      "key": {
+        "accepted": [
+          "don't like",
+          "do not like"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "not like",
+            "code": "L1.DO_SUPPORT"
+          },
+          {
+            "answer": "doesn't like",
+            "code": "L1.DO_SUPPORT"
+          },
+          {
+            "answer": "no like",
+            "code": "L1.DO_SUPPORT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-06",
+      "cefr": "A1",
+      "topic_id": "g.wh_questions",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.Q_INVERSION",
+      "irt": {
+        "a": 0.9,
+        "b": -0.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Where ___ you live?",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "do",
+          "are",
+          "does",
+          "you"
+        ]
+      },
+      "key": {
+        "correct": "do",
+        "distractors": [
+          {
+            "option": "are",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "does",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "you",
+            "code": "L1.Q_INVERSION",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-07",
+      "cefr": "A1",
+      "topic_id": "g.wh_questions",
+      "activity_type": "word_order",
+      "l1_target": "L1.Q_INVERSION",
+      "irt": {
+        "a": 1.1,
+        "b": -0.6,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "What",
+          "do",
+          "you",
+          "want?"
+        ]
+      },
+      "key": {
+        "accepted": [
+          "What do you want?"
+        ]
+      }
+    },
+    {
+      "id": "a1-08",
+      "cefr": "A1",
+      "topic_id": "g.present_simple",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.SIMPLE_CONT",
+      "irt": {
+        "a": 0.9,
+        "b": -1.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Every morning I ___ to school by bus.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "go",
+          "am going",
+          "going",
+          "goes"
+        ]
+      },
+      "key": {
+        "correct": "go",
+        "distractors": [
+          {
+            "option": "am going",
+            "code": "L1.SIMPLE_CONT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "going",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "goes",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-09",
+      "cefr": "A1",
+      "topic_id": "g.present_continuous",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.SIMPLE_CONT",
+      "irt": {
+        "a": 0.9,
+        "b": -0.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Look! The baby ___.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "is sleeping",
+          "sleeps",
+          "sleeping",
+          "sleep"
+        ]
+      },
+      "key": {
+        "correct": "is sleeping",
+        "distractors": [
+          {
+            "option": "sleeps",
+            "code": "L1.SIMPLE_CONT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "sleeping",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "sleep",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-10",
+      "cefr": "A1",
+      "topic_id": "g.present_continuous",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.SIMPLE_CONT",
+      "irt": {
+        "a": 1.2,
+        "b": -0.5,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "Be quiet, please. I ___ (study) now."
+      },
+      "key": {
+        "accepted": [
+          "am studying",
+          "'m studying"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "study",
+            "code": "L1.SIMPLE_CONT"
+          },
+          {
+            "answer": "studying",
+            "code": "L1.BE_OMIT"
+          },
+          {
+            "answer": "studies",
+            "code": "L1.3SG_S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-11",
+      "cefr": "A1",
+      "topic_id": "g.articles_a_an",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.ART_OMIT",
+      "irt": {
+        "a": 0.9,
+        "b": -1.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I have ___ car.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "a",
+          "an",
+          "-",
+          "two"
+        ]
+      },
+      "key": {
+        "correct": "a",
+        "distractors": [
+          {
+            "option": "an",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "-",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "two",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-12",
+      "cefr": "A1",
+      "topic_id": "g.articles_a_an",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.ART_OMIT",
+      "irt": {
+        "a": 1.2,
+        "b": -1.0,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "She is ___ engineer."
+      },
+      "key": {
+        "accepted": [
+          "an"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "a",
+            "code": "GEN.OTHER"
+          },
+          {
+            "answer": "-",
+            "code": "L1.ART_OMIT"
+          },
+          {
+            "answer": "the",
+            "code": "L1.ART_THE"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-13",
+      "cefr": "A1",
+      "topic_id": "g.articles_the",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.ART_THE",
+      "irt": {
+        "a": 0.9,
+        "b": -0.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "___ sun is very hot today.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "The",
+          "A",
+          "An",
+          "-"
+        ]
+      },
+      "key": {
+        "correct": "The",
+        "distractors": [
+          {
+            "option": "A",
+            "code": "L1.ART_THE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "An",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "-",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-14",
+      "cefr": "A1",
+      "topic_id": "g.prep_time",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PREP_IN_ON_AT",
+      "irt": {
+        "a": 0.9,
+        "b": -1.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "We have an exam ___ Monday.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "on",
+          "in",
+          "at",
+          "to"
+        ]
+      },
+      "key": {
+        "correct": "on",
+        "distractors": [
+          {
+            "option": "in",
+            "code": "L1.PREP_IN_ON_AT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "at",
+            "code": "L1.PREP_IN_ON_AT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "to",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-15",
+      "cefr": "A1",
+      "topic_id": "g.prep_time",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.PREP_IN_ON_AT",
+      "irt": {
+        "a": 1.2,
+        "b": -0.7,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "The film starts ___ 8 o'clock."
+      },
+      "key": {
+        "accepted": [
+          "at"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "in",
+            "code": "L1.PREP_IN_ON_AT"
+          },
+          {
+            "answer": "on",
+            "code": "L1.PREP_IN_ON_AT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-16",
+      "cefr": "A1",
+      "topic_id": "g.prep_place",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PREP_IN_ON_AT",
+      "irt": {
+        "a": 0.9,
+        "b": -1.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "The keys are ___ the bag.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "in",
+          "at",
+          "on to",
+          "into at"
+        ]
+      },
+      "key": {
+        "correct": "in",
+        "distractors": [
+          {
+            "option": "at",
+            "code": "L1.PREP_IN_ON_AT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "on to",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "into at",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-17",
+      "cefr": "A1",
+      "topic_id": "g.have_has",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.THERE_HAVE",
+      "irt": {
+        "a": 0.9,
+        "b": -1.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "My sister ___ a new phone.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "has",
+          "have",
+          "is",
+          "there is"
+        ]
+      },
+      "key": {
+        "correct": "has",
+        "distractors": [
+          {
+            "option": "have",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          },
+          {
+            "option": "is",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "there is",
+            "code": "L1.THERE_HAVE",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-18",
+      "cefr": "A1",
+      "topic_id": "g.there_is_are",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.THERE_HAVE",
+      "irt": {
+        "a": 0.9,
+        "b": -0.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "In my city ___ two big parks.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "there are",
+          "has",
+          "there is",
+          "have"
+        ]
+      },
+      "key": {
+        "correct": "there are",
+        "distractors": [
+          {
+            "option": "has",
+            "code": "L1.THERE_HAVE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "there is",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have",
+            "code": "L1.THERE_HAVE",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-19",
+      "cefr": "A1",
+      "topic_id": "g.object_pronouns",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.HE_SHE",
+      "irt": {
+        "a": 0.9,
+        "b": -0.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I know Ali. I see ___ every day.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "him",
+          "he",
+          "his",
+          "her"
+        ]
+      },
+      "key": {
+        "correct": "him",
+        "distractors": [
+          {
+            "option": "he",
+            "code": "L1.HE_SHE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "his",
+            "code": "L1.HIS_HER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "her",
+            "code": "L1.HE_SHE",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-20",
+      "cefr": "A1",
+      "topic_id": "g.possessives",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.HIS_HER",
+      "irt": {
+        "a": 0.9,
+        "b": -0.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Ayşe loves ___ job.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "her",
+          "his",
+          "she",
+          "its"
+        ]
+      },
+      "key": {
+        "correct": "her",
+        "distractors": [
+          {
+            "option": "his",
+            "code": "L1.HIS_HER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "she",
+            "code": "L1.HE_SHE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "its",
+            "code": "L1.HIS_HER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-21",
+      "cefr": "A1",
+      "topic_id": "g.some_any_much_many",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.COUNT_UNCOUNT",
+      "irt": {
+        "a": 0.9,
+        "b": -0.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "There isn't ___ milk in the fridge.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "any",
+          "some",
+          "many",
+          "a"
+        ]
+      },
+      "key": {
+        "correct": "any",
+        "distractors": [
+          {
+            "option": "some",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "many",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "a",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-22",
+      "cefr": "A1",
+      "topic_id": "g.some_any_much_many",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.COUNT_UNCOUNT",
+      "irt": {
+        "a": 0.9,
+        "b": -0.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "How ___ water do you drink?",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "much",
+          "many",
+          "a lot",
+          "any"
+        ]
+      },
+      "key": {
+        "correct": "much",
+        "distractors": [
+          {
+            "option": "many",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "a lot",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "any",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-23",
+      "cefr": "A1",
+      "topic_id": "g.adverbs_frequency",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.WORD_ORDER_SOV",
+      "irt": {
+        "a": 0.9,
+        "b": -0.7,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Doğru cümleyi seç.",
+        "question_en": "Which sentence is correct?",
+        "options": [
+          "He always gets up early.",
+          "He gets always up early.",
+          "Always he gets up early.",
+          "He gets up early always."
+        ]
+      },
+      "key": {
+        "correct": "He always gets up early.",
+        "distractors": [
+          {
+            "option": "He gets always up early.",
+            "code": "L1.WORD_ORDER_SOV",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Always he gets up early.",
+            "code": "L1.WORD_ORDER_SOV",
+            "feedback_tr": ""
+          },
+          {
+            "option": "He gets up early always.",
+            "code": "L1.WORD_ORDER_SOV",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-24",
+      "cefr": "A1",
+      "topic_id": "g.word_order_svo",
+      "activity_type": "word_order",
+      "l1_target": "L1.WORD_ORDER_SOV",
+      "irt": {
+        "a": 1.1,
+        "b": -1.0,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "We",
+          "play",
+          "football",
+          "after",
+          "school."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "We play football after school."
+        ]
+      }
+    },
+    {
+      "id": "a1-25",
+      "cefr": "A1",
+      "topic_id": "g.adverbs_frequency",
+      "activity_type": "word_order",
+      "l1_target": "L1.WORD_ORDER_SOV",
+      "irt": {
+        "a": 1.1,
+        "b": -0.4,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "She",
+          "usually",
+          "reads",
+          "at",
+          "night."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "She usually reads at night."
+        ]
+      }
+    },
+    {
+      "id": "a1-26",
+      "cefr": "A1",
+      "topic_id": "g.present_simple_3sg",
+      "activity_type": "listen_choose",
+      "l1_target": "L1.3SG_S",
+      "irt": {
+        "a": 0.9,
+        "b": -0.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Where does the friend work?",
+        "options": [
+          "in a bank",
+          "in a park",
+          "in a shop",
+          "at school"
+        ]
+      },
+      "key": {
+        "correct": "in a bank",
+        "text_en": "My friend works in a bank.",
+        "distractors": [
+          {
+            "option": "in a park",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          },
+          {
+            "option": "in a shop",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          },
+          {
+            "option": "at school",
+            "code": "GEN.VOCAB",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-27",
+      "cefr": "A1",
+      "topic_id": "g.can",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": -0.7,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "What can the speaker do?",
+        "options": [
+          "ride a bike",
+          "drive a car",
+          "both",
+          "neither"
+        ]
+      },
+      "key": {
+        "correct": "ride a bike",
+        "text_en": "I can't drive, but I can ride a bike.",
+        "distractors": [
+          {
+            "option": "drive a car",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "both",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "neither",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a1-28",
+      "cefr": "A1",
+      "topic_id": "g.present_simple_3sg",
+      "activity_type": "dictation",
+      "l1_target": "L1.3SG_S",
+      "irt": {
+        "a": 1.2,
+        "b": -0.4,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "He lives near the station.",
+        "text_en": "He lives near the station.",
+        "target_words": [
+          "lives"
+        ]
+      }
+    },
+    {
+      "id": "a1-29",
+      "cefr": "A1",
+      "topic_id": "g.do_does_q_neg",
+      "activity_type": "dictation",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 1.2,
+        "b": -0.2,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "Does she like music?",
+        "text_en": "Does she like music?",
+        "target_words": [
+          "Does",
+          "like"
+        ]
+      }
+    },
+    {
+      "id": "a1-30",
+      "cefr": "A1",
+      "topic_id": "p.w_v",
+      "activity_type": "listen_choose",
+      "l1_target": "L1.W_V",
+      "irt": {
+        "a": 0.9,
+        "b": -0.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Which word do you hear?",
+        "options": [
+          "wine",
+          "vine",
+          "fine",
+          "line"
+        ]
+      },
+      "key": {
+        "correct": "wine",
+        "text_en": "wine",
+        "distractors": [
+          {
+            "option": "vine",
+            "code": "L1.W_V",
+            "feedback_tr": ""
+          },
+          {
+            "option": "fine",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "line",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-01",
+      "cefr": "A2",
+      "topic_id": "g.past_be",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 0.9,
+        "b": 0.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ at home yesterday.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "was",
+          "were",
+          "am",
+          "be"
+        ]
+      },
+      "key": {
+        "correct": "was",
+        "distractors": [
+          {
+            "option": "were",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "am",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-02",
+      "cefr": "A2",
+      "topic_id": "g.past_be",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.BE_OMIT",
+      "irt": {
+        "a": 1.2,
+        "b": 0.3,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "They ___ (be) tired after the match."
+      },
+      "key": {
+        "accepted": [
+          "were"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "was",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "are",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-03",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_regular",
+      "activity_type": "mcq_read",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 0.9,
+        "b": 0.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "We ___ our grandmother last weekend.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "visited",
+          "visit",
+          "visits",
+          "are visiting"
+        ]
+      },
+      "key": {
+        "correct": "visited",
+        "distractors": [
+          {
+            "option": "visit",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "visits",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          },
+          {
+            "option": "are visiting",
+            "code": "L1.SIMPLE_CONT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-04",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_regular",
+      "activity_type": "gap_fill",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 1.2,
+        "b": 0.4,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "She ___ (study) for three hours last night."
+      },
+      "key": {
+        "accepted": [
+          "studied"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "studyed",
+            "code": "GEN.SPELLING"
+          },
+          {
+            "answer": "study",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "studies",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-05",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "mcq_read",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 0.9,
+        "b": 0.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Yesterday I ___ a great film.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "saw",
+          "seed",
+          "see",
+          "seen"
+        ]
+      },
+      "key": {
+        "correct": "saw",
+        "distractors": [
+          {
+            "option": "seed",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "see",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "seen",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-06",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "gap_fill",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 1.2,
+        "b": 0.6,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "He ___ (go) to Ankara last month."
+      },
+      "key": {
+        "accepted": [
+          "went"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "goed",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "go",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "gone",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-07",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "gap_fill",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 1.2,
+        "b": 0.8,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "We ___ (buy) a new sofa last week."
+      },
+      "key": {
+        "accepted": [
+          "bought"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "buyed",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "buy",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-08",
+      "cefr": "A2",
+      "topic_id": "g.past_q_neg",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 0.9,
+        "b": 0.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "___ you go to the party on Saturday?",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "Did",
+          "Do",
+          "Were",
+          "Was"
+        ]
+      },
+      "key": {
+        "correct": "Did",
+        "distractors": [
+          {
+            "option": "Do",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Were",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Was",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-09",
+      "cefr": "A2",
+      "topic_id": "g.past_q_neg",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 1.2,
+        "b": 0.7,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I ___ (not / see) him at school yesterday."
+      },
+      "key": {
+        "accepted": [
+          "didn't see",
+          "did not see"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "didn't saw",
+            "code": "L1.DO_SUPPORT"
+          },
+          {
+            "answer": "not saw",
+            "code": "L1.DO_SUPPORT"
+          },
+          {
+            "answer": "don't see",
+            "code": "L1.DO_SUPPORT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-10",
+      "cefr": "A2",
+      "topic_id": "g.past_q_neg",
+      "activity_type": "word_order",
+      "l1_target": "L1.Q_INVERSION",
+      "irt": {
+        "a": 1.1,
+        "b": 0.8,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "Where",
+          "did",
+          "you",
+          "go",
+          "last",
+          "summer?"
+        ]
+      },
+      "key": {
+        "accepted": [
+          "Where did you go last summer?"
+        ]
+      }
+    },
+    {
+      "id": "a2-11",
+      "cefr": "A2",
+      "topic_id": "g.going_to",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Look at those clouds. It ___ rain.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "is going to",
+          "goes to",
+          "going to",
+          "is go to"
+        ]
+      },
+      "key": {
+        "correct": "is going to",
+        "distractors": [
+          {
+            "option": "goes to",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "going to",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "is go to",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-12",
+      "cefr": "A2",
+      "topic_id": "g.going_to",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 0.6,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "We ___ (visit) my uncle next weekend. We have the tickets."
+      },
+      "key": {
+        "accepted": [
+          "are going to visit",
+          "'re going to visit",
+          "are visiting"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "will visit",
+            "code": "GEN.OTHER"
+          },
+          {
+            "answer": "visit",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-13",
+      "cefr": "A2",
+      "topic_id": "g.will_future",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I'm sure you ___ pass the exam.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "will",
+          "are",
+          "do",
+          "going"
+        ]
+      },
+      "key": {
+        "correct": "will",
+        "distractors": [
+          {
+            "option": "are",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "do",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "going",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-14",
+      "cefr": "A2",
+      "topic_id": "g.comparatives",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "My brother is ___ than me.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "taller",
+          "more tall",
+          "tallest",
+          "tall"
+        ]
+      },
+      "key": {
+        "correct": "taller",
+        "distractors": [
+          {
+            "option": "more tall",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "tallest",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "tall",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-15",
+      "cefr": "A2",
+      "topic_id": "g.comparatives",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 0.7,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "This is the ___ (expensive) phone in the shop."
+      },
+      "key": {
+        "accepted": [
+          "most expensive"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "expensivest",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "more expensive",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-16",
+      "cefr": "A2",
+      "topic_id": "g.comparatives",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Istanbul is ___ city in Turkey.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "the biggest",
+          "the bigger",
+          "biggest",
+          "the most big"
+        ]
+      },
+      "key": {
+        "correct": "the biggest",
+        "distractors": [
+          {
+            "option": "the bigger",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "biggest",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "the most big",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-17",
+      "cefr": "A2",
+      "topic_id": "g.modals_obligation",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "You look ill. You ___ see a doctor.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "should",
+          "should to",
+          "must to",
+          "have"
+        ]
+      },
+      "key": {
+        "correct": "should",
+        "distractors": [
+          {
+            "option": "should to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "must to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-18",
+      "cefr": "A2",
+      "topic_id": "g.modals_obligation",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "In Turkey, you ___ drive on the right.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "have to",
+          "has to",
+          "must to",
+          "should to"
+        ]
+      },
+      "key": {
+        "correct": "have to",
+        "distractors": [
+          {
+            "option": "has to",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          },
+          {
+            "option": "must to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "should to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-19",
+      "cefr": "A2",
+      "topic_id": "g.verb_patterns",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.VERB_PATTERN",
+      "irt": {
+        "a": 0.9,
+        "b": 0.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I want ___ a new language.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "to learn",
+          "learn",
+          "learning",
+          "learns"
+        ]
+      },
+      "key": {
+        "correct": "to learn",
+        "distractors": [
+          {
+            "option": "learn",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "learning",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "learns",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-20",
+      "cefr": "A2",
+      "topic_id": "g.verb_patterns",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.VERB_PATTERN",
+      "irt": {
+        "a": 1.2,
+        "b": 0.9,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "She enjoys ___ (cook) for her friends."
+      },
+      "key": {
+        "accepted": [
+          "cooking"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "to cook",
+            "code": "L1.VERB_PATTERN"
+          },
+          {
+            "answer": "cook",
+            "code": "L1.VERB_PATTERN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-21",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 0.9,
+        "b": 1.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ to London, but I want to go.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "have never been",
+          "never went",
+          "was never",
+          "have never go"
+        ]
+      },
+      "key": {
+        "correct": "have never been",
+        "distractors": [
+          {
+            "option": "never went",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "was never",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have never go",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-22",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 0.9,
+        "b": 1.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Doğru cümleyi seç.",
+        "question_en": "Which sentence is correct?",
+        "options": [
+          "She has already finished her homework.",
+          "She has finished her homework yesterday.",
+          "She already finish her homework.",
+          "She have already finished her homework."
+        ]
+      },
+      "key": {
+        "correct": "She has already finished her homework.",
+        "distractors": [
+          {
+            "option": "She has finished her homework yesterday.",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "She already finish her homework.",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          },
+          {
+            "option": "She have already finished her homework.",
+            "code": "L1.3SG_S",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-23",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 1.2,
+        "b": 1.3,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "Have you ever ___ (eat) sushi?"
+      },
+      "key": {
+        "accepted": [
+          "eaten"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "ate",
+            "code": "L1.PERFECT_PAST"
+          },
+          {
+            "answer": "eat",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "eated",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-24",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 0.9,
+        "b": 1.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "We ___ in this house since 2015.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "have lived",
+          "live",
+          "lived",
+          "are living"
+        ]
+      },
+      "key": {
+        "correct": "have lived",
+        "distractors": [
+          {
+            "option": "live",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "lived",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "are living",
+            "code": "L1.SIMPLE_CONT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-25",
+      "cefr": "A2",
+      "topic_id": "g.present_continuous",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.SIMPLE_CONT",
+      "irt": {
+        "a": 0.9,
+        "b": 0.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ my grandparents tomorrow. I have the tickets.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "am visiting",
+          "visit",
+          "visited",
+          "am visit"
+        ]
+      },
+      "key": {
+        "correct": "am visiting",
+        "distractors": [
+          {
+            "option": "visit",
+            "code": "L1.SIMPLE_CONT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "visited",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "am visit",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-26",
+      "cefr": "A2",
+      "topic_id": "g.articles_the",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.ART_THE",
+      "irt": {
+        "a": 0.9,
+        "b": 0.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Doğru cümleyi seç.",
+        "question_en": "Which sentence is correct?",
+        "options": [
+          "Life is beautiful.",
+          "The life is beautiful.",
+          "A life is beautiful.",
+          "Lifes are beautiful."
+        ]
+      },
+      "key": {
+        "correct": "Life is beautiful.",
+        "distractors": [
+          {
+            "option": "The life is beautiful.",
+            "code": "L1.ART_THE",
+            "feedback_tr": ""
+          },
+          {
+            "option": "A life is beautiful.",
+            "code": "L1.ART_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Lifes are beautiful.",
+            "code": "L1.PLURAL_NUM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-27",
+      "cefr": "A2",
+      "topic_id": "g.some_any_much_many",
+      "activity_type": "mcq_read",
+      "l1_target": "L1.COUNT_UNCOUNT",
+      "irt": {
+        "a": 0.9,
+        "b": 0.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Can you give me some ___?",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "information",
+          "informations",
+          "an information",
+          "information's"
+        ]
+      },
+      "key": {
+        "correct": "information",
+        "distractors": [
+          {
+            "option": "informations",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "an information",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "information's",
+            "code": "GEN.SPELLING",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-28",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "word_order",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 1.1,
+        "b": 0.7,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "We",
+          "took",
+          "a",
+          "taxi",
+          "to",
+          "the",
+          "airport."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "We took a taxi to the airport."
+        ]
+      }
+    },
+    {
+      "id": "a2-29",
+      "cefr": "A2",
+      "topic_id": "g.going_to",
+      "activity_type": "word_order",
+      "l1_target": null,
+      "irt": {
+        "a": 1.1,
+        "b": 0.9,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "What",
+          "are",
+          "you",
+          "going",
+          "to",
+          "do",
+          "tonight?"
+        ]
+      },
+      "key": {
+        "accepted": [
+          "What are you going to do tonight?"
+        ]
+      }
+    },
+    {
+      "id": "a2-30",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "listen_choose",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 0.9,
+        "b": 0.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Where did they stay?",
+        "options": [
+          "in a small hotel",
+          "with friends",
+          "in a big hotel",
+          "at home"
+        ]
+      },
+      "key": {
+        "correct": "in a small hotel",
+        "text_en": "Last summer we went to Antalya and stayed in a small hotel.",
+        "distractors": [
+          {
+            "option": "with friends",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "in a big hotel",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "at home",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-31",
+      "cefr": "A2",
+      "topic_id": "g.going_to",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 0.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "When will the speaker start the job?",
+        "options": [
+          "next month",
+          "next week",
+          "last month",
+          "today"
+        ]
+      },
+      "key": {
+        "correct": "next month",
+        "text_en": "I'm going to start a new job next month.",
+        "distractors": [
+          {
+            "option": "next week",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "last month",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "today",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-32",
+      "cefr": "A2",
+      "topic_id": "g.comparatives",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Which jacket is warmer?",
+        "options": [
+          "the blue one",
+          "the red one",
+          "both",
+          "neither"
+        ]
+      },
+      "key": {
+        "correct": "the blue one",
+        "text_en": "The red jacket is cheaper than the blue one, but the blue one is warmer.",
+        "distractors": [
+          {
+            "option": "the red one",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "both",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "neither",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-33",
+      "cefr": "A2",
+      "topic_id": "g.past_q_neg",
+      "activity_type": "dictation",
+      "l1_target": "L1.DO_SUPPORT",
+      "irt": {
+        "a": 1.2,
+        "b": 0.9,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "We didn't watch the match last night.",
+        "text_en": "We didn't watch the match last night.",
+        "target_words": [
+          "didn't",
+          "watch"
+        ]
+      }
+    },
+    {
+      "id": "a2-34",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "dictation",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 1.2,
+        "b": 1.3,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "I have never seen the sea.",
+        "text_en": "I have never seen the sea.",
+        "target_words": [
+          "have",
+          "seen"
+        ]
+      }
+    },
+    {
+      "id": "a2-35",
+      "cefr": "A2",
+      "topic_id": "p.th",
+      "activity_type": "listen_choose",
+      "l1_target": "L1.TH_SOUND",
+      "irt": {
+        "a": 0.9,
+        "b": 0.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Which word do you hear?",
+        "options": [
+          "three",
+          "tree",
+          "free",
+          "sree"
+        ]
+      },
+      "key": {
+        "correct": "three",
+        "text_en": "three",
+        "distractors": [
+          {
+            "option": "tree",
+            "code": "L1.TH_SOUND",
+            "feedback_tr": ""
+          },
+          {
+            "option": "free",
+            "code": "L1.TH_SOUND",
+            "feedback_tr": ""
+          },
+          {
+            "option": "sree",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-36",
+      "cefr": "A2",
+      "topic_id": "g.will_future",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "A: It's cold in here. B: OK, I ___ close the window.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "will",
+          "am",
+          "do",
+          "going"
+        ]
+      },
+      "key": {
+        "correct": "will",
+        "distractors": [
+          {
+            "option": "am",
+            "code": "L1.BE_OMIT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "do",
+            "code": "L1.DO_SUPPORT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "going",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-01",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I ___ TV when the phone rang.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "was watching",
+          "watched",
+          "am watching",
+          "have watched"
+        ]
+      },
+      "key": {
+        "correct": "was watching",
+        "distractors": [
+          {
+            "option": "watched",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "am watching",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have watched",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-02",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.7,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "If it rains tomorrow, we ___ at home.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "will stay",
+          "stay",
+          "would stay",
+          "stayed"
+        ]
+      },
+      "key": {
+        "correct": "will stay",
+        "distractors": [
+          {
+            "option": "stay",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "would stay",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "stayed",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-03",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.8,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I ___ (use) to play basketball when I was a child."
+      },
+      "key": {
+        "accepted": [
+          "used"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "use",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "was used",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-04",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "This bridge ___ in 1973.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "was built",
+          "built",
+          "is building",
+          "has built"
+        ]
+      },
+      "key": {
+        "correct": "was built",
+        "distractors": [
+          {
+            "option": "built",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "is building",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "has built",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-05",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "The man ___ lives next door is a pilot.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "who",
+          "which",
+          "what",
+          "whose"
+        ]
+      },
+      "key": {
+        "correct": "who",
+        "distractors": [
+          {
+            "option": "which",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "what",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "whose",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-06",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.0,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I'm interested ___ learning photography.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "in",
+          "on",
+          "at",
+          "for"
+        ]
+      },
+      "key": {
+        "correct": "in",
+        "distractors": [
+          {
+            "option": "on",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "at",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "for",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-07",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.1,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "She has been ___ (wait) for the bus for twenty minutes."
+      },
+      "key": {
+        "accepted": [
+          "waiting"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "waited",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "wait",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-08",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "When I arrived at the station, the train ___.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "had already left",
+          "already left",
+          "has already left",
+          "was already leave"
+        ]
+      },
+      "key": {
+        "correct": "had already left",
+        "distractors": [
+          {
+            "option": "already left",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "has already left",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "was already leave",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-09",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "You ___ be tired after such a long journey.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "must",
+          "should to",
+          "have",
+          "can to"
+        ]
+      },
+      "key": {
+        "correct": "must",
+        "distractors": [
+          {
+            "option": "should to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "can to",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-10",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.2,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "He asked me where I ___ (live)."
+      },
+      "key": {
+        "accepted": [
+          "lived"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "live",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "do live",
+            "code": "L1.DO_SUPPORT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-11",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I'm looking forward to ___ you.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "seeing",
+          "see",
+          "seen",
+          "saw"
+        ]
+      },
+      "key": {
+        "correct": "seeing",
+        "distractors": [
+          {
+            "option": "see",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "seen",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "saw",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-12",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "There's ___ time left; we should hurry.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "little",
+          "few",
+          "many",
+          "a few"
+        ]
+      },
+      "key": {
+        "correct": "little",
+        "distractors": [
+          {
+            "option": "few",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "many",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          },
+          {
+            "option": "a few",
+            "code": "L1.COUNT_UNCOUNT",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-13",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "word_order",
+      "l1_target": null,
+      "irt": {
+        "a": 1.1,
+        "b": 2.4,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "Can",
+          "you",
+          "tell",
+          "me",
+          "where",
+          "the",
+          "station",
+          "is?"
+        ]
+      },
+      "key": {
+        "accepted": [
+          "Can you tell me where the station is?"
+        ]
+      }
+    },
+    {
+      "id": "b1-14",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "If I ___ more money, I would buy a car.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "had",
+          "have",
+          "would have",
+          "will have"
+        ]
+      },
+      "key": {
+        "correct": "had",
+        "distractors": [
+          {
+            "option": "have",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "would have",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "will have",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-15",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "She made me ___ the whole report again.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "write",
+          "to write",
+          "writing",
+          "wrote"
+        ]
+      },
+      "key": {
+        "correct": "write",
+        "distractors": [
+          {
+            "option": "to write",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "writing",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "wrote",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-16",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.5,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "The film was so ___ (bore) that I fell asleep."
+      },
+      "key": {
+        "accepted": [
+          "boring"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "bored",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-17",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Neither my brother ___ my sister likes coffee.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "nor",
+          "or",
+          "and",
+          "but"
+        ]
+      },
+      "key": {
+        "correct": "nor",
+        "distractors": [
+          {
+            "option": "or",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "and",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "but",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-18",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "By the time she finishes university, she ___ in three countries.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "will have lived",
+          "lives",
+          "lived",
+          "is living"
+        ]
+      },
+      "key": {
+        "correct": "will have lived",
+        "distractors": [
+          {
+            "option": "lives",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "lived",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "is living",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-19",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "word_order",
+      "l1_target": null,
+      "irt": {
+        "a": 1.1,
+        "b": 2.7,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "The",
+          "book",
+          "that",
+          "you",
+          "gave",
+          "me",
+          "was",
+          "great."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "The book that you gave me was great."
+        ]
+      }
+    },
+    {
+      "id": "b1-20",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.7,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Despite ___ tired, he finished the race.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "being",
+          "be",
+          "he was",
+          "to be"
+        ]
+      },
+      "key": {
+        "correct": "being",
+        "distractors": [
+          {
+            "option": "be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "he was",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "to be",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-21",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Why didn't the speaker call?",
+        "options": [
+          "the phone battery died",
+          "they forgot",
+          "they were busy",
+          "they had no number"
+        ]
+      },
+      "key": {
+        "correct": "the phone battery died",
+        "text_en": "I was going to call you, but my phone ran out of battery.",
+        "distractors": [
+          {
+            "option": "they forgot",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "they were busy",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "they had no number",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-22",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.3,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "Did the speaker go to the meeting?",
+        "options": [
+          "No",
+          "Yes",
+          "Yes, late",
+          "We don't know"
+        ]
+      },
+      "key": {
+        "correct": "No",
+        "text_en": "If I had known about the meeting, I would have come.",
+        "distractors": [
+          {
+            "option": "Yes",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "Yes, late",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "We don't know",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-23",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "What happened to the museum?",
+        "options": [
+          "It opened again",
+          "It closed",
+          "It moved",
+          "It was sold"
+        ]
+      },
+      "key": {
+        "correct": "It opened again",
+        "text_en": "The museum, which was closed for two years, has finally reopened.",
+        "distractors": [
+          {
+            "option": "It closed",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It moved",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It was sold",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-24",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "dictation",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.0,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "The letter was sent last week.",
+        "text_en": "The letter was sent last week.",
+        "target_words": [
+          "was",
+          "sent"
+        ]
+      }
+    },
+    {
+      "id": "b1-25",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "dictation",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.4,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "She told me she had lost her keys.",
+        "text_en": "She told me she had lost her keys.",
+        "target_words": [
+          "had",
+          "lost"
+        ]
+      }
+    },
+    {
+      "id": "b1-26",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.9,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "I've lived here ___ ten years."
+      },
+      "key": {
+        "accepted": [
+          "for"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "since",
+            "code": "GEN.OTHER"
+          },
+          {
+            "answer": "during",
+            "code": "GEN.OTHER"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-27",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 1.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "It's the first time I ___ snow.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "have seen",
+          "see",
+          "saw",
+          "am seeing"
+        ]
+      },
+      "key": {
+        "correct": "have seen",
+        "distractors": [
+          {
+            "option": "see",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "saw",
+            "code": "L1.PERFECT_PAST",
+            "feedback_tr": ""
+          },
+          {
+            "option": "am seeing",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-28",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "I wish I ___ speak French.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "could",
+          "can",
+          "will",
+          "would can"
+        ]
+      },
+      "key": {
+        "correct": "could",
+        "distractors": [
+          {
+            "option": "can",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "will",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "would can",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-29",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.9,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "The children were allowed ___ (stay) up late."
+      },
+      "key": {
+        "accepted": [
+          "to stay"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "stay",
+            "code": "L1.VERB_PATTERN"
+          },
+          {
+            "answer": "staying",
+            "code": "L1.VERB_PATTERN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-30",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 2.9,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Hardly ___ the house when it started to rain.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "had we left",
+          "we had left",
+          "we left",
+          "did we leave"
+        ]
+      },
+      "key": {
+        "correct": "had we left",
+        "distractors": [
+          {
+            "option": "we had left",
+            "code": "L1.Q_INVERSION",
+            "feedback_tr": ""
+          },
+          {
+            "option": "we left",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "did we leave",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-37",
+      "cefr": "A2",
+      "topic_id": "g.present_perfect",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.PERFECT_PAST",
+      "irt": {
+        "a": 1.2,
+        "b": 1.2,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I have ___ (know) her for five years."
+      },
+      "key": {
+        "accepted": [
+          "known"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "knew",
+            "code": "L1.PERFECT_PAST"
+          },
+          {
+            "answer": "knowed",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-38",
+      "cefr": "A2",
+      "topic_id": "g.comparatives",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.1,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "My new phone is ___ (good) than my old one."
+      },
+      "key": {
+        "accepted": [
+          "better"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "gooder",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "more good",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-39",
+      "cefr": "A2",
+      "topic_id": "g.past_simple_irregular",
+      "activity_type": "gap_fill",
+      "l1_target": "GEN.VERB_FORM",
+      "irt": {
+        "a": 1.2,
+        "b": 1.0,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "She ___ (teach) English in Spain last year."
+      },
+      "key": {
+        "accepted": [
+          "taught"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "teached",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "teach",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "a2-40",
+      "cefr": "A2",
+      "topic_id": "g.verb_patterns",
+      "activity_type": "gap_fill",
+      "l1_target": "L1.VERB_PATTERN",
+      "irt": {
+        "a": 1.2,
+        "b": 1.2,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "They decided ___ (take) the bus."
+      },
+      "key": {
+        "accepted": [
+          "to take"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "take",
+            "code": "L1.VERB_PATTERN"
+          },
+          {
+            "answer": "taking",
+            "code": "L1.VERB_PATTERN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-31",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.7,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "While I ___ (walk) home, it started to rain."
+      },
+      "key": {
+        "accepted": [
+          "was walking"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "walked",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "am walking",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-32",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.8,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "If it ___ (rain) tomorrow, the match will be cancelled."
+      },
+      "key": {
+        "accepted": [
+          "rains"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "will rain",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "rain",
+            "code": "L1.3SG_S"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-33",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 1.9,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "This song ___ (write) by a teenager in 1985."
+      },
+      "key": {
+        "accepted": [
+          "was written"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "wrote",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "was wrote",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-34",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.0,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "We ___ (not / finish) the project yet."
+      },
+      "key": {
+        "accepted": [
+          "haven't finished",
+          "have not finished"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "didn't finish",
+            "code": "L1.PERFECT_PAST"
+          },
+          {
+            "answer": "don't finish",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-35",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.1,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "The woman ___ car was stolen called the police."
+      },
+      "key": {
+        "accepted": [
+          "whose"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "who",
+            "code": "GEN.OTHER"
+          },
+          {
+            "answer": "which",
+            "code": "GEN.OTHER"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-36",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.2,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "If I ___ (be) you, I would apologise."
+      },
+      "key": {
+        "accepted": [
+          "were",
+          "was"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "am",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "would be",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-37",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.3,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "She suggested ___ (go) to the cinema."
+      },
+      "key": {
+        "accepted": [
+          "going"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "to go",
+            "code": "L1.VERB_PATTERN"
+          },
+          {
+            "answer": "go",
+            "code": "L1.VERB_PATTERN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-38",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.4,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "By the time we arrived, the film ___ (start)."
+      },
+      "key": {
+        "accepted": [
+          "had started",
+          "had already started"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "started",
+            "code": "L1.PERFECT_PAST"
+          },
+          {
+            "answer": "has started",
+            "code": "L1.PERFECT_PAST"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-39",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.5,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "He told me that he ___ (can) not come."
+      },
+      "key": {
+        "accepted": [
+          "could"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "can",
+            "code": "GEN.VERB_FORM"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b1-40",
+      "cefr": "B1",
+      "topic_id": "m.b1",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 2.6,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I'm not used to ___ (get) up so early."
+      },
+      "key": {
+        "accepted": [
+          "getting"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "get",
+            "code": "L1.VERB_PATTERN"
+          },
+          {
+            "answer": "to get",
+            "code": "L1.VERB_PATTERN"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-01",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.1,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "If she had taken the earlier train, she ___ late.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "wouldn't have been",
+          "wouldn't be",
+          "won't be",
+          "hadn't been"
+        ]
+      },
+      "key": {
+        "correct": "wouldn't have been",
+        "distractors": [
+          {
+            "option": "wouldn't be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "won't be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "hadn't been",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-02",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "The project is said ___ over budget.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "to be",
+          "being",
+          "that it is",
+          "be"
+        ]
+      },
+      "key": {
+        "correct": "to be",
+        "distractors": [
+          {
+            "option": "being",
+            "code": "L1.VERB_PATTERN",
+            "feedback_tr": ""
+          },
+          {
+            "option": "that it is",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "be",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-03",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 3.3,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa parantez içindeki kelimenin doğru biçimini yaz.",
+        "text_en": "I'd rather you ___ (not / tell) anyone about this."
+      },
+      "key": {
+        "accepted": [
+          "didn't tell",
+          "did not tell"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "don't tell",
+            "code": "GEN.VERB_FORM"
+          },
+          {
+            "answer": "not tell",
+            "code": "L1.DO_SUPPORT"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-04",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.4,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "No sooner ___ than the lights went out.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "had he arrived",
+          "he had arrived",
+          "he arrived",
+          "did he arrived"
+        ]
+      },
+      "key": {
+        "correct": "had he arrived",
+        "distractors": [
+          {
+            "option": "he had arrived",
+            "code": "L1.Q_INVERSION",
+            "feedback_tr": ""
+          },
+          {
+            "option": "he arrived",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "did he arrived",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-05",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.5,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "She can't ___ the email; it's still in her drafts.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "have sent",
+          "sent",
+          "has sent",
+          "be sent"
+        ]
+      },
+      "key": {
+        "correct": "have sent",
+        "distractors": [
+          {
+            "option": "sent",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "has sent",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "be sent",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-06",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "It's high time we ___ a decision.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "made",
+          "make",
+          "will make",
+          "have made"
+        ]
+      },
+      "key": {
+        "correct": "made",
+        "distractors": [
+          {
+            "option": "make",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "will make",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "have made",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-07",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "word_order",
+      "l1_target": null,
+      "irt": {
+        "a": 1.1,
+        "b": 3.7,
+        "c": 0.05,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Kelimeleri doğru sıraya koyarak cümleyi kur.",
+        "tokens": [
+          "Not",
+          "only",
+          "did",
+          "he",
+          "apologise,",
+          "but",
+          "he",
+          "also",
+          "paid."
+        ]
+      },
+      "key": {
+        "accepted": [
+          "Not only did he apologise, but he also paid."
+        ]
+      }
+    },
+    {
+      "id": "b2-08",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.8,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Had I known, I ___ differently.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "would have acted",
+          "would act",
+          "acted",
+          "had acted"
+        ]
+      },
+      "key": {
+        "correct": "would have acted",
+        "distractors": [
+          {
+            "option": "would act",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "acted",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "had acted",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-09",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "gap_fill",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 3.9,
+        "c": 0.02,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Boşluğa uygun tek kelimeyi yaz.",
+        "text_en": "The proposal, ___ details are still unclear, was rejected."
+      },
+      "key": {
+        "accepted": [
+          "whose"
+        ],
+        "wrong_patterns": [
+          {
+            "answer": "which",
+            "code": "GEN.OTHER"
+          },
+          {
+            "answer": "who's",
+            "code": "GEN.SPELLING"
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-10",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "listen_choose",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 3.6,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve soruya uygun cevabı seç.",
+        "question_en": "What happened to the event?",
+        "options": [
+          "It was cancelled",
+          "It went ahead",
+          "It moved indoors",
+          "It was delayed"
+        ]
+      },
+      "key": {
+        "correct": "It was cancelled",
+        "text_en": "Had the weather been better, the event wouldn't have been cancelled.",
+        "distractors": [
+          {
+            "option": "It went ahead",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It moved indoors",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          },
+          {
+            "option": "It was delayed",
+            "code": "GEN.OTHER",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    },
+    {
+      "id": "b2-11",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "dictation",
+      "l1_target": null,
+      "irt": {
+        "a": 1.2,
+        "b": 3.9,
+        "c": 0.0,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Dinle ve duyduğun cümleyi aynen yaz."
+      },
+      "key": {
+        "correct": "The results are unlikely to have been affected.",
+        "text_en": "The results are unlikely to have been affected.",
+        "target_words": [
+          "unlikely",
+          "have",
+          "been"
+        ]
+      }
+    },
+    {
+      "id": "b2-12",
+      "cefr": "B2",
+      "topic_id": "m.b2",
+      "activity_type": "mcq_read",
+      "l1_target": null,
+      "irt": {
+        "a": 0.9,
+        "b": 4.2,
+        "c": 0.25,
+        "d": 0.97
+      },
+      "payload": {
+        "instruction_tr": "Cümleyi oku ve boşluğa uyan seçeneği seç.",
+        "text_en": "Little ___ that his life was about to change.",
+        "question_en": "Which option goes in the gap?",
+        "options": [
+          "did he know",
+          "he knew",
+          "he did know",
+          "knew he"
+        ]
+      },
+      "key": {
+        "correct": "did he know",
+        "distractors": [
+          {
+            "option": "he knew",
+            "code": "L1.Q_INVERSION",
+            "feedback_tr": ""
+          },
+          {
+            "option": "he did know",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          },
+          {
+            "option": "knew he",
+            "code": "GEN.VERB_FORM",
+            "feedback_tr": ""
+          }
+        ]
+      }
+    }
+  ],
+  "speaking": {
+    "id": "speak-01",
+    "topic_id": "g.present_simple",
+    "activity_type": "speak_answer",
+    "l1_target": null,
+    "payload": {
+      "instruction_tr": "Soruyu sesli cevapla. Yaklaşık 20 saniye konuş; basit cümleler yeterli.",
+      "prompt_en": "Tell me about your day."
+    },
+    "key": {
+      "model_answer_en": "I wake up at seven. I go to school by bus. I have lunch with my friends. In the evening I watch TV."
+    }
+  }
+}

@@ -1,6 +1,7 @@
 // Üretim sonrası kod kontrolleri (docs/SPEC.md 5.2 son paragraf, PLAN M5 karar 10).
 // Şemadan geçen bir etkinlik yine de burada reddedilebilir; reddedilen slot bir kez yeniden üretilir.
 import type { ActivityType } from "@/lib/content/activity-types";
+import { coverage, INTEREST_WORDS } from "@/lib/content/wordlist";
 import { answersMatch, normalizeAnswer, tokenizeWords } from "@/lib/engine/normalize";
 import type { Level } from "@/lib/engine/types";
 import type { GeneratedItem } from "./schemas";
@@ -10,6 +11,43 @@ export interface SlotSpec {
   position: number;
   topic_id: string;
   activity_type: ActivityType;
+  /** Slotun ilgi alanı: o temanın kelimeleri kapsamada bilinen sayılır. */
+  interest?: string | null;
+}
+
+/** Kelime kapsamı eşikleri (`app_settings.curriculum`): A1 ≥ %98, A2 ≥ %95. */
+export interface CoverageThresholds {
+  a1: number;
+  a2: number;
+}
+
+/**
+ * Bir etkinlikte listede olmayan en çok bu kadar farklı sözcüğe göz yumulur: kısa metinde tek bir
+ * bilinmeyen sözcük oranı eşiğin altına iter ama öğrenciyi durdurmaz (oran metin boyunca anlamlıdır).
+ */
+export const MAX_UNKNOWN_WORDS = 1;
+
+/** Öğrencinin okuduğu İngilizce metin (şıklar, cevaplar, sorular). Boşluk işareti sayılmaz. */
+export function itemEnglishText(item: GeneratedItem): string {
+  const p = item.payload;
+  const k = item.key;
+  return [p.text_en?.replaceAll(GAP_MARK, " "), p.question_en, p.prompt_en, ...(p.options ?? []), ...(p.tokens ?? []), k.correct, ...(k.accepted ?? []), k.model_answer_en]
+    .filter((s): s is string => Boolean(s))
+    .join(". ");
+}
+
+/**
+ * Kelime kapsamı (docs/arastirma/mufredat-onerisi.md, karar 2): seviye listesi + ilgi alanı
+ * kelimeleri dışındaki sözcük oranı eşiği aşıyor ve birden çok farklı sözcükse reddedilir.
+ * Sesletim konularında (`p.*`) en küçük çiftler (wine / vine) bilerek seçildiği için uygulanmaz.
+ */
+export function vocabularyProblems(item: GeneratedItem, slot: SlotSpec, level: Level, thresholds: CoverageThresholds): string[] {
+  if (slot.topic_id.startsWith("p.")) return [];
+  const extra = slot.interest ? (INTEREST_WORDS[slot.interest] ?? []) : [];
+  const c = coverage(itemEnglishText(item), level, extra);
+  const min = level === "A1" ? thresholds.a1 : thresholds.a2;
+  const distinct = new Set(c.unknown);
+  return c.ratio < min && distinct.size > MAX_UNKNOWN_WORDS ? ["vocabulary_above_level"] : [];
 }
 
 export const MAX_SENTENCE_WORDS: Record<Level, number> = { A1: 12, A2: 16 };
@@ -36,7 +74,7 @@ function sameMultiset(a: string[], b: string[]): boolean {
 }
 
 /** Bir etkinliğin sorunları; boş dizi = geçti. Mesajlar kısa kodlardır (loglanabilir). */
-export function checkItem(item: GeneratedItem, slot: SlotSpec, level: Level): string[] {
+export function checkItem(item: GeneratedItem, slot: SlotSpec, level: Level, vocabulary?: CoverageThresholds): string[] {
   const p = item.payload;
   const k = item.key;
   const problems: string[] = [];
@@ -126,5 +164,6 @@ export function checkItem(item: GeneratedItem, slot: SlotSpec, level: Level): st
   ].filter((s): s is string => Boolean(s));
   need(english.every((s) => sentenceWordCounts(s).every((n) => n <= max)), "sentence_too_long");
 
+  if (vocabulary) problems.push(...vocabularyProblems(item, slot, level, vocabulary));
   return problems;
 }

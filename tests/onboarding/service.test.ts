@@ -21,7 +21,7 @@ function fakeStore(options: { code?: string; capacity?: number } = {}) {
   const steps = new Map<string, OnboardingStep>();
   const consents = new Map<string, { version: string; at: string }>();
   const deleted: string[] = [];
-  const profiles = new Map<string, { level_self: string; level_est: string; interests: string[] }>();
+  const profiles = new Map<string, Parameters<OnboardingStore["saveProfile"]>[1]>();
   const calls = { claim: 0, consent: 0 };
 
   const store: OnboardingStore = {
@@ -46,6 +46,9 @@ function fakeStore(options: { code?: string; capacity?: number } = {}) {
       profiles.set(userId, profile);
       steps.set(userId, "placement");
       return true;
+    },
+    async programExists(programId) {
+      return programId === "uni-a1";
     },
     async deleteUser(userId) {
       deleted.push(userId);
@@ -270,6 +273,22 @@ describe("submitProfile (POST /api/onboarding/profile, PRD F2)", () => {
     expect(profiles.get("a")).toEqual({ level_self: "A2", level_est: "A2", interests: ["music", "food"] });
     expect(profiles.get("b")?.level_est).toBe("A1");
     expect(steps.get("a")).toBe("placement");
+  });
+
+  it("çalışma modu, hedef ve okul programı kaydedilir; kendi programında okul programı yazılmaz", async () => {
+    const { store, steps, profiles } = fakeStore();
+    for (const u of ["a", "b", "c"]) steps.set(u, "profile");
+    const base = { levelSelf: "A1", interests: ["music", "food"] };
+    await submitProfile(store, { userId: "a", onboardingStep: "profile" }, { ...base, studyMode: "school", goal: "exam", programId: "uni-a1" }, NOW);
+    await submitProfile(store, { userId: "b", onboardingStep: "profile" }, { ...base, studyMode: "self", goal: "communication", programId: "uni-a1" }, NOW);
+    expect(profiles.get("a")).toMatchObject({ study_mode: "school", goal: "exam", program_id: "uni-a1" });
+    expect(profiles.get("b")).toMatchObject({ study_mode: "self", goal: "communication" });
+    expect(profiles.get("b")).not.toHaveProperty("program_id");
+    // Bilinmeyen program ya da hedef reddedilir.
+    expect(await codeOf(submitProfile(store, { userId: "c", onboardingStep: "profile" }, { ...base, studyMode: "school", programId: "yok" }, NOW))).toBe(
+      "invalid_input",
+    );
+    expect(await codeOf(submitProfile(store, { userId: "c", onboardingStep: "profile" }, { ...base, goal: "fun" }, NOW))).toBe("invalid_input");
   });
 
   it("onamı vermemiş kullanıcı profil kaydedemez", async () => {

@@ -83,7 +83,7 @@ end
 $$;
 
 -- 1. Seed sayıları
-select pg_temp.expect('topics sayısı', (select count(*) from public.topics), 32);
+select pg_temp.expect('topics sayısı', (select count(*) from public.topics), 34);
 select pg_temp.expect('l1_codes sayısı', (select count(*) from public.l1_codes), 24);
 
 -- 2. L1.LITERAL dışındaki her L1.* kodunun geçerli topic_id'si var
@@ -109,7 +109,7 @@ select pg_temp.expect('student_a: error_events', pg_temp.count_as('student_a', '
 select pg_temp.expect('student_a: mastery',      pg_temp.count_as('student_a', 'select * from public.mastery'), 1);
 select pg_temp.expect('student_a: diagnoses',    pg_temp.count_as('student_a', 'select * from public.diagnoses'), 1);
 select pg_temp.expect('student_a: events',       pg_temp.count_as('student_a', 'select * from public.events'), 1);
-select pg_temp.expect('student_a: topics',       pg_temp.count_as('student_a', 'select * from public.topics'), 32);
+select pg_temp.expect('student_a: topics',       pg_temp.count_as('student_a', 'select * from public.topics'), 34);
 select pg_temp.expect('student_a: l1_codes',     pg_temp.count_as('student_a', 'select * from public.l1_codes'), 24);
 
 -- 5. Öğrenci yalnızca-admin tablolarını göremez

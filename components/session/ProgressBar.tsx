@@ -11,12 +11,15 @@ export function ProgressBar({
   activityType,
 }: {
   current: number;
-  total: number;
+  /** Yerleştirmede toplam bilinmez (uyarlamalı test): sayaç "n. soru" olur. */
+  total?: number;
   skill: Skill;
   activityType: ActivityType;
 }) {
   const Icon = SKILL_ICON[skill];
-  const done = Math.min(current, total);
+  // Uyarlamalı testte çubuk tahmini ortalama uzunluğa (≈ 18 soru) göre dolar, sona yaklaşınca yavaşlar.
+  const bar = total ?? Math.max(current + 2, 18);
+  const done = Math.min(current, bar);
   return (
     <header className="flex flex-col gap-2">
       <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -26,19 +29,17 @@ export function ProgressBar({
             {ACTIVITY_TYPE_LABELS_TR[activityType]} · {SKILL_LABELS_TR[skill]}
           </span>
         </span>
-        <span>
-          {done + 1} / {total}
-        </span>
+        <span>{total === undefined ? `${done + 1}. soru` : `${done + 1} / ${total}`}</span>
       </div>
       <div
         role="progressbar"
         aria-label="Oturum ilerlemesi"
         aria-valuemin={0}
-        aria-valuemax={total}
+        aria-valuemax={bar}
         aria-valuenow={done}
         className="h-2 overflow-hidden rounded-full bg-muted"
       >
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(done / total) * 100}%` }} />
+        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(done / bar) * 100}%` }} />
       </div>
     </header>
   );
