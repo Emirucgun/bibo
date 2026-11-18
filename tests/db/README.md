@@ -4,6 +4,8 @@
 
 `m2-auth.sql` M2 bitti testinin veritabanı tarafını doğrular: yeni kullanıcıda `profiles` satırı (tetikleyici), geçersiz davet kodu, kapasite 1 iken ikinci kullanıcının reddi, rıza alanları, `profiles` / `cohorts` RLS'i (öğrenci rolünü ya da adımını değiştiremez) ve hesap silme. Aynı biçimde tek işlemde çalışır ve geri alınır.
 
+`v2-measurement.sql` v2 göçünü doğrular: ölçme konuları, yeni kısıtlar (`scope_status`, amaçlar, pazartesi haftası), `learner_state` / `programs` / `program_weeks` / `item_calibration` RLS'i, hesap silme zinciri ve RLS'i kapalı tablo olmaması. Aynı biçimde tek işlemde çalışır ve geri alınır. Docker'sız yerel Postgres'te `storage.buckets` için küçük bir taklit gerekir (m7 göçü).
+
 `m6-session.sql` M6'nın veritabanı tarafını doğrular: `sessions.status`'ta `generating`, öğrenci başına tek `generating`/`ready` oturum (kısmi tekil indeks), `(item_id, try_no)` tekilliği, `item_keys`'in öğrenciye kapalı olması ve oturum tablolarında A/B ayrımı. Aynı biçimde tek işlemde çalışır ve geri alınır.
 
 ## `dev` projesinde
@@ -12,6 +14,7 @@
 psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/rls.sql
 psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/m2-auth.sql
 psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/m6-session.sql
+psql "<dev-db-url>" -v ON_ERROR_STOP=1 -f tests/db/v2-measurement.sql
 ```
 
 ## Docker'sız yerel Postgres'te
@@ -26,6 +29,7 @@ psql -d m3test -v ON_ERROR_STOP=1 -f supabase/seed.sql
 psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/rls.sql
 psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/m2-auth.sql
 psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/m6-session.sql
+psql -d m3test -v ON_ERROR_STOP=1 -f tests/db/v2-measurement.sql
 ```
 
 Aynı veritabanından tür üretimi (Docker gerekmez):

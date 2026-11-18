@@ -51,14 +51,17 @@ export type Database = {
         Row: {
           correction: string | null;
           created_at: string;
+          evidence_weight: number | null;
           explain_opened: boolean;
           explanation_long_tr: string | null;
           feedback_short_tr: string | null;
           graded_by: string | null;
           hint_used: boolean;
           id: string;
+          incidental: Json | null;
           is_correct: boolean | null;
           item_id: string;
+          pred_p: number | null;
           response: NonNullable<Json>;
           score: number | null;
           time_ms: number | null;
@@ -69,14 +72,17 @@ export type Database = {
         Insert: {
           correction?: string | null;
           created_at?: string;
+          evidence_weight?: number | null;
           explain_opened?: boolean;
           explanation_long_tr?: string | null;
           feedback_short_tr?: string | null;
           graded_by?: string | null;
           hint_used?: boolean;
           id?: string;
+          incidental?: Json | null;
           is_correct?: boolean | null;
           item_id: string;
+          pred_p?: number | null;
           response: NonNullable<Json>;
           score?: number | null;
           time_ms?: number | null;
@@ -86,14 +92,17 @@ export type Database = {
         Update: {
           correction?: string | null;
           created_at?: string;
+          evidence_weight?: number | null;
           explain_opened?: boolean;
           explanation_long_tr?: string | null;
           feedback_short_tr?: string | null;
           graded_by?: string | null;
           hint_used?: boolean;
           id?: string;
+          incidental?: Json | null;
           is_correct?: boolean | null;
           item_id?: string;
+          pred_p?: number | null;
           response?: NonNullable<Json>;
           score?: number | null;
           time_ms?: number | null;
@@ -294,6 +303,31 @@ export type Database = {
         };
         Relationships: [];
       };
+      item_calibration: {
+        Row: {
+          a: number;
+          b: number;
+          item_id: string;
+          n: number;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          a: number;
+          b: number;
+          item_id: string;
+          n?: number;
+          updated_at?: string;
+        };
+        Update: {
+          a?: number;
+          b?: number;
+          item_id?: string;
+          n?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       item_keys: {
         Row: {
           item_id: string;
@@ -321,6 +355,7 @@ export type Database = {
       items: {
         Row: {
           activity_type: string;
+          bank_item_id: string | null;
           created_at: string;
           credited: boolean;
           id: string;
@@ -338,6 +373,7 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           activity_type: string;
+          bank_item_id?: string | null;
           created_at?: string;
           credited?: boolean;
           id?: string;
@@ -354,6 +390,7 @@ export type Database = {
         };
         Update: {
           activity_type?: string;
+          bank_item_id?: string | null;
           created_at?: string;
           credited?: boolean;
           id?: string;
@@ -430,6 +467,31 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      learner_state: {
+        Row: {
+          n_obs: number;
+          state: NonNullable<Json>;
+          updated_at: string;
+          user_id: string;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          n_obs?: number;
+          state: NonNullable<Json>;
+          updated_at?: string;
+          user_id: string;
+          version: number;
+        };
+        Update: {
+          n_obs?: number;
+          state?: NonNullable<Json>;
+          updated_at?: string;
+          user_id?: string;
+          version?: number;
+        };
+        Relationships: [];
       };
       llm_usage: {
         Row: {
@@ -554,12 +616,20 @@ export type Database = {
           created_at: string;
           display_name: string | null;
           explain_mode: string;
+          focus_choice: string | null;
+          goal: string | null;
           id: string;
           interests: string[];
           level_est: string | null;
           level_self: string | null;
+          notify_opt_in_at: string | null;
           onboarding_step: string;
+          placement_done_at: string | null;
+          placement_result: Json | null;
+          program_id: string | null;
           role: string;
+          scope_status: string;
+          study_mode: string | null;
           updated_at: string;
         };
         ComputedFields: never;
@@ -571,12 +641,20 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           explain_mode?: string;
+          focus_choice?: string | null;
+          goal?: string | null;
           id: string;
           interests?: string[];
           level_est?: string | null;
           level_self?: string | null;
+          notify_opt_in_at?: string | null;
           onboarding_step?: string;
+          placement_done_at?: string | null;
+          placement_result?: Json | null;
+          program_id?: string | null;
           role?: string;
+          scope_status?: string;
+          study_mode?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -587,12 +665,20 @@ export type Database = {
           created_at?: string;
           display_name?: string | null;
           explain_mode?: string;
+          focus_choice?: string | null;
+          goal?: string | null;
           id?: string;
           interests?: string[];
           level_est?: string | null;
           level_self?: string | null;
+          notify_opt_in_at?: string | null;
           onboarding_step?: string;
+          placement_done_at?: string | null;
+          placement_result?: Json | null;
+          program_id?: string | null;
           role?: string;
+          scope_status?: string;
+          study_mode?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -603,11 +689,85 @@ export type Database = {
             referencedRelation: "cohorts";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "profiles_focus_choice_fkey";
+            columns: ["focus_choice"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "profiles_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "programs";
+            referencedColumns: ["id"];
+          },
         ];
+      };
+      program_weeks: {
+        Row: {
+          program_id: string;
+          topic_id: string;
+          week_start: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          program_id: string;
+          topic_id: string;
+          week_start: string;
+        };
+        Update: {
+          program_id?: string;
+          topic_id?: string;
+          week_start?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "program_weeks_program_id_fkey";
+            columns: ["program_id"];
+            isOneToOne: false;
+            referencedRelation: "programs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "program_weeks_topic_id_fkey";
+            columns: ["topic_id"];
+            isOneToOne: false;
+            referencedRelation: "topics";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      programs: {
+        Row: {
+          active: boolean;
+          created_at: string;
+          id: string;
+          name: string;
+          school: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          active?: boolean;
+          created_at?: string;
+          id: string;
+          name: string;
+          school?: string | null;
+        };
+        Update: {
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          school?: string | null;
+        };
+        Relationships: [];
       };
       school_topics: {
         Row: {
           created_at: string;
+          source: string;
           topic_id: string | null;
           user_id: string;
           week_start: string;
@@ -615,12 +775,14 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           created_at?: string;
+          source?: string;
           topic_id?: string | null;
           user_id: string;
           week_start: string;
         };
         Update: {
           created_at?: string;
+          source?: string;
           topic_id?: string | null;
           user_id?: string;
           week_start?: string;
@@ -745,8 +907,12 @@ export type Database = {
       topics: {
         Row: {
           active: boolean;
+          confusables: string[];
           description_tr: string;
+          exam_weight: number;
+          goal_tags: string[];
           id: string;
+          irt_b: number | null;
           kind: string;
           l1_risk: number;
           level: string;
@@ -754,12 +920,18 @@ export type Database = {
           sort: number;
           title_en: string;
           title_tr: string;
+          unit: number;
+          value: number;
         };
         ComputedFields: never;
         Insert: {
           active?: boolean;
+          confusables?: string[];
           description_tr: string;
+          exam_weight?: number;
+          goal_tags?: string[];
           id: string;
+          irt_b?: number | null;
           kind: string;
           l1_risk: number;
           level: string;
@@ -767,11 +939,17 @@ export type Database = {
           sort: number;
           title_en: string;
           title_tr: string;
+          unit?: number;
+          value?: number;
         };
         Update: {
           active?: boolean;
+          confusables?: string[];
           description_tr?: string;
+          exam_weight?: number;
+          goal_tags?: string[];
           id?: string;
+          irt_b?: number | null;
           kind?: string;
           l1_risk?: number;
           level?: string;
@@ -779,6 +957,8 @@ export type Database = {
           sort?: number;
           title_en?: string;
           title_tr?: string;
+          unit?: number;
+          value?: number;
         };
         Relationships: [];
       };
@@ -818,31 +998,28 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      add_session_cost: {
-        Args: { p_session_id: string; p_usd: number };
-        Returns: undefined;
-      };
+      add_session_cost: { Args: { p_session_id: string; p_usd: number }; Returns: undefined };
       admin_usage_since: {
-        Args: { since: string }
+        Args: { since: string };
         Returns: {
-          cache_read_tokens: number
-          calls: number
-          cost_usd: number
-          input_tokens: number
-          ok_calls: number
-          provider: string
-          purpose: string
-          tts_chars: number
-        }[]
-      }
+          cache_read_tokens: number;
+          calls: number;
+          cost_usd: number;
+          input_tokens: number;
+          ok_calls: number;
+          provider: string;
+          purpose: string;
+          tts_chars: number;
+        }[];
+      };
       admin_weekly_sessions: {
-        Args: { since: string }
+        Args: { since: string };
         Returns: {
-          sessions: number
-          user_id: string
-          week_start: string
-        }[]
-      }
+          sessions: number;
+          user_id: string;
+          week_start: string;
+        }[];
+      };
       claim_invite: {
         Args: { p_code: string; p_user_id: string };
         Returns: {
