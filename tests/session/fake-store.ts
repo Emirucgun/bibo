@@ -341,6 +341,9 @@ export class FakeSessionStore implements SessionStore {
   async getSchoolTopic(userId: string, weekStart: string) {
     return this.schoolTopics.get(`${userId}|${weekStart}`) ?? null;
   }
+  async hasSchoolTopicAnswer(userId: string, weekStart: string) {
+    return this.schoolTopics.has(`${userId}|${weekStart}`);
+  }
   async getProgramTopic(programId: string, weekStart: string) {
     return this.programWeeks.get(`${programId}|${weekStart}`) ?? null;
   }

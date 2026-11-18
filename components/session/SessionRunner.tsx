@@ -17,7 +17,7 @@ import { callApi } from "@/lib/api/client";
 import type { ActivityType } from "@/lib/content/activity-types";
 import type { ExplainMode } from "@/lib/session/explain-mode";
 import type { AttemptResponse } from "@/lib/session/schemas";
-import type { AttemptResult, FinishResult, SessionView, SpeechResult } from "@/lib/session/service";
+import type { AttemptResult, FinishResult, PlacementProgress, SessionView, SpeechResult } from "@/lib/session/service";
 import type { ItemPublic } from "@/lib/session/types";
 import { PlacementSummary } from "@/components/onboarding/PlacementSummary";
 import { FeedbackCard } from "./FeedbackCard";
@@ -39,7 +39,7 @@ const ACTIVITY: Partial<Record<ActivityType, ComponentType<ActivityProps>>> = {
 type Phase =
   | { name: "loading" }
   | { name: "problem"; message: string }
-  | { name: "run"; items: ItemPublic[]; index: number }
+  | { name: "run"; items: ItemPublic[]; index: number; placement: boolean }
   | { name: "finishing" }
   | { name: "summary"; result: FinishResult };
 
@@ -98,7 +98,7 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
       if (index === -1) return void finish();
       if (answered.size > 0) fire("session_resume", { session_id: sessionId, position: index });
       shownAt.current = performance.now();
-      setPhase({ name: "run", items: view.items, index });
+      setPhase({ name: "run", items: view.items, index, placement: view.session.kind === "placement" });
     })();
     return () => {
       cancelled = true;
@@ -133,10 +133,43 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
     );
   }
 
-  const { items, index } = phase;
+  const { items, index, placement } = phase;
   const item = items[index];
   const Activity = ACTIVITY[item.activity_type];
   const isLast = index === items.length - 1;
+
+  function resetItem() {
+    setResult(null);
+    setHint(null);
+    setError(null);
+    setAudioDown(false);
+    setSpeech(null);
+    setSpeechTry(1);
+    hintUsed.current = false;
+    shownAt.current = performance.now();
+    window.scrollTo({ top: 0 });
+  }
+
+  /** Yerleştirme: sıradaki madde sunucuda eklendi; görünüm yeniden okunur (uyarlamalı test). */
+  async function advance(progress: PlacementProgress | undefined) {
+    if (progress === "done") return void finish();
+    const res = await callApi<SessionView>(`/api/sessions/${sessionId}`, { method: "GET" });
+    if (!res.ok) return setPhase({ name: "problem", message: res.message });
+    const answered = new Set(res.data.attempts.map((a) => a.item_id));
+    const nextIndex = res.data.items.findIndex((i) => !answered.has(i.id));
+    if (nextIndex === -1) return void finish();
+    resetItem();
+    setPhase({ name: "run", items: res.data.items, index: nextIndex, placement: true });
+  }
+
+  async function skipPlacement() {
+    if (submitting) return;
+    setSubmitting(true);
+    const res = await callApi<{ placement: PlacementProgress }>(`/api/items/${item.id}/skip`, { method: "POST", body: {} });
+    setSubmitting(false);
+    if (res.ok) await advance(res.data.placement);
+    else setError(res.message);
+  }
 
   async function submit(response: AttemptResponse) {
     if (submitting || result) return;
@@ -150,6 +183,12 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
         hintUsed: hintUsed.current,
       },
     });
+    if (res.ok && placement) {
+      // Yerleştirmede doğru/yanlış gösterilmez; sıradaki soruya geçilir.
+      await advance(res.data.placement);
+      setSubmitting(false);
+      return;
+    }
     if (res.ok) setResult(res.data);
     else setError(res.message);
     setSubmitting(false);
@@ -179,21 +218,13 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
 
   function next() {
     if (isLast) return void finish();
-    setResult(null);
-    setHint(null);
-    setError(null);
-    setAudioDown(false);
-    setSpeech(null);
-    setSpeechTry(1);
-    hintUsed.current = false;
-    shownAt.current = performance.now();
-    setPhase({ name: "run", items, index: index + 1 });
-    window.scrollTo({ top: 0 });
+    resetItem();
+    setPhase({ name: "run", items, index: index + 1, placement });
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <ProgressBar current={index} total={items.length} skill={item.skill} activityType={item.activity_type} />
+      <ProgressBar current={index} total={placement ? undefined : items.length} skill={item.skill} activityType={item.activity_type} />
       <p className="text-base font-medium">{item.payload.instruction_tr}</p>
 
       {item.activity_type === "speak_answer" ? (
@@ -254,9 +285,17 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
         </Button>
       ) : null}
 
-      {result ? (
+      {result && placement ? (
+        // Yerleştirmenin konuşma sorusu: değerlendirme gösterilmez.
+        <div className="flex flex-col gap-3">
+          {result.feedbackShortTr ? <p className="text-sm">{result.feedbackShortTr}</p> : null}
+          <Button type="button" onClick={() => void advance(result.placement ?? "done")} className="h-12 w-full text-base">
+            Testi bitir
+          </Button>
+        </div>
+      ) : result ? (
         <FeedbackCard key={result.attemptId} result={result} explainMode={explainMode} isLast={isLast} busy={false} onNext={next} />
-      ) : hint ? (
+      ) : placement ? null : hint ? (
         <p className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
           <span className="font-medium">İpucu: </span>
           {hint}
@@ -268,7 +307,12 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
       )}
 
       {(audioDown || (!Activity && item.activity_type !== "speak_answer")) && !result ? (
-        <Button type="button" onClick={next} className="h-12 w-full text-base">
+        <Button
+          type="button"
+          disabled={submitting}
+          onClick={placement ? () => void skipPlacement() : next}
+          className="h-12 w-full text-base"
+        >
           Geç
         </Button>
       ) : null}

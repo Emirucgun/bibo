@@ -572,7 +572,7 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       const { data, error } = await db
         .from("profiles")
         .select(
-          "level_est, level_self, interests, explain_mode, onboarding_step, scope_status, study_mode, goal, program_id, focus_choice, placement_done_at",
+          "level_est, level_self, interests, explain_mode, onboarding_step, scope_status, study_mode, goal, program_id, focus_choice, placement_done_at, notify_opt_in_at",
         )
         .eq("id", userId)
         .maybeSingle();
@@ -589,13 +589,19 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
         program_id: (data.program_id as string | null) ?? null,
         focus_choice: (data.focus_choice as string | null) ?? null,
         placement_done_at: date(data.placement_done_at),
+        notify_opt_in_at: date(data.notify_opt_in_at),
       };
     },
 
     async updateProfile(userId, patch, now) {
+      const { notify_opt_in_at, ...rest } = patch;
       const { error } = await db
         .from("profiles")
-        .update({ ...patch, updated_at: now.toISOString() })
+        .update({
+          ...rest,
+          ...(notify_opt_in_at ? { notify_opt_in_at: notify_opt_in_at.toISOString() } : {}),
+          updated_at: now.toISOString(),
+        })
         .eq("id", userId);
       if (error) fail("profiles.update", error);
     },
@@ -673,6 +679,17 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
         .maybeSingle();
       if (error) fail("school_topics", error);
       return (data?.topic_id as string | null) ?? null;
+    },
+
+    async hasSchoolTopicAnswer(userId, weekStart) {
+      const { data, error } = await db
+        .from("school_topics")
+        .select("user_id")
+        .eq("user_id", userId)
+        .eq("week_start", weekStart)
+        .maybeSingle();
+      if (error) fail("school_topics", error);
+      return data !== null;
     },
 
     async getProgramTopic(programId, weekStart) {

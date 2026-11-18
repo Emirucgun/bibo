@@ -26,9 +26,18 @@ export interface OnboardingStore {
   /** Yalnızca `onboarding_step = 'profile'` iken yazar ve adımı `placement` yapar; yazdıysa `true`. */
   saveProfile(
     userId: string,
-    profile: { level_self: string; level_est: "A1" | "A2"; interests: string[] },
+    profile: {
+      level_self: string;
+      level_est: "A1" | "A2";
+      interests: string[];
+      study_mode?: "school" | "self";
+      goal?: "communication" | "exam" | "work_travel";
+      program_id?: string | null;
+    },
     now: Date,
   ): Promise<boolean>;
+  /** Etkin okul programı var mı (`programs.active`). */
+  programExists(programId: string): Promise<boolean>;
   /** `auth.admin.deleteUser`: `on delete cascade` ile tüm öğrenci verisi gider. */
   deleteUser(userId: string): Promise<void>;
 }
@@ -102,12 +111,17 @@ export async function submitProfile(
   if (actor.onboardingStep === "consent") throw new ApiError("onboarding_incomplete");
   // Profil zaten kayıtlı (ör. çift dokunuş): ilk kayıt korunur.
   if (actor.onboardingStep !== "profile") return { ok: true };
+  const programId = input.studyMode === "self" ? null : (input.programId ?? null);
+  if (programId && !(await store.programExists(programId))) throw new ApiError("invalid_input");
   await store.saveProfile(
     actor.userId,
     {
       level_self: input.levelSelf,
       level_est: input.levelSelf === "A2" ? "A2" : "A1",
       interests: [...new Set(input.interests)],
+      ...(input.studyMode ? { study_mode: input.studyMode } : {}),
+      ...(input.goal ? { goal: input.goal } : {}),
+      ...(programId ? { program_id: programId } : {}),
     },
     now,
   );

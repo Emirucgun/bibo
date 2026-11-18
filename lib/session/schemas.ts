@@ -34,8 +34,16 @@ export const ProfilePatchInput = z
     displayName: z.string().trim().min(1).max(80).optional(),
     interests: z.array(z.enum(INTERESTS)).min(MIN_INTERESTS).max(INTERESTS.length).optional(),
     explainMode: z.enum(["short", "long"]).optional(),
+    studyMode: z.enum(["school", "self"]).optional(),
+    goal: z.enum(["communication", "exam", "work_travel"]).optional(),
   })
   .refine((v) => Object.keys(v).length > 0);
+
+/** POST /api/focus-choice: "Bugün ne çalışalım?" (`null` = seçimi kaldır). */
+export const FocusChoiceInput = z.strictObject({ topicId: z.string().trim().min(1).max(64).nullable() });
+
+/** POST /api/waitlist: kapsam dışı öğrenci "hazır olunca haber ver" der. */
+export const WaitlistInput = z.strictObject({ optIn: z.literal(true) });
 
 /** `events.name` (SPEC Bölüm 3). */
 export const EVENT_NAMES = [

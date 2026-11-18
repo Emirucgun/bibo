@@ -38,6 +38,14 @@ export const API_ERRORS = {
     status: 503,
     message_tr: "Sesini şu an yazıya dökemedik. Biraz sonra yeniden kaydet.",
   },
+  out_of_scope: {
+    status: 403,
+    message_tr: "Seviyen şu an hizmet verdiğimiz seviyenin üstünde. Senin için hazır olunca haber vereceğiz.",
+  },
+  retest_unavailable: {
+    status: 409,
+    message_tr: "Testi şu an yeniden çözemezsin. Tarih geldiğinde bu sayfadan deneyebilirsin.",
+  },
   server_error: { status: 500, message_tr: "Bir şeyler ters gitti. Biraz sonra yeniden dene." },
 } as const;
 

@@ -11,13 +11,27 @@ export interface SettingsInitial {
   displayName: string;
   interests: Interest[];
   explainMode: "short" | "long";
+  studyMode: "school" | "self" | null;
+  goal: "communication" | "exam" | "work_travel" | null;
 }
+
+const STUDY_MODES = [
+  ["school", "Okuldaki derslerime destek", "Oturumlar okuldaki konulara uyum sağlar."],
+  ["self", "Kendi programım", "Konular baştan sona sırayla, kendi hızında."],
+] as const;
+const GOALS = [
+  ["communication", "Günlük iletişim"],
+  ["exam", "Hazırlık / yeterlik sınavı"],
+  ["work_travel", "İş ya da seyahat"],
+] as const;
 
 // PATCH /api/profile: ad, ilgi alanları, açıklama modu (SPEC 6).
 export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const [name, setName] = useState(initial.displayName);
   const [interests, setInterests] = useState<Interest[]>(initial.interests);
   const [mode, setMode] = useState(initial.explainMode);
+  const [studyMode, setStudyMode] = useState(initial.studyMode);
+  const [goal, setGoal] = useState(initial.goal);
   const [state, setState] = useState<"idle" | "pending" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
   const valid = name.trim().length > 0 && interests.length >= MIN_INTERESTS;
@@ -29,7 +43,13 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     setError(null);
     const res = await callApi("/api/profile", {
       method: "PATCH",
-      body: { displayName: name.trim(), interests, explainMode: mode },
+      body: {
+        displayName: name.trim(),
+        interests,
+        explainMode: mode,
+        ...(studyMode ? { studyMode } : {}),
+        ...(goal ? { goal } : {}),
+      },
     });
     if (res.ok) setState("saved");
     else {
@@ -81,6 +101,47 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           })}
         </div>
       </fieldset>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="mb-1 text-sm font-medium">Nasıl çalışıyorsun?</legend>
+        {STUDY_MODES.map(([v, label, note]) => (
+          <label key={v} className={cn("flex min-h-12 items-start gap-3 rounded-lg border px-4 py-3", studyMode === v ? "border-primary bg-primary/5" : "border-border")}>
+            <input
+              type="radio"
+              name="study-mode"
+              checked={studyMode === v}
+              onChange={() => {
+                setStudyMode(v);
+                setState("idle");
+              }}
+              className="mt-1 size-4"
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-medium">{label}</span>
+              <span className="text-sm text-muted-foreground">{note}</span>
+            </span>
+          </label>
+        ))}
+      </fieldset>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-sm font-medium">Hedefin</span>
+        <select
+          value={goal ?? ""}
+          onChange={(e) => {
+            setGoal((e.target.value || null) as SettingsInitial["goal"]);
+            setState("idle");
+          }}
+          className="h-12 rounded-lg border border-input bg-background px-3 text-base"
+        >
+          {goal ? null : <option value="">Seç…</option>}
+          {GOALS.map(([v, label]) => (
+            <option key={v} value={v}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-1 text-sm font-medium">Yanlış cevapta açıklama</legend>

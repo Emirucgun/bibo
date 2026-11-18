@@ -3,8 +3,8 @@ import { requireUser } from "@/lib/auth/require";
 import { createSessionDeps } from "@/lib/session/deps";
 import { patchProfile } from "@/lib/session/service";
 
-// PATCH /api/profile · { displayName?, interests?: string[≥2], explainMode? } → { ok }
-// Yalnızca bu üç alan (SPEC RLS tablosu).
+// PATCH /api/profile · { displayName?, interests?: string[≥2], explainMode?, studyMode?, goal? } → { ok }
+// Yalnızca bu alanlar (SPEC RLS tablosu).
 export async function PATCH(request: Request) {
   return withApi("profile/patch", async () => {
     const { userId } = await requireUser();

@@ -38,16 +38,3 @@ export async function loadProgress(userId: string, now: Date): Promise<Progress>
     diagnoses: (diagnoses.data ?? []) as { id: string; topic_id: string; message_tr: string }[],
   });
 }
-
-/** Bu haftanın okul konusu sorusu cevaplandı mı (`null` = hatırlamıyor / atladı da cevaptır). */
-export async function schoolTopicAnswered(userId: string, now: Date): Promise<boolean> {
-  const db = await createClient();
-  const { data, error } = await db
-    .from("school_topics")
-    .select("user_id")
-    .eq("user_id", userId)
-    .eq("week_start", istanbulWeek(now).date)
-    .maybeSingle();
-  if (error) return true; // soru gösterilmesin; ana sayfa kırılmasın
-  return data !== null;
-}

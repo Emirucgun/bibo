@@ -14,7 +14,7 @@ import { ApiError } from "@/lib/api/errors";
 import { GAP_MARK } from "@/lib/ai/checks";
 import { ACTIVITY_TYPE_INFO, SKILL_LABELS_TR } from "@/lib/content/activity-types";
 import { L1_CODES } from "@/lib/content/taxonomy";
-import { solidShare, type CurriculumInput } from "@/lib/engine/curriculum";
+import { defaultPath, focusChoices, openTopics, schoolSuggestions, solidShare, type CurriculumInput } from "@/lib/engine/curriculum";
 import { diagnoseTopic, diagnosisMessage, reconcileDiagnoses } from "@/lib/engine/diagnosis";
 import { creditRetest } from "@/lib/engine/effectiveness";
 import { gradeLocal } from "@/lib/engine/grade-local";
@@ -50,6 +50,8 @@ import {
   DiagnosisFeedbackInput,
   EventInput,
   FinishInput,
+  FocusChoiceInput,
+  WaitlistInput,
   ProfilePatchInput,
   SpeechMeta,
   Uuid,
@@ -1493,7 +1495,7 @@ export async function submitDiagnosisFeedback(
 // Profil ve olaylar
 // ---------------------------------------------------------------------------
 
-/** PATCH /api/profile → `{ ok }`; yalnızca `display_name`, `interests`, `explain_mode`. */
+/** PATCH /api/profile → `{ ok }`; `display_name`, `interests`, `explain_mode`, `study_mode`, `goal`. */
 export async function patchProfile(
   store: SessionStore,
   actor: Actor,
@@ -1507,9 +1509,128 @@ export async function patchProfile(
       ...(input.displayName !== undefined ? { display_name: input.displayName } : {}),
       ...(input.interests !== undefined ? { interests: [...new Set(input.interests)] } : {}),
       ...(input.explainMode !== undefined ? { explain_mode: input.explainMode } : {}),
+      ...(input.studyMode !== undefined ? { study_mode: input.studyMode } : {}),
+      ...(input.goal !== undefined ? { goal: input.goal } : {}),
     },
     now,
   );
+  // Müfredatı değiştiren tercih: hazırlanmış (başlamamış) oturum yeniden planlansın.
+  if (input.studyMode !== undefined || input.goal !== undefined) await store.abandonReady(actor.userId);
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Kapsam kapısı, bekleme listesi, yeniden test (docs/SPEC.md 4.7)
+// ---------------------------------------------------------------------------
+
+/** Kapsam dışı öğrencinin yeniden test hakkı: toplam en çok bu kadar yerleştirme. */
+export const MAX_PLACEMENTS = 2;
+
+export interface ScopeView {
+  status: "in_scope" | "above_scope" | "graduated";
+  /** "Hazır olunca haber ver" seçildi mi. */
+  notified: boolean;
+  /** Şu an yeniden test çözebilir mi. */
+  canRetest: boolean;
+  /** Yeniden test hakkı açılacaksa tarihi (ISO); hak yoksa ya da açıksa `null`. */
+  retestAt: string | null;
+}
+
+/** GET /api/scope → kapsam durumu ve yeniden test hakkı. */
+export async function getScope(deps: SessionDeps, actor: Actor): Promise<ScopeView> {
+  const { store } = deps;
+  const now = deps.now();
+  const [learner, settings, placements] = await Promise.all([
+    store.getLearner(actor.userId),
+    store.loadModelSettings(),
+    store.countPlacements(actor.userId),
+  ]);
+  const status = learner.scope_status ?? "in_scope";
+  let canRetest = false;
+  let retestAt: string | null = null;
+  if (status === "above_scope" && placements < MAX_PLACEMENTS && learner.placement_done_at) {
+    const at = new Date(learner.placement_done_at.getTime() + settings.retest_after_days * DAY_MS);
+    canRetest = now >= at;
+    retestAt = canRetest ? null : at.toISOString();
+  }
+  return { status, notified: Boolean(learner.notify_opt_in_at), canRetest, retestAt };
+}
+
+/** POST /api/waitlist → `{ ok }`; KVKK: yalnızca "haber ver" tercihi ve zamanı yazılır. */
+export async function joinWaitlist(deps: SessionDeps, actor: Actor, body: unknown): Promise<{ ok: true }> {
+  parse(WaitlistInput, body);
+  const learner = await deps.store.getLearner(actor.userId);
+  if ((learner.scope_status ?? "in_scope") === "in_scope") throw new ApiError("invalid_input");
+  if (!learner.notify_opt_in_at) {
+    await deps.store.updateProfile(actor.userId, { notify_opt_in_at: deps.now() }, deps.now());
+  }
+  return { ok: true };
+}
+
+/** POST /api/placement/retest → `{ ok }`; hak yoksa 409 `retest_unavailable`. */
+export async function retestPlacement(deps: SessionDeps, actor: Actor): Promise<{ ok: true }> {
+  const scope = await getScope(deps, actor);
+  if (!scope.canRetest) throw new ApiError("retest_unavailable");
+  const ok = await deps.store.reopenPlacement(actor.userId, deps.now());
+  if (!ok) throw new ApiError("retest_unavailable");
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Ana sayfa: "Bugün ne çalışalım?" ve haftalık okul sorusu (docs/arastirma/mufredat-onerisi.md)
+// ---------------------------------------------------------------------------
+
+export interface HomeOptions {
+  /** En iyi 2–3 aday; öğrenci seçerse sonraki oturumun odağı olur. */
+  focusChoices: { topicId: string; titleTr: string; status: "learning" | "ready" }[];
+  /** Öğrencinin şu anki seçimi. */
+  focusChoice: string | null;
+  /** Haftalık okul sorusu: kendi programında, okul programı haritalıysa ya da bu hafta cevaplandıysa `null`. */
+  school: { suggestions: { topicId: string; titleTr: string }[]; topics: { topicId: string; titleTr: string }[] } | null;
+}
+
+/** Ana sayfadaki seçenek sayısı. */
+export const HOME_FOCUS_CHOICES = 3;
+
+/** GET /api/home → odak seçenekleri ve (gerekirse) okul sorusu. */
+export async function getHomeOptions(deps: SessionDeps, actor: Actor): Promise<HomeOptions> {
+  const { store } = deps;
+  const now = deps.now();
+  const learner = await store.getLearner(actor.userId);
+  const [model, focus, answered] = await Promise.all([
+    loadLearnerModel(store, actor.userId, learner.level_self),
+    store.listRecentFocus(actor.userId, RECENT_FOCUS_SESSIONS),
+    learner.study_mode === "self" || learner.program_id ? Promise.resolve(true) : store.hasSchoolTopicAnswer(actor.userId, istanbulWeekStart(now)),
+  ]);
+  const input = curriculumInput(model, learner, null, focus.recent);
+  const choices = focusChoices(input, HOME_FOCUS_CHOICES)
+    .filter((c) => c.status === "learning" || c.status === "ready")
+    .map((c) => ({ topicId: c.topic.id, titleTr: c.topic.title_tr, status: c.status as "learning" | "ready" }));
+  const open = openTopics(input);
+  return {
+    focusChoices: choices,
+    focusChoice: learner.focus_choice ?? null,
+    school: answered
+      ? null
+      : {
+          suggestions: schoolSuggestions({ ...input, topics: open }, 3).map((t) => ({ topicId: t.id, titleTr: t.title_tr })),
+          topics: defaultPath(open).map((t) => ({ topicId: t.id, titleTr: t.title_tr })),
+        },
+  };
+}
+
+/**
+ * POST /api/focus-choice → `{ ok }`. Seçim yalnızca şu anki seçeneklerden biri olabilir; hazırlanmış
+ * (başlamamış) oturum bırakılır, sonraki oturum seçilen konuyla planlanır.
+ */
+export async function setFocusChoice(deps: SessionDeps, actor: Actor, body: unknown): Promise<{ ok: true }> {
+  const { topicId } = parse(FocusChoiceInput, body);
+  if (topicId !== null) {
+    const options = await getHomeOptions(deps, actor);
+    if (!options.focusChoices.some((c) => c.topicId === topicId)) throw new ApiError("invalid_input");
+  }
+  await deps.store.updateProfile(actor.userId, { focus_choice: topicId }, deps.now());
+  await deps.store.abandonReady(actor.userId);
   return { ok: true };
 }
 

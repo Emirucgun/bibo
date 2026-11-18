@@ -191,6 +191,7 @@ export interface Learner {
   program_id?: string | null;
   focus_choice?: string | null;
   placement_done_at?: Date | null;
+  notify_opt_in_at?: Date | null;
 }
 
 export interface ProfilePatch {
@@ -201,7 +202,7 @@ export interface ProfilePatch {
   goal?: Goal;
   focus_choice?: string | null;
   scope_status?: ScopeStatus;
-  notify_opt_in_at?: string;
+  notify_opt_in_at?: Date;
 }
 
 /** Yerleştirme sonunda profile yazılanlar. */
@@ -306,6 +307,8 @@ export interface SessionStore {
   listRecentErrors(userId: string, since: Date): Promise<RecentError[]>;
   /** `weekStart`: pazartesi, `YYYY-MM-DD`. */
   getSchoolTopic(userId: string, weekStart: string): Promise<string | null>;
+  /** Bu hafta okul sorusu cevaplandı mı (`null` konu = "hatırlamıyorum" da cevaptır). */
+  hasSchoolTopicAnswer(userId: string, weekStart: string): Promise<boolean>;
   /** Okul programı haritasındaki haftanın konusu. */
   getProgramTopic(programId: string, weekStart: string): Promise<string | null>;
   /** Son bitmiş günlük oturumların odak konuları (en yeni önce) ve toplam bitmiş günlük oturum sayısı. */

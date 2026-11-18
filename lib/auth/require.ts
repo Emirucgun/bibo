@@ -31,6 +31,13 @@ export async function requireOnboarded(): Promise<AuthedUser> {
   return user;
 }
 
+/** `requireOnboarded()` + kapsam içi; A2 üstü ya da A2'yi bitirmiş öğrenciye günlük akış kapalı (403). */
+export async function requireInScope(): Promise<AuthedUser> {
+  const user = await requireOnboarded();
+  if (user.profile.scopeStatus !== "in_scope") throw new ApiError("out_of_scope");
+  return user;
+}
+
 /**
  * Oturum ve etkinlik uç noktaları: başlangıcı bitmiş ya da yerleştirme adımındaki kullanıcı
  * (yerleştirme testi aynı oturum akışını kullanır, PLAN karar 31). Günlük oturum üretimi
