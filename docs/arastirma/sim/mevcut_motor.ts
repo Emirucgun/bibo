@@ -1,3 +1,7 @@
+// NOT: Bu betik v2 öncesi motoru (EMA ustalık, L1 riskli planlayıcı) ölçer; motor 18.11.2026'da değişti.
+// Yeniden çalıştırmak için: git checkout 447e157 -- lib/engine && npx tsx docs/arastirma/sim/mevcut_motor.ts (sonra geri alın).
+// tsconfig.json bu klasörü derlemeden hariç tutar.
+// @ts-nocheck
 // Araştırma betiği (ürün kodu değil): MEVCUT motorun (lib/engine/*, lib/session/placement.ts,
 // lib/progress/progress.ts) güçlü bir öğrenciyi nasıl sınıflandırdığını gerçek kodla yeniden üretir.
 // Ağ, veritabanı ve API çağrısı yok; para harcamaz.

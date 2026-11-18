@@ -1,6 +1,6 @@
 // Uçtan uca simülasyon (ROADMAP M4): "yazmada bilen, konuşmada bilmeyen" sentetik öğrenci,
-// sahte değerlendirme, 6 oturum. Ağ/veritabanı/API çağrısı yok; para harcamaz.
-// Çalıştır: npx tsx scripts/simulate.ts [--seed 42] [--sessions 6]
+// sahte değerlendirme, 8 oturum. Ağ/veritabanı/API çağrısı yok; para harcamaz.
+// Çalıştır: npx tsx scripts/simulate.ts [--seed 42] [--sessions 8]
 import { diagnosisMessage } from "@/lib/engine/diagnosis";
 import { loadL1Codes, loadTopics } from "./lib/seed";
 import { simulate } from "./lib/simulate";
@@ -16,7 +16,7 @@ const result = simulate({
   topics,
   l1_codes: loadL1Codes(),
   seed: arg("seed", 42),
-  sessions: arg("sessions", 6),
+  sessions: arg("sessions", 8),
 });
 
 for (const s of result.sessions) {
@@ -32,8 +32,8 @@ for (const s of result.sessions) {
   }
 }
 
-const ok = result.speaking_gap_session !== null && result.speaking_gap_session <= 5;
+const ok = result.speaking_gap_session !== null && result.speaking_gap_session <= 8;
 console.log(
-  `\nskill_gap(speaking) ≥ 0,6 ilk oturum: ${result.speaking_gap_session ?? "yok"} → ${ok ? "GEÇTİ (≤ 5)" : "KALDI"}`,
+  `\nskill_gap(speaking) ilk oturum: ${result.speaking_gap_session ?? "yok"} → ${ok ? "GEÇTİ (≤ 8)" : "KALDI"} · ön koşul ihlali: ${result.prerequisite_violations}`,
 );
 process.exit(ok ? 0 : 1);

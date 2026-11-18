@@ -1,3 +1,7 @@
+// NOT: Bu betik v2 öncesi motoru (EMA ustalık, L1 riskli planlayıcı) ölçer; motor 18.11.2026'da değişti.
+// Yeniden çalıştırmak için: git checkout 447e157 -- lib/engine && npx tsx docs/arastirma/sim/mufredat_mevcut.ts (sonra geri alın).
+// tsconfig.json bu klasörü derlemeden hariç tutar.
+// @ts-nocheck
 // Araştırma betiği (ürün kodu değil): MEVCUT planlayıcının konuları hangi sırayla açtığını ölçer.
 // Her konunun ilk kez "odak" olduğu oturumu bulur ve ön koşulundan ÖNCE açılan konuları sayar
 // ("sıra ihlali": ön koşulu henüz hiç odak olmamış ya da hiç çalışılmamış bir konuya geçmek).

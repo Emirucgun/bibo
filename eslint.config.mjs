@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // v2 öncesi motoru ölçen araştırma betikleri (docs/arastirma/sim/*.ts başlığına bakın).
+    "docs/arastirma/sim/**",
   ]),
 ]);
 

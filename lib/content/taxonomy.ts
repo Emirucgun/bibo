@@ -3,8 +3,8 @@
 
 export interface TaxonomyTopic {
   id: string;
-  level: "A1" | "A2";
-  kind: "grammar" | "pron";
+  level: "A1" | "A2" | "B1" | "B2";
+  kind: "grammar" | "pron" | "measure";
   title_tr: string;
   title_en: string;
   active: boolean;
@@ -276,6 +276,22 @@ export const TOPICS: readonly TaxonomyTopic[] = [
     "title_tr": "w / v ayrımı (algı: wine / vine)",
     "title_en": "W and v sounds",
     "active": true
+  },
+  {
+    "id": "m.b1",
+    "level": "B1",
+    "kind": "measure",
+    "title_tr": "B1 ölçme maddeleri",
+    "title_en": "B1 measurement items",
+    "active": true
+  },
+  {
+    "id": "m.b2",
+    "level": "B2",
+    "kind": "measure",
+    "title_tr": "B2 ölçme maddeleri",
+    "title_en": "B2 measurement items",
+    "active": true
   }
 ];
 
@@ -530,7 +546,9 @@ export const TOPIC_IDS = [
   "g.modals_obligation",
   "g.verb_patterns",
   "p.th",
-  "p.w_v"
+  "p.w_v",
+  "m.b1",
+  "m.b2"
 ] as const;
 export type TopicId = (typeof TOPIC_IDS)[number];
 

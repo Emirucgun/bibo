@@ -3,21 +3,40 @@
 // bu türlere çevirir. Zaman alanları `Date`; motor `Date.now()` çağırmaz.
 import type { ActivityType, Mode, Purpose, Skill } from "@/lib/content/activity-types";
 import type { Interest } from "@/lib/content/interests";
+import type { LearnerState, ModelContext } from "./learner-model";
 
 export type { ActivityType, Mode, Purpose, Skill, Interest };
 
+/** Öğrencinin içerik seviyesi (açık konular). */
 export type Level = "A1" | "A2";
+/** Konunun seviyesi; B1/B2 yalnızca ölçme konularında (`kind = measure`). */
+export type TopicLevel = "A1" | "A2" | "B1" | "B2";
+export type TopicKind = "grammar" | "pron" | "measure";
+export type StudyMode = "school" | "self";
+export type Goal = "communication" | "exam" | "work_travel";
 
-/** `topics` satırının motorun kullandığı kısmı. */
+/** `topics` satırının motorun kullandığı kısmı (müfredat alanları docs/SPEC.md 4.4). */
 export interface EngineTopic {
   id: string;
-  level: Level;
-  kind: "grammar" | "pron";
+  level: TopicLevel;
+  kind: TopicKind;
   title_tr: string;
   l1_risk: 0 | 1 | 2;
   prereqs: string[];
   sort: number;
   active: boolean;
+  /** Ortak ölçekte zorluk; yoksa seviye ve L1 riskinden varsayılan. */
+  irt_b?: number | null;
+  /** Varsayılan yoldaki ünite (0 = ünitesiz). */
+  unit?: number;
+  /** İletişimsel değer 1–3. */
+  value?: number;
+  /** Hazırlık sınavı ağırlığı 0–2. */
+  exam_weight?: number;
+  /** Karışık çalışma için karışabilir konular. */
+  confusables?: string[];
+  /** Hedeflere uygunluk etiketleri. */
+  goal_tags?: Goal[];
 }
 
 /** `l1_codes` satırının motorun kullandığı kısmı. */
@@ -179,12 +198,21 @@ export interface PlannerInput {
   interests: Interest[];
   topics: EngineTopic[];
   l1_codes: EngineL1Code[];
-  mastery: MasteryRow[];
+  /** Öğrenme profili (docs/SPEC.md 4.1). */
+  model: { ctx: ModelContext; state: LearnerState };
   activity_stats: ActivityStat[];
   active_diagnoses: ExistingDiagnosis[];
   recent_errors: RecentError[];
   /** Bu haftanın okul konusu (`school_topics.topic_id`). */
   school_topic_id: string | null;
+  study_mode: StudyMode;
+  goal: Goal | null;
+  /** Öğrencinin "Bugün ne çalışalım?" seçimi. */
+  focus_choice: string | null;
+  /** Son oturumların odak konuları (en yeni önce). */
+  recent_focus: (string | null)[];
+  /** Bitmiş günlük oturum sayısı (dönüşümlü slotlar için). */
+  session_index: number;
   settings: PlannerSettings;
 }
 
@@ -203,6 +231,8 @@ export interface PlanSlot {
 
 export interface Plan {
   focus_topic_id: string | null;
+  /** Odak, okul konusunun eksik ön koşuluysa okul konusu. */
+  bridge_for: string | null;
   slots: PlanSlot[];
   total_seconds: number;
   notes: string[];

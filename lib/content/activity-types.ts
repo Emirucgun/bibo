@@ -13,6 +13,10 @@ export const PURPOSES = [
   "focus",
   "retest",
   "stretch",
+  "probe",
+  "input",
+  "output",
+  "fluency",
 ] as const;
 export type Purpose = (typeof PURPOSES)[number];
 

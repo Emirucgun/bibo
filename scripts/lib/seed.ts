@@ -4,10 +4,12 @@ import { readFileSync } from "node:fs";
 
 const SEED_DIR = new URL("../../supabase/seed/", import.meta.url);
 
+export type SeedGoal = "communication" | "exam" | "work_travel";
+
 export interface TopicRow {
   id: string;
-  level: "A1" | "A2";
-  kind: "grammar" | "pron";
+  level: "A1" | "A2" | "B1" | "B2";
+  kind: "grammar" | "pron" | "measure";
   title_tr: string;
   title_en: string;
   description_tr: string;
@@ -15,6 +17,16 @@ export interface TopicRow {
   prereqs: string[];
   sort: number;
   active: boolean;
+  /** Ortak ölçekte zorluk (boş = seviye ve L1 riskinden varsayılan). */
+  irt_b: number | null;
+  /** Varsayılan yoldaki ünite (0 = ünitesiz). Taslak, pedagoji onayı bekliyor. */
+  unit: number;
+  /** İletişimsel değer 1–3. */
+  value: number;
+  /** Hazırlık sınavı ağırlığı 0–2. */
+  exam_weight: number;
+  confusables: string[];
+  goal_tags: SeedGoal[];
 }
 
 export interface L1CodeRow {
@@ -96,8 +108,12 @@ export function loadTopics(text = readSeedFile("topics.csv")): TopicRow[] {
   return parseCsv(text).map((r) => {
     const l1Risk = Number(r.l1_risk);
     if (![0, 1, 2].includes(l1Risk)) throw new Error(`${r.id}: l1_risk 0–2 olmalı`);
-    if (r.level !== "A1" && r.level !== "A2") throw new Error(`${r.id}: level`);
-    if (r.kind !== "grammar" && r.kind !== "pron") throw new Error(`${r.id}: kind`);
+    if (!["A1", "A2", "B1", "B2"].includes(r.level)) throw new Error(`${r.id}: level`);
+    if (!["grammar", "pron", "measure"].includes(r.kind)) throw new Error(`${r.id}: kind`);
+    if ((r.kind === "measure") !== (r.level === "B1" || r.level === "B2")) throw new Error(`${r.id}: B1/B2 yalnızca ölçme konusu`);
+    const list = (v: string | undefined) => (v ?? "").split(";").map((x) => x.trim()).filter(Boolean);
+    const goals = list(r.goal_tags);
+    for (const g of goals) if (!["communication", "exam", "work_travel"].includes(g)) throw new Error(`${r.id}: goal_tags`);
     return {
       id: r.id,
       level: r.level,
@@ -109,7 +125,13 @@ export function loadTopics(text = readSeedFile("topics.csv")): TopicRow[] {
       prereqs: r.prereqs.split(";").map((s) => s.trim()).filter(Boolean),
       sort: Number(r.sort),
       active: parseBool(r.active, `${r.id}.active`),
-    };
+      irt_b: r.irt_b === undefined || r.irt_b.trim() === "" ? null : Number(r.irt_b),
+      unit: Number(r.unit ?? 0),
+      value: Number(r.value ?? 2),
+      exam_weight: Number(r.exam_weight ?? 1),
+      confusables: list(r.confusables),
+      goal_tags: goals as SeedGoal[],
+    } as TopicRow;
   });
 }
 
@@ -176,6 +198,7 @@ export function buildSeedSql(topics = loadTopics(), codes = loadL1Codes()): stri
   const topicCols = [
     "id", "level", "kind", "title_tr", "title_en", "description_tr",
     "l1_risk", "prereqs", "sort", "active",
+    "irt_b", "unit", "value", "exam_weight", "confusables", "goal_tags",
   ] as const;
   const codeCols = [
     "code", "topic_id", "is_l1", "name_tr", "rule_tr", "wrong_example", "right_example",
@@ -203,7 +226,7 @@ export function buildSeedSql(topics = loadTopics(), codes = loadL1Codes()): stri
     "-- ÜRETİLMİŞ DOSYA, elle düzenlemeyin. Kaynak: supabase/seed/topics.csv, l1_codes.csv",
     "-- Yeniden üret: npx tsx scripts/build-seed.ts",
     "-- Uzak projeye: npx supabase db push --remote --include-seed (upsert; tekrar çalıştırılabilir).",
-    "-- placement.json veritabanına yazılmaz; yerleştirme oturumu (M9) dosyadan okur.",
+    "-- placement_bank.json veritabanına yazılmaz; yerleştirme dosyadan okur (kalibrasyon item_calibration'da).",
     "",
     "begin;",
     "",
@@ -245,8 +268,8 @@ export function buildTaxonomyTs(topics = loadTopics(), codes = loadL1Codes()): s
     "",
     "export interface TaxonomyTopic {",
     "  id: string;",
-    '  level: "A1" | "A2";',
-    '  kind: "grammar" | "pron";',
+    '  level: "A1" | "A2" | "B1" | "B2";',
+    '  kind: "grammar" | "pron" | "measure";',
     "  title_tr: string;",
     "  title_en: string;",
     "  active: boolean;",

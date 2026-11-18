@@ -1,8 +1,9 @@
-// Uçtan uca simülasyon çekirdeği (docs/SPEC.md Bölüm 12): sentetik öğrenci + sahte
-// değerlendirme ile planlayıcı → ustalık → teşhis döngüsü. Ağ ve veritabanı yok.
+// Uçtan uca simülasyon çekirdeği (docs/SPEC.md Bölüm 12): sentetik öğrenci + sahte değerlendirme
+// ile planlayıcı → öğrenme profili → teşhis döngüsü. Ağ ve veritabanı yok.
 // scripts/simulate.ts ve tests/engine/simulate.test.ts bunu kullanır.
-import { diagnoseTopic, reconcileDiagnoses, type MasteryBySkill } from "@/lib/engine/diagnosis";
-import { applyEvidence, emptyMastery } from "@/lib/engine/mastery";
+import { diagnoseTopic, reconcileDiagnoses } from "@/lib/engine/diagnosis";
+import { topicStatus, type CurriculumInput } from "@/lib/engine/curriculum";
+import { createContext, defaultTopicB, emptyState, expectedAccuracy, observe, type LearnerState, type ModelContext } from "@/lib/engine/learner-model";
 import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
 import type {
@@ -11,9 +12,10 @@ import type {
   EngineTopic,
   ExistingDiagnosis,
   Interest,
-  MasteryRow,
+  Level,
   RecentError,
   Skill,
+  StudyMode,
   TopicAttempt,
 } from "@/lib/engine/types";
 
@@ -43,27 +45,47 @@ export interface SimResult {
   /** `skill_gap(speaking)` güveni ≥ 0,6 ilk görüldüğü oturum (1 tabanlı) ya da `null`. */
   speaking_gap_session: number | null;
   active: ExistingDiagnosis[];
+  /** Odak olduğunda ön koşulu henüz hiç odak/sağlam olmamış konu sayısı (müfredat ölçütü). */
+  prerequisite_violations: number;
+  /** Odak olan farklı konular. */
+  focused_topics: string[];
+  ctx: ModelContext;
+  state: LearnerState;
+}
+
+export function modelContextFor(topics: EngineTopic[]): ModelContext {
+  return createContext(topics.map((t) => ({ id: t.id, b: t.irt_b ?? defaultTopicB(t.level, t.l1_risk), l1_risk: t.l1_risk, kind: t.kind })));
 }
 
 export function simulate(args: {
   topics: EngineTopic[];
   l1_codes: EngineL1Code[];
   profile?: StudentProfile;
+  /** Verilirse sabit beceri olasılıkları yerine: konu pratik edildikçe öğrenilir. */
+  learns?: boolean;
   sessions?: number;
   seed?: number;
   start?: Date;
   interests?: Interest[];
+  level?: Level;
+  study_mode?: StudyMode;
+  prior?: { mu: number; sd: number };
 }): SimResult {
   const profile = args.profile ?? WRITES_BUT_CANNOT_SPEAK;
   const rng = createRng(args.seed ?? 42);
   const start = args.start ?? new Date("2026-12-14T09:00:00Z");
   const topicById = new Map(args.topics.map((t) => [t.id, t]));
+  const ctx = modelContextFor(args.topics);
+  const state = emptyState(ctx, args.prior);
+  const practice = new Map<string, number>();
 
-  const mastery = new Map<string, MasteryRow>();
   const attempts = new Map<string, TopicAttempt[]>();
   const errors: RecentError[] = [];
   let diagnoses: (ExistingDiagnosis & { candidate: DiagnosisCandidate })[] = [];
   const sessions: SimSession[] = [];
+  const recentFocus: (string | null)[] = [];
+  const firstFocus = new Map<string, number>();
+  let violations = 0;
   let speakingGap: number | null = null;
 
   for (let s = 0; s < (args.sessions ?? 6); s++) {
@@ -71,81 +93,68 @@ export function simulate(args: {
     const plan = planSession({
       now,
       rng,
-      level_est: "A1",
+      level_est: args.level ?? "A1",
       interests: args.interests ?? ["football", "gaming"],
       topics: args.topics,
       l1_codes: args.l1_codes,
-      mastery: [...mastery.values()],
+      model: { ctx, state },
       activity_stats: [],
       active_diagnoses: diagnoses.filter((d) => d.status === "active"),
       recent_errors: errors,
       school_topic_id: null,
+      study_mode: args.study_mode ?? "school",
+      goal: null,
+      focus_choice: null,
+      recent_focus: recentFocus,
+      session_index: s,
       settings: { tts_enabled: true, general_content_rate: 0.2 },
     });
 
-    const session: SimSession = {
-      index: s + 1,
-      focus_topic_id: plan.focus_topic_id,
-      slots: [],
-      total_seconds: plan.total_seconds,
-      new_diagnoses: [],
-    };
+    if (plan.focus_topic_id && !firstFocus.has(plan.focus_topic_id)) {
+      firstFocus.set(plan.focus_topic_id, s);
+      const cur: CurriculumInput = {
+        ctx, state, topics: args.topics, level_est: args.level ?? "A1", study_mode: "school", goal: null,
+        school_topic_id: null, focus_choice: null, recent_focus: recentFocus,
+      };
+      // İhlal: ön koşul ne önce odak oldu, ne sağlam, ne de beklenen doğru oranı ≥ %65 (hazır).
+      for (const p of topicById.get(plan.focus_topic_id)!.prereqs) {
+        const pt = topicById.get(p);
+        if (pt && !firstFocus.has(p) && topicStatus(cur, pt) !== "solid" && expectedAccuracy(ctx, state, p) < 0.65) violations++;
+      }
+    }
+    recentFocus.unshift(plan.focus_topic_id);
+
+    const session: SimSession = { index: s + 1, focus_topic_id: plan.focus_topic_id, slots: [], total_seconds: plan.total_seconds, new_diagnoses: [] };
     const touched = new Set<string>();
     plan.slots.forEach((slot, i) => {
-      const t = topicById.get(slot.topic_id)!;
       const at = new Date(now.getTime() + (i + 1) * 90_000);
-      const correct = rng() < profile[slot.skill];
-      const key = `${slot.topic_id}|${slot.skill}`;
-      const prev = mastery.get(key) ?? { ...emptyMastery(t), topic_id: t.id, skill: slot.skill };
-      const next = applyEvidence(
-        prev,
-        { topic_id: t.id, skill: slot.skill, mode: slot.mode, score: correct ? 1 : 0, is_correct: correct, hint_used: false, incidental: false },
-        at,
-      );
-      mastery.set(key, { ...next, topic_id: t.id, skill: slot.skill });
-      const list = attempts.get(t.id) ?? [];
+      let p = profile[slot.skill];
+      if (args.learns) {
+        const n = practice.get(slot.topic_id) ?? 0;
+        practice.set(slot.topic_id, n + 1);
+        p = Math.min(0.95, profile[slot.skill] * (0.5 + 0.08 * n));
+      }
+      const correct = rng() < p;
+      observe(ctx, state, { topic_id: slot.topic_id, skill: slot.skill, mode: slot.mode, score: correct ? 1 : 0, weight: 1, at });
+      const list = attempts.get(slot.topic_id) ?? [];
       list.push({ skill: slot.skill, activity_type: slot.activity_type, is_correct: correct });
-      attempts.set(t.id, list);
-      if (!correct) errors.push({ topic_id: t.id, skill: slot.skill, l1_code: slot.l1_target ?? "GEN.OTHER", created_at: at });
-      touched.add(t.id);
-      session.slots.push({ topic_id: t.id, skill: slot.skill, activity_type: slot.activity_type, purpose: slot.purpose, correct });
+      attempts.set(slot.topic_id, list);
+      if (!correct) errors.push({ topic_id: slot.topic_id, skill: slot.skill, l1_code: slot.l1_target ?? "GEN.OTHER", created_at: at });
+      touched.add(slot.topic_id);
+      session.slots.push({ topic_id: slot.topic_id, skill: slot.skill, activity_type: slot.activity_type, purpose: slot.purpose, correct });
     });
 
-    // Oturum sonu: dokunulan her konu için teşhis
     for (const topicId of touched) {
-      const bySkill: MasteryBySkill = {};
-      for (const sk of ["reading", "listening", "writing", "speaking"] as Skill[]) {
-        const r = mastery.get(`${topicId}|${sk}`);
-        if (r) bySkill[sk] = r;
-      }
-      const candidate = diagnoseTopic(topicId, bySkill, attempts.get(topicId));
-      const result = reconcileDiagnoses({
-        topic_id: topicId,
-        candidate,
-        existing: diagnoses,
-        mastery: bySkill,
-        attempts: attempts.get(topicId),
-      });
-      for (const u of result.updates) {
-        diagnoses = diagnoses.map((d) => (d.id === u.id ? { ...d, status: u.status } : d));
-      }
+      const candidate = diagnoseTopic(ctx, state, topicId, attempts.get(topicId));
+      const result = reconcileDiagnoses({ ctx, state, topic_id: topicId, candidate, existing: diagnoses, attempts: attempts.get(topicId) });
+      for (const u of result.updates) diagnoses = diagnoses.map((d) => (d.id === u.id ? { ...d, status: u.status } : d));
       if (result.insert) {
         const c = result.insert;
-        diagnoses.push({
-          id: `d${diagnoses.length + 1}`,
-          topic_id: c.topic_id,
-          kind: c.kind,
-          weak_skill: c.weak_skill,
-          weak_activity: c.weak_activity,
-          status: "active",
-          candidate: c,
-        });
+        diagnoses.push({ id: `d${diagnoses.length + 1}`, topic_id: c.topic_id, kind: c.kind, weak_skill: c.weak_skill, weak_activity: c.weak_activity, status: "active", candidate: c });
         session.new_diagnoses.push(c);
       }
     }
-    const hasGap = diagnoses.some(
-      (d) => d.status === "active" && d.kind === "skill_gap" && d.weak_skill === "speaking" && d.candidate.confidence >= 0.6,
-    );
+    const hasGap = diagnoses.some((d) => d.status === "active" && d.kind === "skill_gap" && d.weak_skill === "speaking" && d.candidate.confidence >= 0.6);
     if (hasGap && speakingGap === null) speakingGap = s + 1;
     sessions.push(session);
   }
@@ -156,5 +165,9 @@ export function simulate(args: {
     active: diagnoses.filter((d) => d.status === "active").map((d) => ({
       id: d.id, topic_id: d.topic_id, kind: d.kind, weak_skill: d.weak_skill, weak_activity: d.weak_activity, status: d.status,
     })),
+    prerequisite_violations: violations,
+    focused_topics: [...firstFocus.keys()],
+    ctx,
+    state,
   };
 }
