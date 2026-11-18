@@ -7,13 +7,17 @@ import type { SessionDeps } from "@/lib/session/service";
 import type {
   AttemptRow,
   DiagnosisRow,
+  EvidenceRow,
   ItemRow,
   Learner,
+  ModelSettings,
   NewDiagnosis,
   NewErrorEvent,
+  PlacementCompletion,
   SessionRow,
   SessionSettings,
   SessionStore,
+  StoredLearnerState,
 } from "@/lib/session/types";
 import { answerAll, FakeStore, ok, USAGE } from "../ai/fixtures";
 import { FakeSpeech, FakeTranscriber, FakeTtsStore } from "../media/fakes";
@@ -39,7 +43,13 @@ export class FakeSessionStore implements SessionStore {
   sessions: (SessionRow & { plan?: unknown; comment?: string | null })[] = [];
   items: (ItemRow & { credited: boolean; created_at: Date })[] = [];
   keys = new Map<string, ItemKey>();
-  attempts: (AttemptRow & { time_ms: number; created_at: Date })[] = [];
+  attempts: (AttemptRow & {
+    time_ms: number;
+    created_at: Date;
+    pred_p?: number | null;
+    evidence_weight?: number | null;
+    incidental?: { topic_id: string; correct: boolean }[] | null;
+  })[] = [];
   errorEvents: NewErrorEvent[] = [];
   mastery = new Map<string, MasteryRow[]>();
   stats = new Map<string, { activity_type: string; taught_n: number; retained_n: number }[]>();
@@ -47,11 +57,35 @@ export class FakeSessionStore implements SessionStore {
   events: { user_id: string; name: string; props?: Record<string, unknown> }[] = [];
   learners = new Map<string, Learner & { display_name?: string }>();
   settings: SessionSettings = { tts_enabled: true, general_content_rate: 0.2, review_sample_rate: 0.15 };
+  modelSettings: ModelSettings = {
+    placement_model: {},
+    learner_model: { version: 1 },
+    continuous_gate_p: 0.95,
+    retest_after_days: 7,
+    grade_samples: 3,
+    coverage: { a1: 0.98, a2: 0.95 },
+  };
+  learnerStates = new Map<string, StoredLearnerState>();
+  placementResults = new Map<string, PlacementCompletion>();
+  programWeeks = new Map<string, string>();
+  schoolTopics = new Map<string, string>();
   clock = { now: new Date(T0) };
 
   constructor() {
     for (const id of [USER, OTHER]) {
-      this.learners.set(id, { level_est: "A1", interests: ["football", "music"], explain_mode: "short" });
+      this.learners.set(id, {
+        level_est: "A1",
+        level_self: "A1",
+        interests: ["football", "music"],
+        explain_mode: "short",
+        onboarding_step: "placement",
+        scope_status: "in_scope",
+        study_mode: "school",
+        goal: null,
+        program_id: null,
+        focus_choice: null,
+        placement_done_at: null,
+      });
     }
   }
 
@@ -104,10 +138,27 @@ export class FakeSessionStore implements SessionStore {
     return id;
   }
   onboarding = new Map<string, string>();
-  async completePlacement(userId: string, levelEst: "A1" | "A2") {
+  async completePlacement(userId: string, result: PlacementCompletion, now: Date) {
     if ((this.onboarding.get(userId) ?? "placement") !== "placement") return false;
     this.onboarding.set(userId, "done");
-    this.learners.set(userId, { ...this.learners.get(userId)!, level_est: levelEst });
+    this.placementResults.set(userId, result);
+    this.learners.set(userId, {
+      ...this.learners.get(userId)!,
+      level_est: result.level_est,
+      scope_status: result.scope_status,
+      onboarding_step: "done",
+      placement_done_at: now,
+    });
+    return true;
+  }
+  async countPlacements(userId: string) {
+    return this.sessions.filter((s) => s.user_id === userId && s.kind === "placement" && s.status === "done").length;
+  }
+  async reopenPlacement(userId: string) {
+    const l = this.learners.get(userId)!;
+    if ((this.onboarding.get(userId) ?? "placement") !== "done" || l.scope_status !== "above_scope") return false;
+    this.onboarding.set(userId, "placement");
+    this.learners.set(userId, { ...l, scope_status: "in_scope", onboarding_step: "placement" });
     return true;
   }
   async setPlan(id: string, plan: unknown, focus: string | null) {
@@ -123,8 +174,19 @@ export class FakeSessionStore implements SessionStore {
 
   async insertItems(...[sessionId, userId, rows]: Parameters<SessionStore["insertItems"]>) {
     for (const { key, ...row } of rows) {
+      if (this.items.some((i) => i.session_id === sessionId && i.position === row.position)) {
+        throw new Error("items: 23505");
+      }
       const id = uuid();
-      this.items.push({ ...row, id, session_id: sessionId, user_id: userId, credited: false, created_at: new Date(this.clock.now) });
+      this.items.push({
+        ...row,
+        bank_item_id: row.bank_item_id ?? null,
+        id,
+        session_id: sessionId,
+        user_id: userId,
+        credited: false,
+        created_at: new Date(this.clock.now),
+      });
       this.keys.set(id, key);
     }
   }
@@ -157,8 +219,37 @@ export class FakeSessionStore implements SessionStore {
     this.errorEvents.push(...rows);
   }
 
-  async listMastery(userId: string, topicIds?: string[]) {
-    return (this.mastery.get(userId) ?? []).filter((m) => !topicIds || topicIds.includes(m.topic_id));
+  async getLearnerState(userId: string) {
+    return this.learnerStates.get(userId) ?? null;
+  }
+  async saveLearnerState(userId: string, row: StoredLearnerState) {
+    this.learnerStates.set(userId, structuredClone(row));
+  }
+  async listEvidence(userId: string): Promise<EvidenceRow[]> {
+    // Konuşmanın 1. denemesi oturum bitince (ya da 2. deneme gelince) sayılır: canlı yolla aynı kural.
+    const graded = this.attempts.filter((a) => {
+      if (a.user_id !== userId || a.score === null) return false;
+      const item = this.items.find((i) => i.id === a.item_id)!;
+      const session = this.sessions.find((x) => x.id === item.session_id);
+      return !(item.activity_type === "speak_answer" && a.try_no === 1 && session?.status !== "done");
+    });
+    const last = (itemId: string) => Math.max(...graded.filter((g) => g.item_id === itemId).map((g) => g.try_no));
+    return graded
+      .filter((a) => a.try_no === last(a.item_id))
+      .map((a) => {
+        const item = this.items.find((i) => i.id === a.item_id)!;
+        return {
+          topic_id: item.topic_id,
+          skill: item.skill,
+          mode: item.mode,
+          bank_item_id: item.bank_item_id,
+          score: a.score!,
+          evidence_weight: a.evidence_weight ?? null,
+          hint_used: a.hint_used,
+          incidental: a.incidental ?? null,
+          created_at: a.created_at,
+        };
+      });
   }
   async upsertMastery(userId: string, rows: MasteryRow[]) {
     const all = this.mastery.get(userId) ?? [];
@@ -247,8 +338,20 @@ export class FakeSessionStore implements SessionStore {
   async listRecentErrors() {
     return [];
   }
-  async getSchoolTopic() {
-    return null;
+  async getSchoolTopic(userId: string, weekStart: string) {
+    return this.schoolTopics.get(`${userId}|${weekStart}`) ?? null;
+  }
+  async getProgramTopic(programId: string, weekStart: string) {
+    return this.programWeeks.get(`${programId}|${weekStart}`) ?? null;
+  }
+  async listRecentFocus(userId: string, n: number) {
+    const done = this.sessions
+      .filter((s) => s.user_id === userId && s.kind === "daily" && s.status === "done")
+      .sort((a, b) => b.finished_at!.getTime() - a.finished_at!.getTime());
+    return { recent: done.slice(0, n).map((s) => s.focus_topic_id), done: done.length };
+  }
+  async loadModelSettings() {
+    return this.modelSettings;
   }
   async loadSessionSettings() {
     return this.settings;

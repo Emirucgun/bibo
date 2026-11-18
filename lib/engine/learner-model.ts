@@ -380,12 +380,16 @@ export function topicEvidence(ctx: ModelContext, state: LearnerState, topicId: s
   return n;
 }
 
-/** Izgara etiketi: "kanıt yoksa hüküm yok" (çalışılacak için konuda en az `min_topic_evidence` cevap). */
+/**
+ * Izgara etiketi: "kanıt yoksa hüküm yok". Zayıf için konuda en az `min_topic_evidence` cevap;
+ * gelişiyor için dar sonsal ya da hücrede en az `min_topic_evidence` doğrudan cevap.
+ */
 export function cellLabel(ctx: ModelContext, state: LearnerState, view: CellView): CellLabel {
   const c = ctx.config;
   if (view.p_mastered >= c.solid_p) return "solid";
   if (view.p_mastered <= c.needs_p && topicEvidence(ctx, state, view.topic_id) >= c.min_topic_evidence) return "needs_work";
-  if (view.sd <= c.tight_sd) return "developing";
+  // Doğrudan kanıtı olan hücre "bilinmiyor" görünmez: öğrenci cevap verdi, durum gelişiyor.
+  if (view.sd <= c.tight_sd || view.n >= c.min_topic_evidence) return "developing";
   return "unknown";
 }
 

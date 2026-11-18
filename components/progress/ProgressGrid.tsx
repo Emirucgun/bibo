@@ -3,12 +3,15 @@ import { SKILL_LABELS_TR, SKILLS } from "@/lib/content/activity-types";
 import type { GridRow, MasteryLevel } from "@/lib/progress/progress";
 
 // Konu × beceri ızgarası (PRD F9). Dört seviye renkle ve simgeyle ayrılır (renk körlüğü, gri tonlama).
+// Doğrudan cevabı olmayan ama diğer kanıtlardan tahmin edilen hücre kesik çerçeveli ve soluk.
 export const LEVEL_STYLE: Record<MasteryLevel, { label: string; icon: string; cell: string }> = {
   unknown: { label: "Henüz bilinmiyor", icon: "·", cell: "border border-dashed border-border bg-background text-muted-foreground" },
   weak: { label: "Zayıf", icon: "✕", cell: "bg-red-100 text-red-900 border border-red-300" },
   developing: { label: "Gelişiyor", icon: "◐", cell: "bg-amber-100 text-amber-900 border border-amber-300" },
   solid: { label: "Sağlam", icon: "✓", cell: "bg-emerald-700 text-white border border-emerald-800" },
 };
+
+const PREDICTED = "opacity-60 border-dashed";
 
 export function LevelLegend() {
   return (
@@ -21,6 +24,12 @@ export function LevelLegend() {
           {LEVEL_STYLE[l].label}
         </li>
       ))}
+      <li className="col-span-2 flex items-center gap-2">
+        <span aria-hidden className={cn("flex size-7 items-center justify-center rounded-md text-sm font-bold", LEVEL_STYLE.solid.cell, PREDICTED)}>
+          {LEVEL_STYLE.solid.icon}
+        </span>
+        Soluk: henüz sormadık, diğer cevaplarından tahmin
+      </li>
     </ul>
   );
 }
@@ -49,15 +58,15 @@ export function ProgressGrid({ rows }: { rows: GridRow[] }) {
               {r.titleTr}
             </th>
             {SKILLS.map((s) => {
-              const level = r.cells[s];
-              if (!level) return <td key={s} aria-label="Ölçülmez" />;
-              const st = LEVEL_STYLE[level];
+              const c = r.cells[s];
+              if (!c) return <td key={s} aria-label="Ölçülmez" />;
+              const st = LEVEL_STYLE[c.level];
               return (
                 <td key={s} className="p-0">
                   <span
                     role="img"
-                    aria-label={`${r.titleTr}, ${SKILL_LABELS_TR[s]}: ${st.label}`}
-                    className={cn("flex h-9 w-full items-center justify-center rounded-md text-sm font-bold", st.cell)}
+                    aria-label={`${r.titleTr}, ${SKILL_LABELS_TR[s]}: ${st.label}${c.predicted ? " (tahmin)" : ""}`}
+                    className={cn("flex h-9 w-full items-center justify-center rounded-md text-sm font-bold", st.cell, c.predicted && PREDICTED)}
                   >
                     {st.icon}
                   </span>

@@ -57,7 +57,7 @@ describe("katı JSON şeması", () => {
     expect(optional).toBeLessThanOrEqual(24);
   });
 
-  it("konu ve kod enum'ları 32 / 24 değer", () => {
+  it("konu ve kod enum'ları 32 / 24 değer (ölçme konuları değerlendirmede yok)", () => {
     const json = toStrictJsonSchema(GradeResult) as { properties: { errors: { items: { properties: Record<string, { enum: string[] }> } } } };
     const props = json.properties.errors.items.properties;
     expect(props.topic_id.enum).toHaveLength(32);

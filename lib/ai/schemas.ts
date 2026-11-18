@@ -2,10 +2,11 @@
 // `z.record` yok (katı JSON şeması serbest anahtarlı nesneyi desteklemez).
 import { z } from "zod";
 import { ACTIVITY_TYPES } from "@/lib/content/activity-types";
-import { L1_CODE_IDS, TOPIC_IDS } from "@/lib/content/taxonomy";
+import { L1_CODE_IDS, TAUGHT_TOPIC_IDS } from "@/lib/content/taxonomy";
 
 export const L1Code = z.enum(L1_CODE_IDS);
-export const TopicId = z.enum(TOPIC_IDS);
+/** Ölçme konuları (B1/B2) değerlendirmede etiketlenmez: öğretilen konular. */
+export const TopicId = z.enum(TAUGHT_TOPIC_IDS);
 export const ActivityType = z.enum(ACTIVITY_TYPES);
 
 export const GeneratedPayload = z.object({

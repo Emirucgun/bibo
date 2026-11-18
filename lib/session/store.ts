@@ -5,10 +5,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isActivityType, type ActivityType, type Mode, type Purpose, type Skill } from "@/lib/content/activity-types";
 import { isInterest } from "@/lib/content/interests";
-import type { EngineL1Code, EngineTopic, ItemKey } from "@/lib/engine/types";
+import type { EngineL1Code, EngineTopic, Goal, ItemKey, StudyMode, TopicKind, TopicLevel } from "@/lib/engine/types";
 import type {
   AttemptRow,
   DiagnosisRow,
+  EvidenceRow,
+  ScopeStatus,
   ItemPayload,
   ItemRow,
   SessionRow,
@@ -18,7 +20,7 @@ import type {
 
 const SESSION_COLS = "id, user_id, kind, status, focus_topic_id, created_at, started_at, finished_at, rating";
 const ITEM_COLS =
-  "id, session_id, user_id, position, topic_id, activity_type, skill, mode, purpose, interest, l1_target, payload";
+  "id, session_id, user_id, position, topic_id, activity_type, skill, mode, purpose, interest, l1_target, payload, bank_item_id";
 const ATTEMPT_COLS =
   "id, item_id, user_id, try_no, response, is_correct, score, hint_used, explain_opened, graded_by, feedback_short_tr, explanation_long_tr, correction";
 const DIAGNOSIS_COLS = "id, topic_id, kind, status, message_tr, evidence, user_feedback";
@@ -62,6 +64,7 @@ function toItem(r: Row): ItemRow {
     interest: (r.interest as string | null) ?? null,
     l1_target: (r.l1_target as string | null) ?? null,
     payload: r.payload as ItemPayload,
+    bank_item_id: (r.bank_item_id as string | null) ?? null,
   };
 }
 
@@ -183,14 +186,44 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       return data.id as string;
     },
 
-    async completePlacement(userId, levelEst, now) {
+    async completePlacement(userId, result, now) {
       const { data, error } = await db
         .from("profiles")
-        .update({ level_est: levelEst, onboarding_step: "done", updated_at: now.toISOString() })
+        .update({
+          level_est: result.level_est,
+          scope_status: result.scope_status,
+          placement_result: result.placement_result as never,
+          placement_done_at: now.toISOString(),
+          onboarding_step: "done",
+          updated_at: now.toISOString(),
+        })
         .eq("id", userId)
         .eq("onboarding_step", "placement")
         .select("id");
       if (error) fail("profiles.placement", error);
+      return (data?.length ?? 0) > 0;
+    },
+
+    async countPlacements(userId) {
+      const { count, error } = await db
+        .from("sessions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("kind", "placement")
+        .eq("status", "done");
+      if (error) fail("sessions.placement_count", error);
+      return count ?? 0;
+    },
+
+    async reopenPlacement(userId, now) {
+      const { data, error } = await db
+        .from("profiles")
+        .update({ onboarding_step: "placement", scope_status: "in_scope", updated_at: now.toISOString() })
+        .eq("id", userId)
+        .eq("onboarding_step", "done")
+        .eq("scope_status", "above_scope")
+        .select("id");
+      if (error) fail("profiles.reopen", error);
       return (data?.length ?? 0) > 0;
     },
 
@@ -221,6 +254,7 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
             interest: r.interest,
             l1_target: r.l1_target,
             payload: r.payload,
+            bank_item_id: r.bank_item_id ?? null,
           })),
         )
         .select("id, position");
@@ -291,24 +325,84 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       if (error) fail("error_events.insert", error);
     },
 
-    // --- mastery ve etkinlik verimi ---
-    async listMastery(userId, topicIds) {
-      let q = db
-        .from("mastery")
-        .select("topic_id, skill, score, n, correct, last_seen_at, next_review_at")
-        .eq("user_id", userId);
-      if (topicIds) q = q.in("topic_id", topicIds);
-      const { data, error } = await q;
-      if (error) fail("mastery", error);
-      return (data ?? []).map((r) => ({
-        topic_id: r.topic_id as string,
-        skill: r.skill as Skill,
-        score: Number(r.score),
-        n: Number(r.n),
-        correct: Number(r.correct),
-        last_seen_at: date(r.last_seen_at),
-        next_review_at: date(r.next_review_at),
-      }));
+    // --- öğrenme profili, mastery önbelleği ve etkinlik verimi ---
+    async getLearnerState(userId) {
+      const { data, error } = await db
+        .from("learner_state")
+        .select("version, state, n_obs")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) fail("learner_state", error);
+      return data ? { version: Number(data.version), state: data.state, n_obs: Number(data.n_obs) } : null;
+    },
+
+    async saveLearnerState(userId, row, now) {
+      const { error } = await db.from("learner_state").upsert(
+        {
+          user_id: userId,
+          version: row.version,
+          state: row.state as never,
+          n_obs: row.n_obs,
+          updated_at: now.toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+      if (error) fail("learner_state.upsert", error);
+    },
+
+    async listEvidence(userId) {
+      const out: (EvidenceRow & { item_id: string; try_no: number })[] = [];
+      const PAGE = 1000;
+      for (let from = 0; ; from += PAGE) {
+        const { data, error } = await db
+          .from("attempts")
+          .select(
+            "item_id, try_no, score, hint_used, evidence_weight, incidental, created_at, items!inner(topic_id, skill, mode, bank_item_id, activity_type, sessions!inner(status))",
+          )
+          .eq("user_id", userId)
+          .not("score", "is", null)
+          .order("created_at")
+          .range(from, from + PAGE - 1);
+        if (error) fail("attempts.evidence", error);
+        const rows = data ?? [];
+        // Konuşmada iki deneme olabilir: etkinlik başına son değerlendirilmiş deneme (PLAN karar 18).
+        for (const r of rows) {
+          const item = (Array.isArray(r.items) ? r.items[0] : r.items) as Row | undefined;
+          if (!item) continue;
+          const session = (Array.isArray(item.sessions) ? item.sessions[0] : item.sessions) as Row | undefined;
+          // Canlı yolla aynı kural: konuşmanın 1. denemesi oturum bitince (ya da 2. deneme gelince) sayılır.
+          if (item.activity_type === "speak_answer" && Number(r.try_no) === 1 && session?.status !== "done") continue;
+          out.push({
+            item_id: r.item_id as string,
+            try_no: Number(r.try_no),
+            topic_id: item.topic_id as string,
+            skill: item.skill as Skill,
+            mode: item.mode as Mode,
+            bank_item_id: (item.bank_item_id as string | null) ?? null,
+            score: Number(r.score),
+            evidence_weight: num(r.evidence_weight),
+            hint_used: Boolean(r.hint_used),
+            incidental: (r.incidental as EvidenceRow["incidental"]) ?? null,
+            created_at: date(r.created_at)!,
+          });
+        }
+        if (rows.length < PAGE) break;
+      }
+      const last = new Map<string, number>();
+      for (const r of out) last.set(r.item_id, Math.max(last.get(r.item_id) ?? 0, r.try_no));
+      return out
+        .filter((r) => r.try_no === last.get(r.item_id))
+        .map((r) => ({
+          topic_id: r.topic_id,
+          skill: r.skill,
+          mode: r.mode,
+          bank_item_id: r.bank_item_id,
+          score: r.score,
+          evidence_weight: r.evidence_weight,
+          hint_used: r.hint_used,
+          incidental: r.incidental,
+          created_at: r.created_at,
+        }));
     },
 
     async upsertMastery(userId, rows, now) {
@@ -477,7 +571,9 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
     async getLearner(userId) {
       const { data, error } = await db
         .from("profiles")
-        .select("level_est, level_self, interests, explain_mode")
+        .select(
+          "level_est, level_self, interests, explain_mode, onboarding_step, scope_status, study_mode, goal, program_id, focus_choice, placement_done_at",
+        )
         .eq("id", userId)
         .maybeSingle();
       if (error || !data) fail("profiles", error);
@@ -486,6 +582,13 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
         level_self: (data.level_self as string | null) ?? null,
         interests: ((data.interests as string[] | null) ?? []).filter(isInterest),
         explain_mode: data.explain_mode === "long" ? "long" : "short",
+        onboarding_step: data.onboarding_step as string,
+        scope_status: (data.scope_status as ScopeStatus | null) ?? "in_scope",
+        study_mode: (data.study_mode as StudyMode | null) ?? null,
+        goal: (data.goal as Goal | null) ?? null,
+        program_id: (data.program_id as string | null) ?? null,
+        focus_choice: (data.focus_choice as string | null) ?? null,
+        placement_done_at: date(data.placement_done_at),
       };
     },
 
@@ -501,17 +604,23 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
       if (topicsCache && performance.now() - topicsCache.at < TAXONOMY_TTL_MS) return topicsCache.rows;
       const { data, error } = await db
         .from("topics")
-        .select("id, level, kind, title_tr, l1_risk, prereqs, sort, active");
+        .select("id, level, kind, title_tr, l1_risk, prereqs, sort, active, irt_b, unit, value, exam_weight, confusables, goal_tags");
       if (error) fail("topics", error);
-      const rows = (data ?? []).map((r) => ({
+      const rows: EngineTopic[] = (data ?? []).map((r) => ({
         id: r.id as string,
-        level: r.level as "A1" | "A2",
-        kind: r.kind as "grammar" | "pron",
+        level: r.level as TopicLevel,
+        kind: r.kind as TopicKind,
         title_tr: r.title_tr as string,
         l1_risk: Number(r.l1_risk) as 0 | 1 | 2,
         prereqs: (r.prereqs as string[] | null) ?? [],
         sort: Number(r.sort),
         active: Boolean(r.active),
+        irt_b: num(r.irt_b),
+        unit: Number(r.unit ?? 0),
+        value: Number(r.value ?? 2),
+        exam_weight: Number(r.exam_weight ?? 1),
+        confusables: (r.confusables as string[] | null) ?? [],
+        goal_tags: ((r.goal_tags as string[] | null) ?? []) as Goal[],
       }));
       if (rows.length > 0) topicsCache = { at: performance.now(), rows };
       return rows;
@@ -564,6 +673,68 @@ export function createSessionStore(db: SupabaseClient): SessionStore {
         .maybeSingle();
       if (error) fail("school_topics", error);
       return (data?.topic_id as string | null) ?? null;
+    },
+
+    async getProgramTopic(programId, weekStart) {
+      const { data, error } = await db
+        .from("program_weeks")
+        .select("topic_id")
+        .eq("program_id", programId)
+        .eq("week_start", weekStart)
+        .maybeSingle();
+      if (error) fail("program_weeks", error);
+      return (data?.topic_id as string | null) ?? null;
+    },
+
+    async listRecentFocus(userId, n) {
+      const { data, error, count } = await db
+        .from("sessions")
+        .select("focus_topic_id", { count: "exact" })
+        .eq("user_id", userId)
+        .eq("kind", "daily")
+        .eq("status", "done")
+        .order("finished_at", { ascending: false })
+        .limit(n);
+      if (error) fail("sessions.recent_focus", error);
+      return { recent: (data ?? []).map((r) => (r.focus_topic_id as string | null) ?? null), done: count ?? 0 };
+    },
+
+    async loadModelSettings() {
+      const keys = ["placement_model", "learner_model", "continuous_gate_p", "retest_after_days", "grade_samples", "curriculum"];
+      const { data, error } = await db.from("app_settings").select("key, value").in("key", keys);
+      if (error) fail("app_settings", error);
+      const map = new Map((data ?? []).map((r) => [r.key as string, r.value as unknown]));
+      const obj = (k: string) => {
+        const v = map.get(k);
+        return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+      };
+      const placement = obj("placement_model");
+      const learner = obj("learner_model");
+      const curriculum = obj("curriculum");
+      const gate = map.get("continuous_gate_p");
+      const retest = map.get("retest_after_days");
+      const samples = map.get("grade_samples");
+      if (
+        !placement ||
+        !learner ||
+        typeof learner.version !== "number" ||
+        !curriculum ||
+        typeof curriculum.coverage_a1 !== "number" ||
+        typeof curriculum.coverage_a2 !== "number" ||
+        typeof gate !== "number" ||
+        typeof retest !== "number" ||
+        typeof samples !== "number"
+      ) {
+        throw new Error(`app_settings eksik ya da geçersiz: ${keys.join(", ")}`);
+      }
+      return {
+        placement_model: placement,
+        learner_model: learner,
+        continuous_gate_p: gate,
+        retest_after_days: retest,
+        grade_samples: samples,
+        coverage: { a1: curriculum.coverage_a1, a2: curriculum.coverage_a2 },
+      };
     },
 
     async loadSessionSettings() {

@@ -552,6 +552,42 @@ export const TOPIC_IDS = [
 ] as const;
 export type TopicId = (typeof TOPIC_IDS)[number];
 
+/** Öğretilen konular (dilbilgisi ve sesletim): değerlendirme şemasının konu kümesi. Ölçme konuları (B1/B2) hariç. */
+export const TAUGHT_TOPIC_IDS = [
+  "g.be_present",
+  "g.subject_pronouns",
+  "g.possessives",
+  "g.articles_a_an",
+  "g.articles_the",
+  "g.plurals",
+  "g.there_is_are",
+  "g.present_simple",
+  "g.present_simple_3sg",
+  "g.do_does_q_neg",
+  "g.have_has",
+  "g.can",
+  "g.present_continuous",
+  "g.prep_time",
+  "g.prep_place",
+  "g.wh_questions",
+  "g.object_pronouns",
+  "g.some_any_much_many",
+  "g.adverbs_frequency",
+  "g.word_order_svo",
+  "g.past_be",
+  "g.past_simple_regular",
+  "g.past_simple_irregular",
+  "g.past_q_neg",
+  "g.going_to",
+  "g.will_future",
+  "g.comparatives",
+  "g.present_perfect",
+  "g.modals_obligation",
+  "g.verb_patterns",
+  "p.th",
+  "p.w_v"
+] as const;
+
 export const L1_CODE_IDS = [
   "L1.ART_OMIT",
   "L1.ART_THE",

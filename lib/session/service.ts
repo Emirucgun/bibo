@@ -14,11 +14,13 @@ import { ApiError } from "@/lib/api/errors";
 import { GAP_MARK } from "@/lib/ai/checks";
 import { ACTIVITY_TYPE_INFO, SKILL_LABELS_TR } from "@/lib/content/activity-types";
 import { L1_CODES } from "@/lib/content/taxonomy";
-import { diagnoseTopic, diagnosisMessage, reconcileDiagnoses, type MasteryBySkill } from "@/lib/engine/diagnosis";
+import { solidShare, type CurriculumInput } from "@/lib/engine/curriculum";
+import { diagnoseTopic, diagnosisMessage, reconcileDiagnoses } from "@/lib/engine/diagnosis";
 import { creditRetest } from "@/lib/engine/effectiveness";
 import { gradeLocal } from "@/lib/engine/grade-local";
+import { pGlobalAbove, predict, type LearnerModelConfig, type LearnerState, type ModelContext } from "@/lib/engine/learner-model";
 import { answersMatch, sameIgnoringCaseAndPunctuation } from "@/lib/engine/normalize";
-import { applyEvidence, emptyMastery, evidenceFromAttempt } from "@/lib/engine/mastery";
+import type { PlacementLevel } from "@/lib/engine/placement-cat";
 import { planSession, RECENT_ERROR_DAYS } from "@/lib/engine/planner";
 import { createRng, seedFromString } from "@/lib/engine/random";
 import type {
@@ -28,11 +30,20 @@ import type {
   ItemKey,
   LocalActivityType,
   LocalResponse,
-  MasteryRow,
   SkillEvidence,
 } from "@/lib/engine/types";
 import { EXPLAIN_MODE_SESSIONS, nextExplainMode, type ExplainMode } from "./explain-mode";
-import { buildPlacementItems, estimateLevel, weakPoints, type WeakPoint } from "./placement";
+import {
+  applyEvidence,
+  evidenceWeight,
+  masteryCache,
+  modelContextFor,
+  rebuildState,
+  restoreState,
+  serialize,
+  type AttemptEvidence,
+} from "./learner";
+import { bankIrt, nextPlacement, placementCards, placementConfig, placementOutcome, type PlacementCards } from "./placement";
 import { splitGeneratedItems, SPOKEN_TEXT_TYPES } from "./save-items";
 import {
   AttemptInput,
@@ -49,7 +60,9 @@ import type {
   AttemptRow,
   DiagnosisRow,
   ItemPublic,
+  EvidenceRow,
   ItemRow,
+  Learner,
   NewErrorEvent,
   SessionRow,
   SessionStatus,
@@ -125,6 +138,128 @@ const istanbulWeekStart = (now: Date): string => {
 };
 
 // ---------------------------------------------------------------------------
+// Öğrenme profili (docs/SPEC.md 4.1)
+// ---------------------------------------------------------------------------
+
+export interface LoadedModel {
+  ctx: ModelContext;
+  state: LearnerState;
+  n_obs: number;
+  /** Saklanan durum kullanılamadı, `attempts`'ten yeniden kuruldu (kaydedilmiş kanıtlar zaten içinde). */
+  rebuilt: boolean;
+  topics: EngineTopic[];
+}
+
+const toAttemptEvidence = (r: EvidenceRow): AttemptEvidence => ({
+  topic_id: r.topic_id,
+  skill: r.skill,
+  mode: r.mode,
+  score: r.score,
+  evidence_weight: r.evidence_weight,
+  hint_used: r.hint_used,
+  incidental: r.incidental,
+  irt: bankIrt(r.bank_item_id),
+  at: r.created_at,
+});
+
+/**
+ * Öğrenme profili: `learner_state` önbelleği; yoksa ya da konu listesi / model sürümü değiştiyse
+ * `attempts`'ten olay kaynaklı yeniden kurulur. Yeniden kurma canlı yolla aynı kuralı izler: etkinlik
+ * başına son değerlendirilmiş deneme; konuşmanın 1. denemesi yalnızca oturumu bitmişse.
+ */
+export async function loadLearnerModel(store: SessionStore, userId: string, levelSelf: string | null | undefined): Promise<LoadedModel> {
+  const [topics, settings, stored] = await Promise.all([
+    store.loadTopics(),
+    store.loadModelSettings(),
+    store.getLearnerState(userId),
+  ]);
+  const ctx = modelContextFor(topics, settings.learner_model as Partial<LearnerModelConfig>);
+  const restored = stored ? restoreState(ctx, stored.state) : null;
+  if (restored) return { ctx, state: restored, n_obs: stored!.n_obs, rebuilt: false, topics };
+  const evidence = await store.listEvidence(userId);
+  return { ctx, state: rebuildState(ctx, evidence.map(toAttemptEvidence), levelSelf), n_obs: evidence.length, rebuilt: true, topics };
+}
+
+/**
+ * Kanıtları profile işler, `learner_state`'i ve `mastery` önbelleğini yazar. `alreadyIn`: kanıt
+ * yeniden kurulmuş durumun içinde zaten var; yalnızca durum ve önbellek yazılır.
+ */
+async function updateLearner(
+  store: SessionStore,
+  userId: string,
+  model: LoadedModel,
+  evidence: AttemptEvidence[],
+  now: Date,
+  alreadyIn = false,
+): Promise<void> {
+  const cells = alreadyIn
+    ? evidence.map((e) => ({ topic_id: e.topic_id, skill: e.skill }))
+    : applyEvidence(model.ctx, model.state, evidence);
+  if (!alreadyIn) model.n_obs += evidence.length;
+  await Promise.all([
+    store.saveLearnerState(userId, { version: model.ctx.config.version, state: serialize(model.state), n_obs: model.n_obs }, now),
+    store.upsertMastery(userId, masteryCache(model.ctx, model.state, cells, now), now),
+  ]);
+}
+
+function attemptEvidence(
+  model: LoadedModel,
+  item: ItemRow,
+  graded: { score: number; incidental: { topic_id: string; correct: boolean }[] },
+  hintUsed: boolean,
+  at: Date,
+): AttemptEvidence {
+  return {
+    topic_id: item.topic_id,
+    skill: item.skill,
+    mode: item.mode,
+    score: graded.score,
+    evidence_weight: evidenceWeight(model.ctx, hintUsed),
+    hint_used: hintUsed,
+    incidental: graded.incidental.length > 0 ? graded.incidental : null,
+    irt: bankIrt(item.bank_item_id),
+    at,
+  };
+}
+
+/** Cevaptan önce modelin doğru olasılığı (`attempts.pred_p`; kalibrasyon ve AUC için). */
+function predictFor(model: LoadedModel, item: ItemRow): number | null {
+  const p = predict(model.ctx, model.state, {
+    topic_id: item.topic_id,
+    skill: item.skill,
+    mode: item.mode,
+    ...(bankIrt(item.bank_item_id) ? { irt: bankIrt(item.bank_item_id)! } : {}),
+  });
+  return p === null ? null : Math.round(p * 10_000) / 10_000;
+}
+
+function curriculumInput(model: LoadedModel, learner: Learner, schoolTopicId: string | null, recentFocus: (string | null)[]): CurriculumInput {
+  return {
+    ctx: model.ctx,
+    state: model.state,
+    topics: model.topics,
+    level_est: learner.level_est,
+    study_mode: learner.study_mode ?? "school",
+    goal: learner.goal ?? null,
+    school_topic_id: schoolTopicId,
+    focus_choice: learner.focus_choice ?? null,
+    recent_focus: recentFocus,
+  };
+}
+
+/** Bu haftanın okul konusu: öğrencinin cevabı, yoksa okul programı haritası. "Kendi programım"da yok. */
+async function schoolTopicFor(store: SessionStore, userId: string, learner: Learner, now: Date): Promise<string | null> {
+  if (learner.study_mode === "self") return null;
+  const week = istanbulWeekStart(now);
+  const own = await store.getSchoolTopic(userId, week);
+  if (own) return own;
+  return learner.program_id ? store.getProgramTopic(learner.program_id, week) : null;
+}
+
+/** Son oturum odakları (tempo kuralı) ve bitmiş oturum sayısı (dönüşümlü slotlar). */
+const RECENT_FOCUS_SESSIONS = 5;
+
+// ---------------------------------------------------------------------------
 // Oturum hazırlama
 // ---------------------------------------------------------------------------
 
@@ -137,16 +272,16 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
   const { store } = deps;
   try {
     const now = deps.now();
-    const [learner, topics, l1_codes, mastery, activity_stats, active_diagnoses, recent_errors, school_topic_id, settings] =
+    const learner = await store.getLearner(userId);
+    const [model, l1_codes, activity_stats, active_diagnoses, recent_errors, school_topic_id, focus, settings] =
       await Promise.all([
-        store.getLearner(userId),
-        store.loadTopics(),
+        loadLearnerModel(store, userId, learner.level_self),
         store.loadL1Codes(),
-        store.listMastery(userId),
         store.listActivityStats(userId),
         store.listActiveDiagnoses(userId),
         store.listRecentErrors(userId, new Date(now.getTime() - RECENT_ERROR_DAYS * DAY_MS)),
-        store.getSchoolTopic(userId, istanbulWeekStart(now)),
+        schoolTopicFor(store, userId, learner, now),
+        store.listRecentFocus(userId, RECENT_FOCUS_SESSIONS),
         store.loadSessionSettings(),
       ]);
 
@@ -155,13 +290,18 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
       rng: createRng(seedFromString(sessionId)),
       level_est: learner.level_est,
       interests: learner.interests,
-      topics,
+      topics: model.topics,
       l1_codes,
-      mastery,
+      model: { ctx: model.ctx, state: model.state },
       activity_stats,
       active_diagnoses,
       recent_errors,
       school_topic_id,
+      study_mode: learner.study_mode ?? "school",
+      goal: learner.goal ?? null,
+      focus_choice: learner.focus_choice ?? null,
+      recent_focus: focus.recent,
+      session_index: focus.done,
       settings: {
         // Kapalı, ses seçilmemiş ya da son 24 saatte 402/429: dinleme metne düşer (SPEC 4.4 adım 8, 5.4).
         tts_enabled: settings.tts_enabled && (await listeningAvailable(deps.media, now)),
@@ -258,14 +398,17 @@ export async function prefetchNext(deps: SessionDeps, userId: string): Promise<v
 }
 
 /**
- * POST /api/placement → `{ sessionId }`. Sabit bankadan (dil modeli yok) yerleştirme oturumu açar;
- * öğrencinin açık ya da bitmiş yerleştirme oturumu varsa onu döner (çift dokunuş, sayfa yenileme).
+ * POST /api/placement → `{ sessionId }`. Uyarlamalı yerleştirme oturumu açar ve ilk maddeyi ekler
+ * (dil modeli yok); sonraki maddeler her cevaptan sonra eklenir (`advancePlacement`). Öğrencinin
+ * açık ya da bitmiş yerleştirme oturumu varsa onu döner (çift dokunuş, sayfa yenileme); yeniden
+ * teste açılmış öğrencide (`reopenPlacement`) bitmiş oturum yerine yenisi açılır.
  */
 export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{ sessionId: string }> {
   const { store } = deps;
-  const existing = await store.findPlacement(actor.userId);
-  if (existing && existing.status !== "generating") return { sessionId: existing.id };
-  if (existing) {
+  const [existing, learner] = await Promise.all([store.findPlacement(actor.userId), store.getLearner(actor.userId)]);
+  const retest = existing?.status === "done" && learner.onboarding_step === "placement";
+  if (existing && existing.status !== "generating" && !retest) return { sessionId: existing.id };
+  if (existing && existing.status === "generating") {
     // Yarıda kalmış kayıt (yazma sırasında hata): kapatılır, yenisi açılır.
     await store.transition(existing.id, ["generating"], "failed");
   }
@@ -275,16 +418,93 @@ export async function startPlacement(deps: SessionDeps, actor: Actor): Promise<{
     if (!again) throw new ApiError("server_error");
     return { sessionId: again.id };
   }
-  const tts = await listeningAvailable(deps.media, deps.now()).catch(() => false);
-  const items = buildPlacementItems({ ttsAvailable: tts, rng: createRng(seedFromString(`${sessionId}:options`)) });
   try {
-    await store.insertItems(sessionId, actor.userId, items);
+    const [tts, settings] = await Promise.all([
+      listeningAvailable(deps.media, deps.now()).catch(() => false),
+      store.loadModelSettings(),
+    ]);
+    const next = nextPlacement({
+      sessionId,
+      items: [],
+      attempts: [],
+      levelSelf: learner.level_self,
+      ttsAvailable: tts,
+      config: placementConfig(settings.placement_model),
+    });
+    if (next.kind !== "item") throw new Error("placement: empty bank");
+    await store.insertItems(sessionId, actor.userId, [next.row]);
   } catch (err) {
     await store.transition(sessionId, ["generating"], "failed").catch(() => false);
     throw err;
   }
   await store.transition(sessionId, ["generating"], "ready");
   return { sessionId };
+}
+
+/** Yerleştirmede cevaptan sonra: sıradaki madde eklendi (`item`) ya da test bitti (`done`). */
+export type PlacementProgress = "item" | "done";
+
+/**
+ * Yerleştirme oturumuna sıradaki maddeyi ekler. Cevapsız madde varsa bir şey yapmaz. Aynı konuma
+ * ikinci ekleme (yarış) benzersizlik kısıtına takılır; ilk yazılan geçerlidir.
+ */
+async function advancePlacement(deps: SessionDeps, userId: string, sessionId: string): Promise<PlacementProgress> {
+  const { store } = deps;
+  const items = await store.listItems(sessionId);
+  const [attempts, learner, settings, tts] = await Promise.all([
+    store.listAttempts(items.map((i) => i.id)),
+    store.getLearner(userId),
+    store.loadModelSettings(),
+    listeningAvailable(deps.media, deps.now()).catch(() => false),
+  ]);
+  const next = nextPlacement({
+    sessionId,
+    items,
+    attempts,
+    levelSelf: learner.level_self,
+    ttsAvailable: tts,
+    config: placementConfig(settings.placement_model),
+  });
+  if (next.kind === "complete") return "done";
+  if (next.kind === "wait") return "item";
+  try {
+    await store.insertItems(sessionId, userId, [next.row]);
+  } catch (err) {
+    // Aynı anda gelen ikinci istek aynı konumu eklemiş olabilir: madde varsa sorun yok.
+    const again = await store.listItems(sessionId);
+    if (!again.some((i) => i.position === next.row.position)) throw err;
+  }
+  return "item";
+}
+
+/**
+ * POST /api/items/:id/skip → `{ placement }`. Yalnızca yerleştirmede, sesi çalınamayan dinleme
+ * maddesi: değerlendirilmemiş deneme yazılır (profil güncellenmez), testin geri kalanında dinleme
+ * sorulmaz ve sıradaki madde eklenir.
+ */
+export async function skipPlacementItem(deps: SessionDeps, actor: Actor, itemId: string): Promise<{ placement: PlacementProgress }> {
+  const { store } = deps;
+  const item = await activeItem(store, actor.userId, itemId);
+  const session = await store.getSession(actor.userId, item.session_id);
+  if (session?.kind !== "placement" || item.skill !== "listening") throw new ApiError("invalid_input");
+  const attempts = await store.listAttempts([item.id]);
+  if (!attempts.some((a) => a.try_no === 1)) {
+    await store.insertAttempt({
+      item_id: item.id,
+      user_id: actor.userId,
+      try_no: 1,
+      response: { skipped: true },
+      is_correct: null,
+      score: null,
+      time_ms: 0,
+      hint_used: false,
+      graded_by: "local",
+      feedback_short_tr: null,
+      explanation_long_tr: null,
+      correction: null,
+    });
+  }
+  return { placement: await advancePlacement(deps, actor.userId, item.session_id) };
 }
 
 // ---------------------------------------------------------------------------
@@ -396,6 +616,8 @@ export interface AttemptResult {
   correction: string | null;
   /** Hatanın Türkçe adı (`l1_codes.name_tr`); geri bildirim kartının başlığında gösterilir. */
   errorNameTr: string | null;
+  /** Yalnızca yerleştirmede: sıradaki madde eklendi mi, test bitti mi. */
+  placement?: PlacementProgress;
 }
 
 const toAttemptResult = (a: AttemptRow): AttemptResult => ({
@@ -405,6 +627,16 @@ const toAttemptResult = (a: AttemptRow): AttemptResult => ({
   feedbackShortTr: a.feedback_short_tr,
   correction: a.correction,
   errorNameTr: null, // yinelenen gönderimde hata adı yeniden hesaplanmaz
+});
+
+/** Yerleştirmede değerlendirme gösterilmez. */
+const hiddenResult = (a: AttemptRow): AttemptResult => ({
+  attemptId: a.id,
+  isCorrect: null,
+  score: null,
+  feedbackShortTr: null,
+  correction: null,
+  errorNameTr: null,
 });
 
 /** Öğrenciye bir şey söylemeyen genel kodlar başlıkta gösterilmez. */
@@ -591,58 +823,26 @@ async function adjudicateGap(
   return { ...graded, score: 0, correction: accepted[0], incidental: [] };
 }
 
-async function updateMastery(
-  deps: SessionDeps,
-  item: ItemRow,
-  graded: Pick<Graded, "incidental"> & { is_correct: boolean; score: number },
-  hintUsed: boolean,
-  now: Date,
-): Promise<void> {
-  const evidence = evidenceFromAttempt({
-    topic_id: item.topic_id,
-    skill: item.skill,
-    mode: item.mode,
-    score: graded.score,
-    is_correct: graded.is_correct,
-    hint_used: hintUsed,
-    incidental: graded.incidental,
-  });
-  const topicIds = [...new Set(evidence.map((e) => e.topic_id))];
-  const [rows, topics] = await Promise.all([
-    deps.store.listMastery(item.user_id, topicIds),
-    deps.store.loadTopics(),
-  ]);
-  const topicById = new Map(topics.map((t) => [t.id, t]));
-  const updated: MasteryRow[] = [];
-  for (const ev of evidence) {
-    const topic = topicById.get(ev.topic_id);
-    if (!topic) continue;
-    const current =
-      updated.find((r) => r.topic_id === ev.topic_id && r.skill === ev.skill) ??
-      rows.find((r) => r.topic_id === ev.topic_id && r.skill === ev.skill) ??
-      emptyMastery(topic);
-    const next = { ...applyEvidence(current, ev, now), topic_id: ev.topic_id, skill: ev.skill };
-    const at = updated.findIndex((r) => r.topic_id === ev.topic_id && r.skill === ev.skill);
-    if (at >= 0) updated[at] = next;
-    else updated.push(next);
-  }
-  await deps.store.upsertMastery(item.user_id, updated, now);
-}
-
 /**
- * Değerlendirilmiş cevabın kanıtı: ustalık ve (tekrar etkinliğiyse) etkinlik verimi.
- * Değerlendirilemeyen cevapta (`is_correct = null`) hiçbir şey yazılmaz.
+ * Değerlendirilmiş cevabın kanıtı: öğrenme profili ve (tekrar etkinliğiyse) etkinlik verimi.
+ * Değerlendirilemeyen cevapta (`is_correct = null`) hiçbir şey yazılmaz. `model` cevap yazılmadan
+ * önce yüklenmiştir; yeniden kurulduysa ve cevap zaten kaydedilmişse (`persisted`) kanıt yeniden işlenmez.
  */
 async function applyGradedEvidence(
   deps: SessionDeps,
+  model: LoadedModel,
   item: ItemRow,
   graded: Pick<Graded, "is_correct" | "score" | "incidental">,
   hintUsed: boolean,
   now: Date,
+  persisted = false,
 ): Promise<void> {
   if (graded.is_correct === null || graded.score === null) return;
   const done = { ...graded, is_correct: graded.is_correct, score: graded.score };
-  const writes: Promise<void>[] = [updateMastery(deps, item, done, hintUsed, now)];
+  const writes: Promise<void>[] = [];
+  writes.push(
+    updateLearner(deps.store, item.user_id, model, [attemptEvidence(model, item, done, hintUsed, now)], now, persisted && model.rebuilt),
+  );
   if (item.purpose === "retest") {
     writes.push(
       (async () => {
@@ -690,7 +890,10 @@ export async function submitAttempt(
     isLocal && item.activity_type !== "gap_fill" ? null : store.loadSessionSettings(),
   ]);
   const previous = attempts.find((a) => a.try_no === 1);
-  if (previous) return toAttemptResult(previous);
+  if (previous) {
+    if (item.purpose !== "placement") return toAttemptResult(previous);
+    return { ...hiddenResult(previous), placement: await advancePlacement(deps, actor.userId, item.session_id) };
+  }
   if (!key) throw new ApiError("server_error");
 
   let graded = isLocal
@@ -705,6 +908,7 @@ export async function submitAttempt(
 
   const now = deps.now();
   const hintUsed = hintOpened;
+  const model = await loadLearnerModel(store, actor.userId, (await store.getLearner(actor.userId)).level_self);
   const attemptId = await store.insertAttempt({
     item_id: item.id,
     user_id: actor.userId,
@@ -718,12 +922,16 @@ export async function submitAttempt(
     feedback_short_tr: graded.feedback_short_tr,
     explanation_long_tr: graded.explanation_long_tr,
     correction: graded.correction,
+    pred_p: predictFor(model, item),
+    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintUsed),
+    incidental: graded.incidental.length > 0 ? graded.incidental : null,
   });
   if (!attemptId) {
     // Yarış (çift dokunuş): ilk yazılan geçerli.
     const first = (await store.listAttempts([item.id])).find((a) => a.try_no === 1);
     if (!first) throw new ApiError("server_error");
-    return toAttemptResult(first);
+    if (item.purpose !== "placement") return toAttemptResult(first);
+    return { ...hiddenResult(first), placement: await advancePlacement(deps, actor.userId, item.session_id) };
   }
 
   // Hata olayları, ustalık ve etkinlik verimi birbirinden bağımsız: birlikte yazılır.
@@ -742,9 +950,21 @@ export async function submitAttempt(
       ),
     );
   }
-  writes.push(applyGradedEvidence(deps, item, graded, hintUsed, now));
+  writes.push(applyGradedEvidence(deps, model, item, graded, hintUsed, now));
   await Promise.all(writes);
 
+  // Yerleştirmede geri bildirim gösterilmez (ölçme etkisi); sıradaki madde eklenir.
+  if (item.purpose === "placement") {
+    return {
+      attemptId,
+      isCorrect: null,
+      score: null,
+      feedbackShortTr: null,
+      correction: null,
+      errorNameTr: null,
+      placement: await advancePlacement(deps, actor.userId, item.session_id),
+    };
+  }
   return {
     attemptId,
     isCorrect: graded.is_correct,
@@ -887,6 +1107,7 @@ export async function submitSpeech(
   const graded: Graded = heard.unclear
     ? { ...UNGRADED, feedback_short_tr: UNCLEAR_TR }
     : await gradeWithLlm(deps, item, key, heard.transcript, settings.review_sample_rate);
+  const model = await loadLearnerModel(store, actor.userId, (await store.getLearner(actor.userId)).level_self);
 
   const attemptId = await store.insertAttempt({
     item_id: item.id,
@@ -901,6 +1122,9 @@ export async function submitSpeech(
     feedback_short_tr: graded.feedback_short_tr,
     explanation_long_tr: graded.explanation_long_tr,
     correction: graded.correction,
+    pred_p: predictFor(model, item),
+    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintOpened),
+    incidental: graded.incidental.length > 0 ? graded.incidental : null,
   });
   if (!attemptId) {
     const again = (await store.listAttempts([item.id])).find((a) => a.try_no === meta.tryNo);
@@ -925,14 +1149,14 @@ export async function submitSpeech(
   }
   if (meta.tryNo === MAX_SPEECH_TRIES) {
     // Son deneme: değerlendirildiyse o, değilse (anlaşılmadı / değerlendirilemedi) 1. deneme işlenir.
-    if (graded.is_correct !== null) writes.push(applyGradedEvidence(deps, item, graded, hintOpened, now));
+    if (graded.is_correct !== null) writes.push(applyGradedEvidence(deps, model, item, graded, hintOpened, now));
     else if (first && first.is_correct !== null) {
-      writes.push(applyGradedEvidence(deps, item, { ...first, incidental: [] }, first.hint_used, now));
+      writes.push(applyGradedEvidence(deps, model, item, { ...first, incidental: [] }, first.hint_used, now, true));
     }
   }
   await Promise.all(writes);
 
-  return {
+  const result: SpeechResult = {
     attemptId,
     isCorrect: graded.is_correct,
     score: graded.score,
@@ -943,18 +1167,26 @@ export async function submitSpeech(
     tryNo: meta.tryNo,
     canRerecord: meta.tryNo < MAX_SPEECH_TRIES,
   };
+  if (item.purpose !== "placement") return result;
+  // Yerleştirmede değerlendirme gösterilmez; anlaşılmayan kayıt mesajı kalır (yeniden kayıt için).
+  return {
+    ...result,
+    ...hiddenResult({ id: attemptId } as AttemptRow),
+    feedbackShortTr: heard.unclear ? UNCLEAR_TR : null,
+    placement: "done",
+  };
 }
 
 /**
  * `finish`: yeniden kaydedilmemiş konuşma etkinliklerinde 1. denemenin kanıtı (PLAN karar 18).
  * Yan kanıt (`evidence`) saklanmadığı için yalnızca hedef konuya işlenir.
  */
-async function applyPendingSpeech(deps: SessionDeps, items: ItemRow[], attempts: AttemptRow[], now: Date): Promise<void> {
+async function applyPendingSpeech(deps: SessionDeps, model: LoadedModel, items: ItemRow[], attempts: AttemptRow[], now: Date): Promise<void> {
   for (const item of items) {
     if (item.activity_type !== "speak_answer") continue;
     const own = attempts.filter((a) => a.item_id === item.id);
     if (own.length !== 1 || own[0].try_no !== 1 || own[0].is_correct === null) continue;
-    await applyGradedEvidence(deps, item, { ...own[0], incidental: [] }, own[0].hint_used, now);
+    await applyGradedEvidence(deps, model, item, { ...own[0], incidental: [] }, own[0].hint_used, now, true);
   }
 }
 
@@ -1012,16 +1244,27 @@ export interface DiagnosisCard {
   userFeedback: "agree" | "disagree" | null;
 }
 
-export interface PlacementResult {
+export interface PlacementResult extends PlacementCards {
+  /** Ölçülen sınıf (A1, A2 ya da A2 üstü). */
+  level: PlacementLevel;
+  /** İçerik seviyesi (kapsam dışıysa da A2). */
   levelEst: "A1" | "A2";
-  /** "Tahmini zayıf noktalar": 3 konu, arayüzde "tahmin" etiketiyle (PRD F2). */
-  weakPoints: WeakPoint[];
+  /** A2 üstü ve P ≥ gate_p: kapsam dışı, bekleme listesi ekranı (PRD F2). */
+  gate: boolean;
+  /** Karar eşiğe ulaşmadan bitti: seviye "sınırda" diye anlatılır. */
+  borderline: boolean;
+  /** En olası sınıfın olasılığı (0..1). */
+  confidence: number;
+  /** Sorulan banka maddesi sayısı. */
+  items: number;
 }
 
 export interface FinishResult {
   summary: SessionSummary;
   diagnosis?: DiagnosisCard;
   placement?: PlacementResult;
+  /** Günlük oturum sonunda sürekli kapı: öğrenci A2'yi tamamladı (kapsam dışına çıktı). */
+  graduated?: boolean;
 }
 
 function evidenceRows(evidence: unknown): DiagnosisCard["evidence"] {
@@ -1048,25 +1291,19 @@ function toCard(row: DiagnosisRow, topics: Map<string, EngineTopic>): DiagnosisC
 }
 
 /** Oturumda dokunulan konularda 4.3 kurallarını çalıştırır; gösterilecek teşhisin kimliğini döner. */
-async function runDiagnosis(deps: SessionDeps, userId: string, touched: string[], now: Date): Promise<string | null> {
+async function runDiagnosis(deps: SessionDeps, model: LoadedModel, userId: string, touched: string[], now: Date): Promise<string | null> {
   const { store } = deps;
   if (touched.length === 0) return null;
-  const [mastery, attempts, existing, topics] = await Promise.all([
-    store.listMastery(userId, touched),
-    store.listTopicAttempts(userId, touched),
-    store.listActiveDiagnoses(userId),
-    store.loadTopics(),
-  ]);
-  const titles = new Map(topics.map((t) => [t.id, t.title_tr]));
+  const [attempts, existing] = await Promise.all([store.listTopicAttempts(userId, touched), store.listActiveDiagnoses(userId)]);
+  const { ctx, state } = model;
+  const titles = new Map(model.topics.map((t) => [t.id, t.title_tr]));
   let best: { id: string; confidence: number } | null = null;
   let resolved: ExistingDiagnosis | null = null;
 
   for (const topicId of touched) {
-    const bySkill: MasteryBySkill = {};
-    for (const m of mastery) if (m.topic_id === topicId) bySkill[m.skill] = m;
     const topicAttempts = attempts.filter((a) => a.topic_id === topicId);
-    const candidate = diagnoseTopic(topicId, bySkill, topicAttempts);
-    const result = reconcileDiagnoses({ topic_id: topicId, candidate, existing, mastery: bySkill, attempts: topicAttempts });
+    const candidate = diagnoseTopic(ctx, state, topicId, topicAttempts);
+    const result = reconcileDiagnoses({ ctx, state, topic_id: topicId, candidate, existing, attempts: topicAttempts });
     for (const u of result.updates) {
       await store.updateDiagnosisStatus(u.id, u.status);
       if (u.status === "resolved") resolved ??= existing.find((d) => d.id === u.id) ?? null;
@@ -1089,6 +1326,72 @@ async function runDiagnosis(deps: SessionDeps, userId: string, touched: string[]
   const shownId = best?.id ?? resolved?.id ?? null;
   if (shownId) await store.markDiagnosisShown(shownId, now);
   return shownId;
+}
+
+/** A2'yi tamamlama oranı: sürekli kapı için A2 konularının bu kadarı sağlam olmalı. */
+export const GRADUATE_SOLID_SHARE = 0.9;
+
+/**
+ * Sürekli kapı (docs/SPEC.md 4.7): genel seviye A2|B1 kesiminin üstünde (P ≥ continuous_gate_p) ve
+ * A2 konularının ≥ %90'ı sağlamsa öğrenci kapsam dışına çıkar (`graduated`).
+ */
+async function continuousGate(deps: SessionDeps, userId: string, model: LoadedModel, learner: Learner, now: Date): Promise<boolean> {
+  if ((learner.scope_status ?? "in_scope") !== "in_scope") return false;
+  const settings = await deps.store.loadModelSettings();
+  const cut = placementConfig(settings.placement_model).cuts[1];
+  if (pGlobalAbove(model.state, cut) < settings.continuous_gate_p) return false;
+  if (solidShare(curriculumInput(model, learner, null, []), "A2") < GRADUATE_SOLID_SHARE) return false;
+  await deps.store.updateProfile(userId, { scope_status: "graduated" }, now);
+  return true;
+}
+
+async function finishPlacement(
+  deps: SessionDeps,
+  actor: Actor,
+  args: { first: boolean; items: ItemRow[]; attempts: AttemptRow[]; summary: SessionSummary; now: Date },
+): Promise<FinishResult & { background?: Background }> {
+  const { store } = deps;
+  const { items, attempts, now } = args;
+  const [learner, settings] = await Promise.all([store.getLearner(actor.userId), store.loadModelSettings()]);
+  const model = await loadLearnerModel(store, actor.userId, learner.level_self);
+  if (args.first) await applyPendingSpeech(deps, model, items, attempts, now);
+  const outcome = placementOutcome(items, attempts, learner.level_self, placementConfig(settings.placement_model));
+  const levelEst: "A1" | "A2" = outcome.level === "A1" ? "A1" : "A2";
+  const cards = placementCards({ ctx: model.ctx, state: model.state, topics: model.topics, items, attempts, level: outcome.level });
+  const result: PlacementResult = {
+    ...cards,
+    level: outcome.level,
+    levelEst,
+    gate: outcome.gate,
+    borderline: outcome.borderline,
+    confidence: Math.round(Math.max(...outcome.probs) * 100) / 100,
+    items: outcome.n,
+  };
+  const completed = args.first
+    ? await store.completePlacement(
+        actor.userId,
+        {
+          level_est: levelEst,
+          scope_status: outcome.gate ? "above_scope" : "in_scope",
+          // Ölçme kaydı: olasılıklar ve θ; öğrenci metni yok.
+          placement_result: {
+            level: outcome.level,
+            probs: outcome.probs.map((p) => Math.round(p * 1000) / 1000),
+            theta_mean: Math.round(outcome.theta_mean * 1000) / 1000,
+            theta_sd: Math.round(outcome.theta_sd * 1000) / 1000,
+            n: outcome.n,
+            gate: outcome.gate,
+            borderline: outcome.borderline,
+          },
+        },
+        now,
+      )
+    : false;
+  return {
+    summary: args.summary,
+    placement: result,
+    ...(completed && !outcome.gate ? { background: () => prefetchNext(deps, actor.userId) } : {}),
+  };
 }
 
 async function updateExplainMode(deps: SessionDeps, userId: string, now: Date): Promise<void> {
@@ -1143,30 +1446,22 @@ export async function finishSession(
     topics: [...new Set(items.map((i) => i.topic_id))].map((t) => ({ id: t, titleTr: topics.get(t)?.title_tr ?? t })),
   };
 
-  if (session.kind === "placement") {
-    // Yerleştirme (PRD F2, PLAN karar 22): ustalık her cevapta normal kanıt gibi işlendi; burada
-    // seviye tahmini, başlangıç adımının kapanması ve ilk günlük oturumun hazırlanması.
-    if (first) await applyPendingSpeech(deps, items, attempts, now);
-    const learner = await store.getLearner(actor.userId);
-    const scored = finalAttempts.filter((a) => a.is_correct !== null);
-    const levelEst = first
-      ? estimateLevel(learner.level_self ?? null, scored.filter((a) => a.is_correct).length, scored.length)
-      : learner.level_est;
-    const completed = first ? await store.completePlacement(actor.userId, levelEst, now) : false;
-    const mastery = await store.listMastery(actor.userId, [...new Set(items.map((i) => i.topic_id))]);
-    return {
-      summary,
-      placement: { levelEst, weakPoints: weakPoints(items.map((i) => i.topic_id), mastery, [...topics.values()]) },
-      ...(completed ? { background: () => prefetchNext(deps, actor.userId) } : {}),
-    };
-  }
+  if (session.kind === "placement") return finishPlacement(deps, actor, { first, items, attempts, summary, now });
 
   let diagnosis: DiagnosisRow | null = null;
+  let graduated = false;
   if (first) {
-    await applyPendingSpeech(deps, items, attempts, now);
-    const shownId = await runDiagnosis(deps, actor.userId, touched, now);
+    const learner = await store.getLearner(actor.userId);
+    const model = await loadLearnerModel(store, actor.userId, learner.level_self);
+    await applyPendingSpeech(deps, model, items, attempts, now);
+    const shownId = await runDiagnosis(deps, model, actor.userId, touched, now);
     if (shownId) diagnosis = await store.getDiagnosis(actor.userId, shownId);
     await updateExplainMode(deps, actor.userId, now);
+    // Öğrencinin seçtiği odak bir kez geçerlidir.
+    if (learner.focus_choice && learner.focus_choice === session.focus_topic_id) {
+      await store.updateProfile(actor.userId, { focus_choice: null }, now);
+    }
+    graduated = await continuousGate(deps, actor.userId, model, learner, now);
   } else {
     diagnosis = await store.getDiagnosisShownAt(actor.userId, finishedAt);
   }
@@ -1174,7 +1469,8 @@ export async function finishSession(
   return {
     summary,
     ...(diagnosis ? { diagnosis: toCard(diagnosis, topics) } : {}),
-    ...(first && session.kind === "daily" ? { background: () => prefetchNext(deps, actor.userId) } : {}),
+    ...(graduated ? { graduated: true } : {}),
+    ...(first && session.kind === "daily" && !graduated ? { background: () => prefetchNext(deps, actor.userId) } : {}),
   };
 }
 

@@ -14,10 +14,11 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { generateSession, GenerationError } from "@/lib/ai/generate-session";
 import type { GeneratedItem } from "@/lib/ai/schemas";
-import { emptyMastery } from "@/lib/engine/mastery";
+import { observe, type LearnerState, type ModelContext } from "@/lib/engine/learner-model";
 import { planSession } from "@/lib/engine/planner";
 import { createRng } from "@/lib/engine/random";
-import type { EngineTopic, Interest, Level, MasteryRow, Skill } from "@/lib/engine/types";
+import type { EngineTopic, Interest, Level, Skill } from "@/lib/engine/types";
+import { freshState, modelContextFor } from "@/lib/session/learner";
 import { SKILLS } from "@/lib/content/activity-types";
 import { mean, percentile, sample, summarizeUsage } from "./lib/eval";
 import { arg, fmtSec, fmtUsd, setupDeps } from "./lib/eval-env";
@@ -41,24 +42,23 @@ const PROFILES: Profile[] = [
 
 const DAY_MS = 86_400_000;
 
-function masteryFor(p: Profile, topics: EngineTopic[], now: Date): MasteryRow[] {
-  const rows: MasteryRow[] = [];
+/** Profilin geçmişi: `known_until_sort`'a kadar konularda beceri başına 4 cevap (öğrenme profiline). */
+function modelFor(p: Profile, topics: EngineTopic[], now: Date): { ctx: ModelContext; state: LearnerState } {
+  const ctx = modelContextFor(topics);
+  const state = freshState(ctx, p.level);
+  let i = 0;
+  const at0 = now.getTime() - 3 * DAY_MS;
   for (const t of topics) {
-    if (t.sort > p.known_until_sort) continue;
+    if (t.sort > p.known_until_sort || t.kind === "measure") continue;
     for (const skill of SKILLS) {
-      rows.push({
-        ...emptyMastery(t),
-        topic_id: t.id,
-        skill,
-        score: p.skill_scores[skill],
-        n: 4,
-        correct: Math.round(4 * p.skill_scores[skill]),
-        last_seen_at: new Date(now.getTime() - 3 * DAY_MS),
-        next_review_at: new Date(now.getTime() + ((t.sort % 3) - 1) * DAY_MS),
-      });
+      const correct = Math.round(4 * p.skill_scores[skill]);
+      for (let k = 0; k < 4; k++) {
+        const mode = skill === "reading" || skill === "listening" ? "recognition" : skill === "speaking" ? "free" : "controlled";
+        observe(ctx, state, { topic_id: t.id, skill, mode, score: k < correct ? 1 : 0, weight: 1, at: new Date(at0 + i++ * 60_000) });
+      }
     }
   }
-  return rows;
+  return { ctx, state };
 }
 
 interface SessionReport {
@@ -96,11 +96,16 @@ async function main() {
         interests: p.interests,
         topics,
         l1_codes: codes,
-        mastery: masteryFor(p, topics, now),
+        model: modelFor(p, topics, now),
         activity_stats: [],
         active_diagnoses: [],
         recent_errors: [],
         school_topic_id: null,
+        study_mode: "school",
+        goal: null,
+        focus_choice: null,
+        recent_focus: [],
+        session_index: s,
         settings: { tts_enabled: true, general_content_rate: 0.2 },
       });
       const rowsBefore = deps.store.rows.length;
