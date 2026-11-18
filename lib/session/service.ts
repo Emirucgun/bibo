@@ -210,13 +210,14 @@ function attemptEvidence(
   graded: { score: number; incidental: { topic_id: string; correct: boolean }[] },
   hintUsed: boolean,
   at: Date,
+  weight: number,
 ): AttemptEvidence {
   return {
     topic_id: item.topic_id,
     skill: item.skill,
     mode: item.mode,
     score: graded.score,
-    evidence_weight: evidenceWeight(model.ctx, hintUsed),
+    evidence_weight: weight,
     hint_used: hintUsed,
     incidental: graded.incidental.length > 0 ? graded.incidental : null,
     irt: bankIrt(item.bank_item_id),
@@ -286,6 +287,7 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
         store.listRecentFocus(userId, RECENT_FOCUS_SESSIONS),
         store.loadSessionSettings(),
       ]);
+    const modelSettings = await store.loadModelSettings();
 
     const plan = planSession({
       now,
@@ -316,7 +318,7 @@ export async function prepareSession(deps: SessionDeps, userId: string, sessionI
     const outcome = await generateSession(
       deps.ai,
       { userId, sessionId, now, prefetch: true },
-      { level: learner.level_est, explainMode: learner.explain_mode, varietySeed: sessionId, slots },
+      { level: learner.level_est, explainMode: learner.explain_mode, varietySeed: sessionId, slots, coverage: modelSettings.coverage },
     );
     await store.insertItems(
       sessionId,
@@ -679,6 +681,8 @@ interface Graded {
   correction: string | null;
   errors: Omit<NewErrorEvent, "attempt_id" | "user_id" | "skill" | "activity_type" | "mode">[];
   incidental: { topic_id: string; correct: boolean }[];
+  /** Değerlendirme güveni (örnek uyumu × model güveni); yerel değerlendirmede 1. Kanıt ağırlığına çarpan. */
+  confidence: number;
 }
 
 function localCorrection(key: ItemKey): string | null {
@@ -709,6 +713,7 @@ function gradeLocally(item: ItemRow, key: ItemKey, response: AttemptResponse): G
       review_sampled: false,
     })),
     incidental: [],
+    confidence: 1,
   };
 }
 
@@ -721,6 +726,7 @@ const UNGRADED: Graded = {
   correction: null,
   errors: [],
   incidental: [],
+  confidence: 0,
 };
 
 async function gradeWithLlm(
@@ -731,7 +737,7 @@ async function gradeWithLlm(
   sampleRate: number,
   override?: { activity_type: "gap_fill"; task: string },
 ): Promise<Graded> {
-  const learner = await deps.store.getLearner(item.user_id);
+  const [learner, modelSettings] = await Promise.all([deps.store.getLearner(item.user_id), deps.store.loadModelSettings()]);
   let outcome;
   try {
     outcome = await gradeFreeAnswer(
@@ -752,6 +758,7 @@ async function gradeWithLlm(
         accepted: key.accepted ?? [],
         student_text: text,
       },
+      modelSettings.grade_samples,
     );
   } catch (err) {
     // Guard reddi, zaman aşımı ya da sağlayıcı hatası: oturum kırılmaz, ustalık güncellenmez.
@@ -781,6 +788,7 @@ async function gradeWithLlm(
       review_sampled: deps.rng() < sampleRate,
     })),
     incidental: r.evidence,
+    confidence: outcome.confidence,
   };
 }
 
@@ -834,16 +842,24 @@ async function applyGradedEvidence(
   deps: SessionDeps,
   model: LoadedModel,
   item: ItemRow,
-  graded: Pick<Graded, "is_correct" | "score" | "incidental">,
+  graded: Pick<Graded, "is_correct" | "score" | "incidental"> & { confidence?: number },
   hintUsed: boolean,
   now: Date,
   persisted = false,
+  weight?: number | null,
 ): Promise<void> {
   if (graded.is_correct === null || graded.score === null) return;
   const done = { ...graded, is_correct: graded.is_correct, score: graded.score };
   const writes: Promise<void>[] = [];
   writes.push(
-    updateLearner(deps.store, item.user_id, model, [attemptEvidence(model, item, done, hintUsed, now)], now, persisted && model.rebuilt),
+    updateLearner(
+      deps.store,
+      item.user_id,
+      model,
+      [attemptEvidence(model, item, done, hintUsed, now, weight ?? evidenceWeight(model.ctx, hintUsed, graded.confidence ?? 1))],
+      now,
+      persisted && model.rebuilt,
+    ),
   );
   if (item.purpose === "retest") {
     writes.push(
@@ -925,7 +941,7 @@ export async function submitAttempt(
     explanation_long_tr: graded.explanation_long_tr,
     correction: graded.correction,
     pred_p: predictFor(model, item),
-    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintUsed),
+    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintUsed, graded.confidence),
     incidental: graded.incidental.length > 0 ? graded.incidental : null,
   });
   if (!attemptId) {
@@ -1125,7 +1141,7 @@ export async function submitSpeech(
     explanation_long_tr: graded.explanation_long_tr,
     correction: graded.correction,
     pred_p: predictFor(model, item),
-    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintOpened),
+    evidence_weight: graded.is_correct === null ? null : evidenceWeight(model.ctx, hintOpened, graded.confidence),
     incidental: graded.incidental.length > 0 ? graded.incidental : null,
   });
   if (!attemptId) {
@@ -1153,7 +1169,7 @@ export async function submitSpeech(
     // Son deneme: değerlendirildiyse o, değilse (anlaşılmadı / değerlendirilemedi) 1. deneme işlenir.
     if (graded.is_correct !== null) writes.push(applyGradedEvidence(deps, model, item, graded, hintOpened, now));
     else if (first && first.is_correct !== null) {
-      writes.push(applyGradedEvidence(deps, model, item, { ...first, incidental: [] }, first.hint_used, now, true));
+      writes.push(applyGradedEvidence(deps, model, item, { ...first, incidental: [] }, first.hint_used, now, true, first.evidence_weight));
     }
   }
   await Promise.all(writes);
@@ -1188,7 +1204,7 @@ async function applyPendingSpeech(deps: SessionDeps, model: LoadedModel, items: 
     if (item.activity_type !== "speak_answer") continue;
     const own = attempts.filter((a) => a.item_id === item.id);
     if (own.length !== 1 || own[0].try_no !== 1 || own[0].is_correct === null) continue;
-    await applyGradedEvidence(deps, model, item, { ...own[0], incidental: [] }, own[0].hint_used, now, true);
+    await applyGradedEvidence(deps, model, item, { ...own[0], incidental: [] }, own[0].hint_used, now, true, own[0].evidence_weight);
   }
 }
 

@@ -22,7 +22,7 @@ const SESSION_COLS = "id, user_id, kind, status, focus_topic_id, created_at, sta
 const ITEM_COLS =
   "id, session_id, user_id, position, topic_id, activity_type, skill, mode, purpose, interest, l1_target, payload, bank_item_id";
 const ATTEMPT_COLS =
-  "id, item_id, user_id, try_no, response, is_correct, score, hint_used, explain_opened, graded_by, feedback_short_tr, explanation_long_tr, correction";
+  "id, item_id, user_id, try_no, response, is_correct, score, hint_used, explain_opened, graded_by, feedback_short_tr, explanation_long_tr, correction, evidence_weight";
 const DIAGNOSIS_COLS = "id, topic_id, kind, status, message_tr, evidence, user_feedback";
 
 const UNIQUE_VIOLATION = "23505";
@@ -83,6 +83,7 @@ function toAttempt(r: Row): AttemptRow {
     feedback_short_tr: (r.feedback_short_tr as string | null) ?? null,
     explanation_long_tr: (r.explanation_long_tr as string | null) ?? null,
     correction: (r.correction as string | null) ?? null,
+    evidence_weight: num(r.evidence_weight),
   };
 }
 

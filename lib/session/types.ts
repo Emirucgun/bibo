@@ -99,6 +99,8 @@ export interface AttemptRow extends AttemptPublic {
   user_id: string;
   graded_by: "local" | "llm" | null;
   explanation_long_tr: string | null;
+  /** Kanıt ağırlığı (ipucu × değerlendirme güveni); `finish`'te işlenen konuşma denemesi için. */
+  evidence_weight?: number | null;
 }
 
 export interface NewAttempt {

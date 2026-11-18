@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { checkItem, sentenceWordCounts } from "@/lib/ai/checks";
+import { checkItem, sentenceWordCounts, vocabularyProblems } from "@/lib/ai/checks";
+import { INTEREST_WORDS } from "@/lib/content/wordlist";
 import type { GeneratedItem } from "@/lib/ai/schemas";
 import { slotsFor, TYPES_10, validItem } from "./fixtures";
 
@@ -72,5 +73,36 @@ describe("checkItem", () => {
     const empty = { ...item, key: { ...item.key, explanation_short_tr: "", explanation_long_tr: " ", hint_tr: "" } };
     expect(check(empty)).toEqual(["missing_explanation_short", "missing_explanation_long", "missing_hint"]);
     expect(check({ ...item, payload: { ...item.payload, instruction_tr: "  " } })).toEqual(["missing_instruction"]);
+  });
+});
+
+describe("kelime kapsamı (app_settings.curriculum)", () => {
+  const T = { a1: 0.98, a2: 0.95 };
+  const slot = (topic = "g.present_simple_3sg", interest: string | null = null) => ({
+    position: 1,
+    topic_id: topic,
+    activity_type: "mcq_read" as const,
+    interest,
+  });
+  const mcq = (text: string): GeneratedItem => {
+    const base = validItem(1, "mcq_read");
+    return { ...base, payload: { ...base.payload, text_en: text } };
+  };
+
+  it("fikstür etkinlikleri geçer; eşik verilmezse denetlenmez", () => {
+    for (const t of TYPES_10) expect(vocabularyProblems(validItem(1, t), { ...slot(), activity_type: t }, "A1", T)).toEqual([]);
+    expect(checkItem(mcq("The ubiquitous paradigm encapsulates ephemeral phenomena."), slot(), "A1")).not.toContain("vocabulary_above_level");
+  });
+
+  it("seviye üstü birden çok sözcük reddedilir; tek bilinmeyen sözcüğe göz yumulur", () => {
+    expect(checkItem(mcq("Ali plays football with his ubiquitous paradigm."), slot(), "A1", T)).toContain("vocabulary_above_level");
+    expect(vocabularyProblems(mcq("Ali plays football with his cousin."), slot(), "A1", T)).toEqual([]);
+  });
+
+  it("ilgi alanı kelimeleri ve özel adlar bilinen sayılır; sesletim konusu muaf", () => {
+    const words = Object.entries(INTEREST_WORDS).find(([, w]) => w.length >= 2)!;
+    const text = `Ali likes the ${words[1][0]} and the ${words[1][1]}.`;
+    expect(vocabularyProblems(mcq(text), slot("g.present_simple_3sg", words[0]), "A1", T)).toEqual([]);
+    expect(vocabularyProblems(mcq("Wine or vine? Wet or vet? Vest or west?"), slot("p.w_v"), "A1", T)).toEqual([]);
   });
 });

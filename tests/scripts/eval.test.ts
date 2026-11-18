@@ -38,7 +38,7 @@ describe("eval yardımcıları", () => {
   });
 
   it("uyum: doğru cevapta hatasız, hatalıda birincil kod", () => {
-    const base = { score: 1, corrected: "", feedback_short_tr: "", explanation_long_tr: "", evidence: [] };
+    const base = { score: 1, corrected: "", feedback_short_tr: "", explanation_long_tr: "", evidence: [], confidence: "high" as const };
     const err = { span: "play", correction: "plays", l1_code: "L1.3SG_S" as const, topic_id: "g.present_simple_3sg" as const };
     expect(tagAgrees({ is_correct: true, l1_codes: [] }, { ...base, is_correct: true, errors: [] })).toBe(true);
     expect(tagAgrees({ is_correct: true, l1_codes: [] }, { ...base, is_correct: false, errors: [err] })).toBe(false);

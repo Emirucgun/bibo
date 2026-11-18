@@ -31,6 +31,7 @@ const GOOD = {
   explanation_long_tr: "Doğru.",
   errors: [],
   evidence: [{ topic_id: "g.present_simple_3sg", correct: true }],
+  confidence: "high",
 };
 
 function fakeFetch(status: number, body: unknown, seen: { body?: Record<string, unknown> } = {}) {

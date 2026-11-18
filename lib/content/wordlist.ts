@@ -4,6 +4,7 @@
 // Hedef: A1 ≥ %98, A2 ≥ %95 (Laufer & Ravenhorst-Kalovski 2010; app_settings `curriculum.coverage`).
 
 const A1_WORDS = `
+exam clock key fridge line
 a an the and or but because so if when than then also too very not no yes all some any many much more most
 i you he she it we they me him her us them my your his its our their mine yours this that these those here there
 what who where when why how which whose
@@ -46,6 +47,7 @@ question word sentence story letter news
 `;
 
 const A2_WORDS = `
+wine
 ago already yet ever since while though although however maybe perhaps probably especially
 able afraid agree allow almost alone along angry another anyone anything anywhere appear apartment area
 army arrange art article asleep attack attend aunt avoid award awful
@@ -113,6 +115,7 @@ zero zone zoo
 
 /** Her seviyede her zaman bilinen işlev sözcükleri ve kısaltma parçaları. */
 const FUNCTION = `
+option options gap blank sentence word answer question correct choose missing
 s t re ll ve d m e o don doesn didn isn aren wasn weren can't won couldn shouldn wouldn haven hasn hadn
 o'clock mr mrs ms ok
 `;

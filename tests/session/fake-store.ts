@@ -62,7 +62,8 @@ export class FakeSessionStore implements SessionStore {
     learner_model: { version: 1 },
     continuous_gate_p: 0.95,
     retest_after_days: 7,
-    grade_samples: 3,
+    // Testlerde çağrı sayısı sade kalsın: tek örnek. Çoğunluk oyu ayrı testte (grade_samples = 3).
+    grade_samples: 1,
     coverage: { a1: 0.98, a2: 0.95 },
   };
   learnerStates = new Map<string, StoredLearnerState>();
@@ -386,6 +387,7 @@ export const GRADE_OK: GradeResult = {
   explanation_long_tr: "Üçüncü tekil şahısta fiile -s eklenir.",
   errors: [],
   evidence: [{ topic_id: "g.present_simple_3sg", correct: true }],
+  confidence: "high",
 };
 
 export const GRADE_WRONG: GradeResult = {
@@ -399,6 +401,7 @@ export const GRADE_WRONG: GradeResult = {
     { topic_id: "g.present_simple_3sg", correct: false },
     { topic_id: "g.be_present", correct: true },
   ],
+  confidence: "high",
 };
 
 export type GradeAnswer = GradeResult | "refusal" | Error;
@@ -407,13 +410,16 @@ export type GradeAnswer = GradeResult | "refusal" | Error;
 export class ScriptedLlm implements LlmClient {
   calls: StructuredCall<unknown>[] = [];
   grade: GradeAnswer = GRADE_OK;
+  /** Doluysa değerlendirme çağrıları sırayla bunları alır (çoğunluk oyu testleri). */
+  gradeQueue: GradeAnswer[] = [];
   failGeneration = false;
   async callStructured<T>(call: StructuredCall<T>): Promise<StructuredResult<T>> {
     this.calls.push(call as StructuredCall<unknown>);
     if (call.schemaName === "grade_result") {
-      if (this.grade instanceof Error) throw this.grade;
-      if (this.grade === "refusal") return { kind: "refusal", usage: USAGE } as StructuredResult<T>;
-      return ok(this.grade) as StructuredResult<T>;
+      const grade = this.gradeQueue.shift() ?? this.grade;
+      if (grade instanceof Error) throw grade;
+      if (grade === "refusal") return { kind: "refusal", usage: USAGE } as StructuredResult<T>;
+      return ok(grade) as StructuredResult<T>;
     }
     if (this.failGeneration) return { kind: "refusal", usage: USAGE } as StructuredResult<T>;
     return answerAll()(call as StructuredCall<unknown>) as StructuredResult<T>;

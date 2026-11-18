@@ -1,7 +1,8 @@
 // Komutlarda ortak, sabit taksonomi metni (önbelleklenen sistem komutunun parçası).
 import { L1_CODES, TOPICS } from "@/lib/content/taxonomy";
 
-export const TOPIC_LIST_TEXT = TOPICS.filter((t) => t.active)
+// Ölçme konuları (B1/B2, yalnızca yerleştirme) komutlarda yok: üretilmez ve etiketlenmez.
+export const TOPIC_LIST_TEXT = TOPICS.filter((t) => t.active && t.kind !== "measure")
   .map((t) => `- ${t.id} [${t.level}, ${t.kind}] ${t.title_en} — ${t.title_tr}`)
   .join("\n");
 

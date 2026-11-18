@@ -86,5 +86,7 @@ export const GradeResult = z.object({
     )
     .max(5),
   evidence: z.array(z.object({ topic_id: TopicId, correct: z.boolean() })).max(6),
+  /** Kararın güveni; kanıt ağırlığına çarpan olarak girer (kesinlik önceliği). */
+  confidence: z.enum(["high", "medium", "low"]),
 });
 export type GradeResult = z.infer<typeof GradeResult>;

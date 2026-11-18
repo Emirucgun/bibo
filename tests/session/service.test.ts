@@ -446,6 +446,21 @@ describe("submitAttempt (POST /api/items/:id/attempt)", () => {
     expect(step(1)).toBeGreaterThan(step(0.5));
   });
 
+  it("grade_samples = 3: tek örneğin yanlış alarmı öğrenciyi yanlış saymaz; uyum kanıt ağırlığını düşürür", async () => {
+    const env = setup();
+    env.store.modelSettings.grade_samples = 3;
+    env.llm.gradeQueue = [GRADE_WRONG, GRADE_OK, GRADE_OK];
+    const id = await openSession(env);
+    const item = firstFree(env, id);
+    const res = await answer(env, item, true);
+    expect(env.llm.gradeCalls).toBe(3);
+    expect(env.aiStore.rows.filter((r) => r.purpose === "grade")).toHaveLength(3);
+    expect(res).toMatchObject({ isCorrect: true, score: 1, correction: null });
+    expect(env.store.errorEvents).toHaveLength(0);
+    // 2/3 uyum × yüksek güven.
+    expect(env.store.attempts[0].evidence_weight).toBeCloseTo(0.667, 3);
+  });
+
   it("yapay zekâ değerlendirmesi: hatalar `llm` kaynağıyla, yan kanıt ayrı konuya yarım ağırlıkla", async () => {
     const env = setup();
     env.deps.rng = () => 0.05; // < review_sample_rate
@@ -800,17 +815,18 @@ describe("finishSession (POST /api/sessions/:id/finish)", () => {
     expect(env.store.sessions.filter((s) => s.status === "ready")).toHaveLength(1);
   });
 
-  it("yazma 8/8 + konuşma 1/6 birikmişken oturum biterse `skill_gap(speaking)` kartı kanıtıyla döner", async () => {
+  it("yazma 10/10 + konuşma 1/7 birikmişken oturum biterse `skill_gap(speaking)` kartı kanıtıyla döner", async () => {
     const env = setup();
     const id = await openSession(env);
     const item = firstOfType(env, id, "gap_fill");
     // Konunun geçmişi: yazma oturmuş, konuşma zayıf; konuşma başka konularda da kanıtlı.
+    const other = item.topic_id === "g.be_present" ? "g.plurals" : "g.be_present";
     // v2 teşhisi kesinlik önceliklidir: 4 konuşma cevabı yetmez (docs/arastirma/olcme-ve-ogrenen-modeli.md).
     seedHistory(env, [
-      [item.topic_id, "writing", [1, 1, 1, 1, 1, 1, 1, 1]],
-      [item.topic_id, "speaking", [0, 0, 1, 0, 0, 0]],
-      ["g.be_present", "writing", [1, 1, 1]],
-      ["g.be_present", "speaking", [1, 1, 0, 0]],
+      [item.topic_id, "writing", [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]],
+      [item.topic_id, "speaking", [0, 0, 1, 0, 0, 0, 0]],
+      [other, "writing", [1, 1, 1]],
+      [other, "speaking", [1, 1, 0, 0]],
     ]);
     await answer(env, item, true);
     const res = await finishSession(env.deps, actor, id, {});
@@ -819,8 +835,8 @@ describe("finishSession (POST /api/sessions/:id/finish)", () => {
     expect(res.diagnosis!.messageTr).toContain("konuşma");
     expect(res.diagnosis!.evidence).toEqual(
       expect.arrayContaining([
-        { skill: "konuşma", correct: 1, n: 6 },
-        { skill: "yazma", correct: 9, n: 9 },
+        { skill: "konuşma", correct: 1, n: 7 },
+        { skill: "yazma", correct: 11, n: 11 },
       ]),
     );
     const stored = env.store.diagnoses[0];
