@@ -19,7 +19,7 @@ export async function InviteScreen({ code }: { code: string | null }) {
     return (
       <>
         <AuthHeading
-          title="Kaynak'a davetlisin"
+          title="bibo'ya davetlisin"
           lead="Devam etmek için Google hesabınla giriş yap. Davet kodun bir sonraki adımda hazır gelecek."
         />
         <GoogleButton />
@@ -39,7 +39,7 @@ export async function InviteScreen({ code }: { code: string | null }) {
     <>
       <AuthHeading
         title="Davet kodunu gir"
-        lead="Kaynak şu an yalnızca davetle açık. Kod, sana gönderilen davet linkinin sonundadır."
+        lead="bibo şu an yalnızca davetle açık. Kod, sana gönderilen davet linkinin sonundadır."
       />
       <InviteForm defaultCode={defaultCode} />
       <SignOutButton label="Farklı bir hesapla gir" />

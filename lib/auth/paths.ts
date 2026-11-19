@@ -23,7 +23,10 @@ export function inviteCodeFromPath(pathname: string): string | null {
   return isValidInviteCode(code) ? code : null;
 }
 
-const PUBLIC_PAGES = ["/giris", "/davet", "/gizlilik", "/auth/callback"];
+/** Tanıtım sayfası: girişsiz ziyaretçi `/` adresinde bunu görür (bibolearn.com kökü). */
+export const LANDING_PATH = "/tanitim";
+
+const PUBLIC_PAGES = ["/giris", "/davet", "/gizlilik", "/auth/callback", LANDING_PATH];
 
 function matches(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);
@@ -39,13 +42,20 @@ export function isApiPath(pathname: string): boolean {
   return matches(pathname, "/api");
 }
 
-export type RouteDecision = { kind: "next" } | { kind: "redirect"; to: string };
+export type RouteDecision =
+  | { kind: "next" }
+  | { kind: "redirect"; to: string }
+  | { kind: "rewrite"; to: string };
 
-/** Girişsiz kullanıcı `/giris`'e; giriş yapmış kullanıcı `/giris`'ten ana sayfaya. */
+/**
+ * Girişsiz ziyaretçi `/` adresinde tanıtım sayfasını görür (adres değişmez), diğer korumalı
+ * sayfalardan `/giris`'e gider. Giriş yapmış kullanıcı `/giris`'ten ana sayfaya.
+ */
 export function decideRoute(input: { pathname: string; signedIn: boolean }): RouteDecision {
   const { pathname, signedIn } = input;
   if (isApiPath(pathname)) return { kind: "next" };
   if (!signedIn) {
+    if (pathname === "/") return { kind: "rewrite", to: LANDING_PATH };
     return isPublicPage(pathname) ? { kind: "next" } : { kind: "redirect", to: "/giris" };
   }
   if (matches(pathname, "/giris")) return { kind: "redirect", to: "/" };
