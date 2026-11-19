@@ -16,7 +16,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { APP_DOMAIN, APP_NAME, APP_TAGLINE } from "@/lib/content/app";
 
 // Tanıtım sayfası (bibolearn.com kökü). Girişsiz ziyaretçi `/` adresinde bunu görür: proxy.ts
-// adresi değiştirmeden buraya yönlendirir (lib/auth/paths.ts `LANDING_PATH`). Statik; veri okumaz.
+// adresi değiştirmeden buraya yönlendirir (lib/auth/paths.ts `LANDING_PATH`); `/tanitim` dışarıdan
+// açılırsa `/` adresine gider, tek adres bibolearn.com. Statik; veri okumaz.
 // Metinler PRD (Bölüm 0–6) ve SCOPE'tan; sayılar oradaki değerlerle aynı tutulur.
 
 const DESCRIPTION =
