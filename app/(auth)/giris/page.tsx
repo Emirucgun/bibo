@@ -18,7 +18,7 @@ export default function LoginPage() {
       </Suspense>
       <GoogleButton />
       <p className="text-sm text-muted-foreground">
-        Kaynak şu an yalnızca davetle açık. Davet linkin varsa önce onu aç; kodun hazır gelir.
+        {APP_NAME} şu an yalnızca davetle açık. Davet linkin varsa önce onu aç; kodun hazır gelir.
       </p>
       <p className="text-sm">
         <Link href="/gizlilik" className="underline underline-offset-4">

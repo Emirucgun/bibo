@@ -37,7 +37,7 @@ function Consent() {
     <>
       <AuthHeading
         title="Başlamadan önce"
-        lead="Kaynak, hatalarının kaynağını bulmak için cevaplarını kaydeder ve yapay zekâ ile değerlendirir."
+        lead="bibo, hatalarının kaynağını bulmak için cevaplarını kaydeder ve yapay zekâ ile değerlendirir."
       />
       <ul className="flex list-disc flex-col gap-1.5 pl-5 text-sm text-muted-foreground">
         <li>Adın, e-posta adresin, seviyen, ilgi alanların ve cevapların saklanır.</li>

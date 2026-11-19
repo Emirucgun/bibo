@@ -9,7 +9,7 @@ import {
 import { supabasePublicEnv } from "@/lib/db/env";
 
 // Next 16'da middleware'in adı (SPEC Bölüm 7): her istekte oturumu yeniler,
-// giriş yapmamış kullanıcıyı /giris'e yönlendirir ve /davet/[code] kodunu çereze yazar.
+// girişsiz ziyaretçiye / adresinde tanıtım sayfasını gösterir, diğer sayfalarda /giris'e yönlendirir ve /davet/[code] kodunu çereze yazar.
 // Başlangıç kapısı (onboarding_step) burada değil, (app) düzeninde.
 export async function proxy(request: NextRequest) {
   const { url, publishableKey } = supabasePublicEnv();
@@ -48,6 +48,14 @@ export async function proxy(request: NextRequest) {
     // Yenilenen oturum çerezleri yönlendirme yanıtına da taşınır.
     for (const cookie of response.cookies.getAll()) redirect.cookies.set(cookie);
     return redirect;
+  }
+
+  if (decision.kind === "rewrite") {
+    const target = request.nextUrl.clone();
+    target.pathname = decision.to;
+    const rewrite = NextResponse.rewrite(target, { request });
+    for (const cookie of response.cookies.getAll()) rewrite.cookies.set(cookie);
+    return rewrite;
   }
 
   const inviteCode = inviteCodeFromPath(pathname);
