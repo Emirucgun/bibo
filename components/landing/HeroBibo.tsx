@@ -1,0 +1,112 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { biboSrc } from "@/components/brand/Bibo";
+
+// Tanıtım sayfasının canlı Bibo'su. Yollar public/brand/bibo-varsayilan.svg ile birebir aynı; yalnızca
+// gözler gruplandı ki gözbebekleri imleci izlesin ve göz kırpsın (Figma kuralı: "Bakış içeriğe döner";
+// imleç yokken başlığa, yani sola bakar). Dokununca "Merhaba" haline geçer ve selam verir.
+
+const MAX_SHIFT = 4; // gözbebeği en çok kaç birim kayar (240'lık tuvalde)
+const REST = { x: -3, y: 1 }; // dinlenirken metne (sola) bakar
+const WAVE_MS = 2200;
+
+export function HeroBibo() {
+  const ref = useRef<SVGSVGElement>(null);
+  const [look, setLook] = useState(REST);
+  const [waving, setWaving] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let frame = 0;
+    let idle: ReturnType<typeof setTimeout> | undefined;
+    const onMove = (event: PointerEvent) => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const svg = ref.current;
+        if (!svg) return;
+        const box = svg.getBoundingClientRect();
+        const dx = event.clientX - (box.left + box.width * 0.55);
+        const dy = event.clientY - (box.top + box.height * 0.62);
+        const dist = Math.hypot(dx, dy) || 1;
+        const reach = Math.min(1, dist / 240);
+        setLook({ x: (dx / dist) * MAX_SHIFT * reach, y: (dy / dist) * MAX_SHIFT * reach });
+      });
+      clearTimeout(idle);
+      idle = setTimeout(() => setLook(REST), 2500);
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      cancelAnimationFrame(frame);
+      clearTimeout(idle);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!waving) return;
+    const t = setTimeout(() => setWaving(false), WAVE_MS);
+    return () => clearTimeout(t);
+  }, [waving]);
+
+  const pupil = { transform: `translate(${look.x}px, ${look.y}px)`, transition: "transform 160ms ease-out" };
+
+  return (
+    <div className="relative flex flex-col items-center">
+      <p
+        aria-live="polite"
+        className={`absolute -top-4 left-1/2 z-10 w-max max-w-[16rem] -translate-x-1/2 rounded-2xl border-2 border-ink bg-white px-4 py-2 text-center text-sm font-medium text-ink shadow-[4px_4px_0_var(--bibo-ink-900)] transition-all duration-300 sm:-top-8 ${
+          waving ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0"
+        }`}
+      >
+        {waving ? "Merhaba! Hatanın kaynağını birlikte bulalım." : ""}
+      </p>
+      <button
+        type="button"
+        onClick={() => setWaving(true)}
+        aria-label="Bibo'ya dokun, selam versin"
+        className="relative size-60 cursor-pointer rounded-full outline-none transition-transform duration-300 hover:-rotate-3 focus-visible:ring-4 focus-visible:ring-ring/50 active:scale-95 sm:size-72"
+      >
+        {waving ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key="wave" src={biboSrc("merhaba")} alt="" className="size-full animate-pop" draggable={false} />
+        ) : (
+          <svg
+            ref={ref}
+            viewBox="0 0 240 240"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="size-full origin-bottom motion-safe:animate-breathe"
+            aria-hidden
+          >
+            <path
+              d="M44 156V44C44 37.1044 46.7393 30.4912 51.6152 25.6152C56.4912 20.7393 63.1044 18 70 18C76.8956 18 83.5088 20.7393 88.3848 25.6152C93.2607 30.4912 96 37.1044 96 44V156H44Z"
+              fill="#14AD9C"
+            />
+            <path d="M96 74C96 78.2435 97.6857 82.3131 100.686 85.3137C103.687 88.3143 107.757 90 112 90V104H96V74Z" fill="#14AD9C" />
+            <path
+              d="M144 88H112C74.4446 88 44 118.445 44 156C44 193.555 74.4446 224 112 224H144C181.555 224 212 193.555 212 156C212 118.445 181.555 88 144 88Z"
+              fill="#14AD9C"
+            />
+            <path d="M83 189.5C89.6274 189.5 95 186.142 95 182C95 177.858 89.6274 174.5 83 174.5C76.3726 174.5 71 177.858 71 182C71 186.142 76.3726 189.5 83 189.5Z" fill="#FF8A72" />
+            <path d="M181 189.5C187.627 189.5 193 186.142 193 182C193 177.858 187.627 174.5 181 174.5C174.373 174.5 169 177.858 169 182C169 186.142 174.373 189.5 181 189.5Z" fill="#FF8A72" />
+            <g className="motion-safe:animate-blink" style={{ transformBox: "fill-box", transformOrigin: "center" }}>
+              <path d="M110 168C118.284 168 125 159.941 125 150C125 140.059 118.284 132 110 132C101.716 132 95 140.059 95 150C95 159.941 101.716 168 110 168Z" fill="white" />
+              <g style={pupil}>
+                <path d="M113 161C117.971 161 122 156.971 122 152C122 147.029 117.971 143 113 143C108.029 143 104 147.029 104 152C104 156.971 108.029 161 113 161Z" fill="#142529" />
+                <path d="M110 151.5C111.657 151.5 113 150.157 113 148.5C113 146.843 111.657 145.5 110 145.5C108.343 145.5 107 146.843 107 148.5C107 150.157 108.343 151.5 110 151.5Z" fill="white" />
+              </g>
+              <path d="M154 168C162.284 168 169 159.941 169 150C169 140.059 162.284 132 154 132C145.716 132 139 140.059 139 150C139 159.941 145.716 168 154 168Z" fill="white" />
+              <g style={pupil}>
+                <path d="M157 161C161.971 161 166 156.971 166 152C166 147.029 161.971 143 157 143C152.029 143 148 147.029 148 152C148 156.971 152.029 161 157 161Z" fill="#142529" />
+                <path d="M154 151.5C155.657 151.5 157 150.157 157 148.5C157 146.843 155.657 145.5 154 145.5C152.343 145.5 151 146.843 151 148.5C151 150.157 152.343 151.5 154 151.5Z" fill="white" />
+              </g>
+            </g>
+            <path d="M120 182C128 190 136 190 144 182" strokeWidth="6.5" strokeLinecap="round" stroke="white" />
+          </svg>
+        )}
+      </button>
+      <span className="mt-2 text-xs text-muted-foreground">Bibo&apos;ya dokun</span>
+    </div>
+  );
+}
