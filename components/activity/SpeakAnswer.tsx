@@ -110,10 +110,15 @@ export function SpeakAnswer({
       {payload.prompt_en ? <EnglishText>{payload.prompt_en}</EnglishText> : null}
 
       {phase.name === "recording" ? (
-        <Button type="button" variant="destructive" onClick={() => void stop()} className="h-16 w-full gap-2 text-base">
-          <Square aria-hidden className="size-5" />
+        // Kayıt sürerken mercan (Figma: kırmızı yalnızca geri dönüşsüz işlemler için).
+        <button
+          type="button"
+          onClick={() => void stop()}
+          className="inline-flex h-16 w-full items-center justify-center gap-2 rounded-lg bg-coral text-base font-medium text-ink outline-none transition-colors select-none hover:bg-coral/85 focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+        >
+          <Square aria-hidden className="size-5 fill-current" />
           Bitir · {clock(seconds)} / {clock(MAX_RECORDING_SEC)}
-        </Button>
+        </button>
       ) : (
         <Button
           type="button"
