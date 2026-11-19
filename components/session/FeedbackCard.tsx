@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check, RotateCcw } from "lucide-react";
 import { cn } from "cn";
 import { Button } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
@@ -68,14 +69,23 @@ export function FeedbackCard({
       aria-live="polite"
       className={cn(
         "flex flex-col gap-3 rounded-lg border p-4",
-        result.isCorrect === true && "border-emerald-600/40 bg-emerald-500/10",
-        result.isCorrect === false && "border-destructive/40 bg-destructive/10",
+        // Figma: doğru turkuaz, yanlış sakin mercan ("Tekrar bakalım"); kırmızı yalnızca geri dönüşsüz işlemler için.
+        result.isCorrect === true && "border-correct/30 bg-correct-bg",
+        result.isCorrect === false && "border-retry/30 bg-retry-bg",
         result.isCorrect === null && "border-border bg-muted",
       )}
     >
       {gradable ? (
         <div className="flex flex-col gap-0.5">
-          <h2 className="text-base font-semibold">{feedbackHeading(result)}</h2>
+          <h2
+            className={cn(
+              "flex items-center gap-1.5 text-base font-semibold",
+              result.isCorrect ? "text-correct" : "text-retry",
+            )}
+          >
+            {result.isCorrect ? <Check aria-hidden className="size-4" /> : <RotateCcw aria-hidden className="size-4" />}
+            {feedbackHeading(result)}
+          </h2>
           {result.errorNameTr ? <p className="text-sm font-medium text-muted-foreground">{result.errorNameTr}</p> : null}
         </div>
       ) : null}

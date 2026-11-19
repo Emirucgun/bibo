@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { Lightbulb } from "lucide-react";
 import { cn } from "cn";
 import { Dictation } from "@/components/activity/Dictation";
 import { GapFill } from "@/components/activity/GapFill";
@@ -12,9 +13,11 @@ import { ShortWrite } from "@/components/activity/ShortWrite";
 import { Translate } from "@/components/activity/Translate";
 import { WordOrder } from "@/components/activity/WordOrder";
 import type { ActivityProps } from "@/components/activity/shared";
+import { Bibo } from "@/components/brand/Bibo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
 import type { ActivityType } from "@/lib/content/activity-types";
+import { sessionBibo } from "@/lib/session/bibo-state";
 import type { ExplainMode } from "@/lib/session/explain-mode";
 import type { AttemptResponse } from "@/lib/session/schemas";
 import type { AttemptResult, FinishResult, PlacementProgress, SessionView, SpeechResult } from "@/lib/session/service";
@@ -107,14 +110,18 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
 
   if (phase.name === "loading" || phase.name === "finishing") {
     return (
-      <p role="status" className="text-sm text-muted-foreground">
-        {phase.name === "loading" ? "Oturumun açılıyor…" : "Özetin hazırlanıyor…"}
-      </p>
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 py-10">
+        <Bibo state="dusunuyor" size={140} className="size-32" />
+        <p role="status" className="text-sm text-muted-foreground">
+          {phase.name === "loading" ? "Oturumun açılıyor…" : "Özetin hazırlanıyor…"}
+        </p>
+      </div>
     );
   }
   if (phase.name === "problem") {
     return (
       <div className="flex flex-col gap-4">
+        <Bibo size={120} className="size-28" />
         <p role="alert" className="text-base">
           {phase.message}
         </p>
@@ -137,6 +144,7 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
   const item = items[index];
   const Activity = ACTIVITY[item.activity_type];
   const isLast = index === items.length - 1;
+  const bibo = sessionBibo({ placement, submitting, hintPending, hint, result, speaking: item.activity_type === "speak_answer" });
 
   function resetItem() {
     setResult(null);
@@ -224,7 +232,12 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
 
   return (
     <div className="flex flex-col gap-5">
-      <ProgressBar current={index} total={placement ? undefined : items.length} skill={item.skill} activityType={item.activity_type} />
+      <div className="flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <ProgressBar current={index} total={placement ? undefined : items.length} skill={item.skill} activityType={item.activity_type} />
+        </div>
+        <Bibo key={bibo} state={bibo} size={48} className="size-12 shrink-0 animate-pop" />
+      </div>
       <p className="text-base font-medium">{item.payload.instruction_tr}</p>
 
       {item.activity_type === "speak_answer" ? (
@@ -296,8 +309,10 @@ export function SessionRunner({ sessionId, explainMode }: { sessionId: string; e
       ) : result ? (
         <FeedbackCard key={result.attemptId} result={result} explainMode={explainMode} isLast={isLast} busy={false} onNext={next} />
       ) : placement ? null : hint ? (
-        <p className="rounded-lg border border-border bg-muted px-4 py-3 text-sm">
-          <span className="font-medium">İpucu: </span>
+        <p className="rounded-lg bg-hint-bg px-4 py-3 text-sm">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-hint">
+            <Lightbulb aria-hidden className="size-4" /> İpucu:
+          </span>{" "}
           {hint}
         </p>
       ) : (
