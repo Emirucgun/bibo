@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Bibo } from "@/components/brand/Bibo";
 import { Button } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
 import type { ScopeView } from "@/lib/session/service";
@@ -55,6 +56,7 @@ export function ScopeNotice({ status }: { status: "above_scope" | "graduated" })
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
+        <Bibo state={status === "graduated" ? "tebrikler" : "varsayilan"} size={140} className="size-32" />
         <h1 className="text-2xl font-semibold">
           {status === "graduated" ? "Tebrikler, A2'yi tamamladın" : "İngilizcen bizim seviyemizin üstünde"}
         </h1>

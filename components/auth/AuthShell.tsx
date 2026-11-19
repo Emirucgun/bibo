@@ -9,9 +9,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
   );
 }
 
-export function AuthHeading({ title, lead }: { title: string; lead?: ReactNode }) {
+export function AuthHeading({ title, lead, visual }: { title: ReactNode; lead?: ReactNode; visual?: ReactNode }) {
   return (
     <header className="flex flex-col gap-2">
+      {visual ? <div className="mb-2">{visual}</div> : null}
       <h1 className="text-2xl font-semibold">{title}</h1>
       {lead ? <p className="text-sm text-muted-foreground">{lead}</p> : null}
     </header>

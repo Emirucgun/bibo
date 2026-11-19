@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Bibo } from "@/components/brand/Bibo";
 import { Button } from "@/components/ui/button";
 import { SessionRunner } from "@/components/session/SessionRunner";
 import { callApi } from "@/lib/api/client";
@@ -28,6 +29,7 @@ export function PlacementFlow() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
+        <Bibo state="merhaba" size={120} className="mb-2 size-28" />
         <p className="text-sm text-muted-foreground">Adım 2/2</p>
         <h1 className="text-2xl font-semibold">Kısa bir tanışma testi</h1>
         <p className="text-base leading-relaxed">

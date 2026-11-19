@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { Search } from "lucide-react";
 import { cn } from "cn";
+import { Bibo } from "@/components/brand/Bibo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
 import type { DiagnosisCard as DiagnosisCardData, FinishResult } from "@/lib/session/service";
@@ -14,6 +16,8 @@ export function SessionSummary({ sessionId, result }: { sessionId: string; resul
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
+        {/* Bir ekranda tek Bibo: teşhis kartı varsa Bibo orada ("Buldum!"), yoksa burada. */}
+        {diagnosis ? null : <Bibo state="tebrikler" size={140} className="mb-1 size-32" />}
         <h1 className="text-2xl font-semibold">Oturum bitti</h1>
         {result.graduated ? null : (
           <p className="text-sm text-muted-foreground">Bir sonraki oturumun arka planda hazırlanıyor.</p>
@@ -22,7 +26,7 @@ export function SessionSummary({ sessionId, result }: { sessionId: string; resul
 
       {result.graduated ? (
         // Sürekli kapı (docs/SPEC.md 4.7): A2 tamamlandı, günlük oturumlar burada biter.
-        <section className="flex flex-col gap-3 rounded-lg border border-emerald-300 bg-emerald-50 p-4">
+        <section className="flex flex-col gap-3 rounded-lg border border-correct/30 bg-correct-bg p-4">
           <h2 className="text-base font-semibold">Tebrikler, A2&apos;yi tamamladın</h2>
           <p className="text-sm leading-relaxed">
             Cevapların artık A2&apos;nin üstünde olduğunu gösteriyor. Şu an yalnızca A1–A2 için çalışıyoruz; çok yakında
@@ -87,10 +91,14 @@ function DiagnosisCard({ diagnosis }: { diagnosis: DiagnosisCardData }) {
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4">
-      <h2 className="text-base font-semibold">
-        {diagnosis.status === "resolved" ? "Çözüldü" : "Bulduğumuz şey"} · {diagnosis.topicTitleTr}
-      </h2>
+    <section className="flex flex-col gap-3 rounded-lg border border-primary/30 bg-secondary p-4">
+      <div className="flex items-center gap-3">
+        <Bibo state={diagnosis.status === "resolved" ? "tebrikler" : "buldum"} size={96} className="size-20 shrink-0 animate-pop" />
+        <h2 className="flex items-center gap-1.5 text-base font-semibold">
+          {diagnosis.status === "resolved" ? null : <Search aria-hidden className="size-4 shrink-0 text-primary" />}
+          {diagnosis.status === "resolved" ? "Çözüldü" : "Bulduğumuz şey"} · {diagnosis.topicTitleTr}
+        </h2>
+      </div>
       <p className="text-sm leading-relaxed">{diagnosis.messageTr}</p>
       {diagnosis.evidence.length > 0 ? (
         <ul className="flex flex-wrap gap-2">
