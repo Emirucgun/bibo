@@ -4,6 +4,7 @@ import { AccountProblem } from "@/components/auth/AccountProblem";
 import { AuthHeading } from "@/components/auth/AuthShell";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { Bibo } from "@/components/brand/Bibo";
 import { InviteForm } from "@/components/onboarding/InviteForm";
 import { INVITE_COOKIE, isValidInviteCode } from "@/lib/auth/paths";
 import { getViewer } from "@/lib/auth/viewer";
@@ -19,6 +20,7 @@ export async function InviteScreen({ code }: { code: string | null }) {
     return (
       <>
         <AuthHeading
+          visual={<Bibo state="merhaba" size={120} className="size-28" />}
           title="bibo'ya davetlisin"
           lead="Devam etmek için Google hesabınla giriş yap. Davet kodun bir sonraki adımda hazır gelecek."
         />

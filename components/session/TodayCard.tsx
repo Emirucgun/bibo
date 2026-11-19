@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Bibo } from "@/components/brand/Bibo";
 import { Button } from "@/components/ui/button";
 import { callApi } from "@/lib/api/client";
 import { TOPICS } from "@/lib/content/taxonomy";
@@ -13,7 +14,7 @@ type State =
   | { name: "loading" }
   | { name: "generating" }
   | { name: "ready"; view: SessionView }
-  | { name: "message"; text: string };
+  | { name: "message"; text: string; code?: string };
 
 const POLL_MS = 3000;
 /** Üretim tipik 20–30 sn; 4 dakikadan sonra beklemeyi bırak. */
@@ -36,7 +37,7 @@ export function TodayCard() {
       for (let round = 0; round < 2 && !cancelled; round++) {
         const next = await callApi<NextResult>("/api/sessions/next", { method: "POST", body: {} });
         if (cancelled) return;
-        if (!next.ok) return setState({ name: "message", text: next.message });
+        if (!next.ok) return setState({ name: "message", text: next.message, code: next.code });
         if (next.data.status === "generating") setState({ name: "generating" });
 
         for (let i = 0; i < MAX_POLLS && !cancelled; i++) {
@@ -72,17 +73,22 @@ export function TodayCard() {
   }
   if (state.name === "generating") {
     return (
-      <section className="flex flex-col gap-2 rounded-lg border border-border p-5">
-        <h2 className="text-lg font-semibold">Oturumun hazırlanıyor</h2>
-        <p role="status" className="text-sm text-muted-foreground">
-          Sana göre etkinlikler yazılıyor. Yarım dakika kadar sürer; sayfayı kapatma.
-        </p>
+      <section className="flex items-center gap-4 rounded-lg border border-border bg-card p-5">
+        <Bibo state="dusunuyor" size={88} className="size-20 shrink-0" />
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">Oturumun hazırlanıyor</h2>
+          <p role="status" className="text-sm text-muted-foreground">
+            Sana göre etkinlikler yazılıyor. Yarım dakika kadar sürer; sayfayı kapatma.
+          </p>
+        </div>
       </section>
     );
   }
   if (state.name === "message") {
     return (
-      <section className="rounded-lg border border-border p-5">
+      <section className="flex items-center gap-4 rounded-lg border border-border bg-card p-5">
+        {/* Günlük sınır: "Bugünlük bu kadar", suçlama yok. Diğer durumlar sakin varsayılan. */}
+        <Bibo state={state.code === "daily_limit" ? "dinleniyor" : "varsayilan"} size={88} className="size-20 shrink-0" />
         <p className="text-base">{state.text}</p>
       </section>
     );
@@ -111,12 +117,15 @@ export function TodayCard() {
   }
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border p-5">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">{active ? "Oturumun yarım kaldı" : "Bugünkü oturum"}</h2>
-        <p className="text-sm text-muted-foreground">
-          {minutes} dk · {items.length} etkinlik{focus ? ` · Odak: ${focus}` : ""}
-        </p>
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card p-5">
+      <div className="flex items-center gap-4">
+        <Bibo state="merhaba" size={88} className="size-20 shrink-0 animate-pop" />
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg font-semibold">{active ? "Oturumun yarım kaldı" : "Bugünkü oturum"}</h2>
+          <p className="text-sm text-muted-foreground">
+            {minutes} dk · {items.length} etkinlik{focus ? ` · Odak: ${focus}` : ""}
+          </p>
+        </div>
       </div>
       {startError ? (
         <p role="alert" className="text-sm">

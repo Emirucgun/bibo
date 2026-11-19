@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/brand/Logo";
 import { getViewer } from "@/lib/auth/viewer";
 import { APP_NAME } from "@/lib/content/app";
 
@@ -13,8 +14,8 @@ export async function AppHeader() {
   ];
   return (
     <header className="flex items-center justify-between gap-3">
-      <Link href="/" className="flex min-h-11 items-center text-xl font-semibold tracking-tight">
-        {APP_NAME}
+      <Link href="/" aria-label={`${APP_NAME} ana sayfa`} className="flex min-h-11 items-center">
+        <Logo width={96} className="h-auto w-24" />
       </Link>
       <nav className="flex items-center gap-1 text-sm">
         {links.map((l) => (

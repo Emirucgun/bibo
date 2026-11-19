@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Bibo } from "@/components/brand/Bibo";
 import { ScopeNotice } from "@/components/onboarding/ScopeNotice";
 import { Button } from "@/components/ui/button";
 import type { FinishResult, PlacementResult } from "@/lib/session/service";
@@ -14,7 +15,7 @@ const LEVEL_TEXT: Record<"A1" | "A2", string> = {
 
 function TopicList({ title, note, topics, tone }: { title: string; note: string; topics: TopicLine[]; tone: "good" | "work" | "open" }) {
   if (topics.length === 0) return null;
-  const box = tone === "good" ? "border-emerald-300 bg-emerald-50" : tone === "work" ? "border-primary/30 bg-primary/5" : "border-border";
+  const box = tone === "good" ? "border-correct/30 bg-correct-bg" : tone === "work" ? "border-primary/30 bg-secondary" : "border-border";
   return (
     <section className={`flex flex-col gap-3 rounded-lg border p-4 ${box}`}>
       <h2 className="text-base font-semibold">{title}</h2>
@@ -43,6 +44,8 @@ export function PlacementSummary({ result }: { result: FinishResult & { placemen
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-2">
+        {/* Kanıta dayalı ilk kart: zorlanılan konu bulunduysa "Buldum!", yoksa "Tebrikler". */}
+        <Bibo state={placement.weakPoints.length > 0 ? "buldum" : "tebrikler"} size={140} className="mb-1 size-32 animate-pop" />
         <h1 className="text-2xl font-semibold">Testi bitirdin</h1>
         <p className="text-base leading-relaxed">{LEVEL_TEXT[placement.levelEst]}</p>
         {placement.borderline ? (

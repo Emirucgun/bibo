@@ -13,6 +13,11 @@ describe("decideRoute (proxy.ts)", () => {
     expect(decideRoute({ pathname: "/", signedIn: false })).toEqual({ kind: "rewrite", to: "/tanitim" });
   });
 
+  it.each([false, true])("tanıtım sayfasının iç yolu dışarıdan açılmaz: /tanitim → / (signedIn=%s)", (signedIn) => {
+    expect(decideRoute({ pathname: "/tanitim", signedIn })).toEqual({ kind: "redirect", to: "/" });
+    expect(decideRoute({ pathname: "/tanitim/", signedIn })).toEqual({ kind: "redirect", to: "/" });
+  });
+
   it.each(["/oturum/123", "/ilerleme", "/ayarlar", "/yonetim", "/baslangic/onam", "/baslangic/profil"])(
     "girişsiz kullanıcı %s → /giris",
     (pathname) => {
@@ -20,7 +25,7 @@ describe("decideRoute (proxy.ts)", () => {
     },
   );
 
-  it.each(["/giris", "/davet", "/davet/ABC123", "/gizlilik", "/auth/callback", "/tanitim"])(
+  it.each(["/giris", "/davet", "/davet/ABC123", "/gizlilik", "/auth/callback"])(
     "girişsiz kullanıcı %s sayfasını açabilir",
     (pathname) => {
       expect(decideRoute({ pathname, signedIn: false })).toEqual({ kind: "next" });
@@ -31,7 +36,7 @@ describe("decideRoute (proxy.ts)", () => {
     expect(decideRoute({ pathname: "/giris", signedIn: true })).toEqual({ kind: "redirect", to: "/" });
   });
 
-  it.each(["/", "/davet", "/davet/ABC123", "/baslangic/onam", "/gizlilik", "/oturum/1", "/tanitim"])(
+  it.each(["/", "/davet", "/davet/ABC123", "/baslangic/onam", "/gizlilik", "/oturum/1"])(
     "giriş yapmış kullanıcı %s için proxy yönlendirmez (kapı sayfada)",
     (pathname) => {
       expect(decideRoute({ pathname, signedIn: true })).toEqual({ kind: "next" });
@@ -50,7 +55,6 @@ describe("decideRoute (proxy.ts)", () => {
     expect(isPublicPage("/girisx")).toBe(false);
     expect(isPublicPage("/davetiye")).toBe(false);
     expect(isPublicPage("/gizlilik-degil")).toBe(false);
-    expect(isPublicPage("/tanitimx")).toBe(false);
     expect(isApiPath("/apix")).toBe(false);
     expect(decideRoute({ pathname: "/apix", signedIn: false })).toEqual({ kind: "redirect", to: "/giris" });
   });

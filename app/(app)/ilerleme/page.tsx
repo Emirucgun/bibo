@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageLoading } from "@/components/auth/AuthShell";
+import { Bibo } from "@/components/brand/Bibo";
 import { AppHeader } from "@/components/home/AppHeader";
 import { LevelLegend, ProgressGrid } from "@/components/progress/ProgressGrid";
 import { getViewer } from "@/lib/auth/viewer";
@@ -73,7 +74,7 @@ async function ProgressBody() {
         <section className="flex flex-col gap-2">
           <h2 className="text-base font-semibold">Şu an üzerinde çalıştıklarımız</h2>
           {p.diagnoses.map((d) => (
-            <p key={d.id} className="rounded-lg border border-primary/30 bg-primary/5 p-4 text-sm leading-relaxed">
+            <p key={d.id} className="rounded-lg border border-primary/30 bg-secondary p-4 text-sm leading-relaxed">
               <span className="font-medium">{d.topicTitleTr}: </span>
               {d.messageTr}
             </p>
@@ -84,7 +85,10 @@ async function ProgressBody() {
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold">Konular ve beceriler</h2>
         {!measured ? (
-          <p className="text-sm text-muted-foreground">İlk oturumlarından sonra kareler dolmaya başlar.</p>
+          <div className="flex items-center gap-4 rounded-lg border border-dashed border-border p-4">
+            <Bibo size={72} className="size-16 shrink-0" />
+            <p className="text-sm text-muted-foreground">İlk oturumlarından sonra kareler dolmaya başlar.</p>
+          </div>
         ) : null}
         <LevelLegend />
         <ProgressGrid rows={p.grid} />

@@ -6,9 +6,10 @@ import type { GridRow, MasteryLevel } from "@/lib/progress/progress";
 // Doğrudan cevabı olmayan ama diğer kanıtlardan tahmin edilen hücre kesik çerçeveli ve soluk.
 export const LEVEL_STYLE: Record<MasteryLevel, { label: string; icon: string; cell: string }> = {
   unknown: { label: "Henüz bilinmiyor", icon: "·", cell: "border border-dashed border-border bg-background text-muted-foreground" },
-  weak: { label: "Zayıf", icon: "✕", cell: "bg-red-100 text-red-900 border border-red-300" },
-  developing: { label: "Gelişiyor", icon: "◐", cell: "bg-amber-100 text-amber-900 border border-amber-300" },
-  solid: { label: "Sağlam", icon: "✓", cell: "bg-emerald-700 text-white border border-emerald-800" },
+  // Figma ustalık ölçeği (--mastery-1…3): kırmızı değil, açıktan koyuya turkuaz. Simgeler aynı kalır.
+  weak: { label: "Zayıf", icon: "✕", cell: "bg-mastery-1 text-accent-foreground border border-mastery-2" },
+  developing: { label: "Gelişiyor", icon: "◐", cell: "bg-mastery-2 text-ink border border-mastery-3" },
+  solid: { label: "Sağlam", icon: "✓", cell: "bg-mastery-3 text-primary-foreground border border-mastery-3" },
 };
 
 const PREDICTED = "opacity-60 border-dashed";

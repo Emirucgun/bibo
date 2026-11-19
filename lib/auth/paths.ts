@@ -23,10 +23,13 @@ export function inviteCodeFromPath(pathname: string): string | null {
   return isValidInviteCode(code) ? code : null;
 }
 
-/** Tanıtım sayfası: girişsiz ziyaretçi `/` adresinde bunu görür (bibolearn.com kökü). */
+/**
+ * Tanıtım sayfasının iç yolu. Girişsiz ziyaretçi `/` adresinde bunu görür (rewrite, bibolearn.com
+ * kökü); bu yolun kendisi dışarıdan açılmaz, `/`'e yönlenir. Tek adres: `/`.
+ */
 export const LANDING_PATH = "/tanitim";
 
-const PUBLIC_PAGES = ["/giris", "/davet", "/gizlilik", "/auth/callback", LANDING_PATH];
+const PUBLIC_PAGES = ["/giris", "/davet", "/gizlilik", "/auth/callback"];
 
 function matches(pathname: string, base: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);
@@ -54,6 +57,7 @@ export type RouteDecision =
 export function decideRoute(input: { pathname: string; signedIn: boolean }): RouteDecision {
   const { pathname, signedIn } = input;
   if (isApiPath(pathname)) return { kind: "next" };
+  if (matches(pathname, LANDING_PATH)) return { kind: "redirect", to: "/" };
   if (!signedIn) {
     if (pathname === "/") return { kind: "rewrite", to: LANDING_PATH };
     return isPublicPage(pathname) ? { kind: "next" } : { kind: "redirect", to: "/giris" };
